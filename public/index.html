@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulateur Devis Privatisations Palace Comedy - 11 juin - 18h55</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+
+<h1>Simulateur Devis Privatisations — Palace Comedy</h1>
+<p class="meta">Version 11 juin — 18h55. V2.6 — « Format » renommé « formule ». Paramètres des formules de prestation déplacés dans la bibliothèque.</p>
+
+<!-- ===== Bandeau gestion des fiches ===== -->
+<div class="ficheBar">
+  <strong style="font-family:'Lexend',sans-serif;font-weight:500;">Fiches devis :</strong>
+  <select id="selectFiche">
+    <option value="">— Nouvelle fiche (non sauvegardée) —</option>
+  </select>
+  <span id="ficheUnsavedDot" title="Modifications non sauvegardées"></span>
+  <span class="sep"></span>
+  <button onclick="newFiche()">+ Nouvelle</button>
+  <button onclick="saveFiche()" class="primary" style="margin-top:0">Enregistrer</button>
+  <button onclick="duplicateFiche()">Dupliquer</button>
+  <button onclick="deleteFiche()" class="delete" style="padding:6px 12px;font-size:0.85em">Supprimer</button>
+  <span class="sep"></span>
+  <button onclick="exportAllJSON()">Exporter JSON</button>
+  <button onclick="document.getElementById('importJsonInput').click()">Importer JSON</button>
+  <input type="file" id="importJsonInput" accept=".json,application/json" style="display:none" onchange="importJSON(event)">
+  <span class="sep"></span>
+  <button onclick="refreshAll()" title="Resynchroniser depuis le cloud">↻ Rafraîchir</button>
+  <span class="sep"></span>
+  <span id="userInfo" style="font-size:0.85em;color:#666;font-family:'Lexend',sans-serif"></span>
+  <button onclick="logout()" class="delete" style="padding:6px 12px;font-size:0.85em">Déconnexion</button>
+</div>
+
+<!-- ===== Indicateurs de sync ===== -->
+<div id="apiSpinner" class="apiSpinner">↻ Sync…</div>
+<div id="toast" class="toast"></div>
+
+<!-- ===== Popup migration localStorage → cloud ===== -->
+<div id="migrationModal" class="modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modalContent" id="migrationModalBody"></div>
+</div>
+
+<!-- ===== Mini-dashboard pipe commercial ===== -->
+<div class="dashboard" id="dashboard">
+  <div class="miniKpi"><span class="l">Total fiches</span><span class="v" id="dashTotal">0</span></div>
+  <div class="miniKpi"><span class="l">Brouillons</span><span class="v" id="dashBrouillon">0</span></div>
+  <div class="miniKpi"><span class="l">Envoyées</span><span class="v" id="dashEnvoye">0</span></div>
+  <div class="miniKpi"><span class="l">Acceptées</span><span class="v" id="dashAccepte">0</span></div>
+  <div class="miniKpi"><span class="l">Taux transfo</span><span class="v" id="dashTaux">—</span></div>
+  <div class="miniKpi"><span class="l">CA acceptées HT</span><span class="v" id="dashCA">—</span></div>
+</div>
+
+<!-- ===== Onglets ===== -->
+<div class="tabsBar">
+  <button class="tab active" data-tab="simulateur" onclick="switchTab('simulateur')">Simulateur</button>
+  <button class="tab" data-tab="calendrier" onclick="switchTab('calendrier')">📅 Calendrier</button>
+</div>
+
+<!-- ===== Onglet : Simulateur ===== -->
+<div id="tabSimulateur" class="tab-content">
+
+<!-- ===== Carte fiche en cours ===== -->
+<div class="ficheCard">
+  <h2>Fiche en cours <span id="ficheStatutBadge" class="statutBadge brouillon">brouillon</span></h2>
+  <p id="ficheTrace" class="ficheTrace hidden"></p>
+  <div class="ficheGrid">
+    <div>
+      <label>Nom de la fiche</label>
+      <input type="text" id="ficheNom" placeholder="Ex : Devis CSE Cointreau 15-06">
+    </div>
+    <div>
+      <label>Client (société / CSE)</label>
+      <input type="text" id="ficheClient" placeholder="Ex : Cointreau">
+    </div>
+    <div>
+      <label>Contact email</label>
+      <input type="text" id="ficheEmail" placeholder="cse@..." inputmode="email">
+    </div>
+    <div>
+      <label>Contact téléphone</label>
+      <input type="text" id="ficheTel" placeholder="02 41..." inputmode="tel">
+    </div>
+    <div>
+      <label>Date de l'événement</label>
+      <input type="date" id="ficheDateEvent">
+    </div>
+    <div>
+      <label>Heure d'arrivée des invités</label>
+      <input type="time" id="ficheHeureArrivee">
+    </div>
+    <div id="ficheHeureSpectacleBlock">
+      <label>Heure du spectacle</label>
+      <input type="time" id="ficheHeureSpectacle">
+    </div>
+    <div>
+      <label>Statut</label>
+      <select id="ficheStatut">
+        <option value="brouillon">Brouillon</option>
+        <option value="envoye">Devis envoyé</option>
+        <option value="accepte">Accepté</option>
+        <option value="refuse">Refusé</option>
+      </select>
+    </div>
+  </div>
+  <label style="margin-top:14px">Notes</label>
+  <textarea id="ficheNotes" placeholder="Notes libres : préférences client, points négociés, allergies, contraintes techniques, historique d'échanges..."></textarea>
+</div>
+
+<div class="layout">
+  <aside class="card sidebar">
+    <h2>Configuration du devis</h2>
+
+    <label>Formule de prestation</label>
+    <select id="format">
+      <option value="privat-full">Privatisation full + show + repas</option>
+      <option value="privat-salle">Privatisation salle seule (sans show)</option>
+      <option value="atelier-cocktail">Atelier cocktail</option>
+      <option value="formation-impro">Formation impro / team building</option>
+      <option value="groupe-classique">Groupe sur soirée Palace classique</option>
+    </select>
+
+    <label>Jour de la semaine</label>
+    <select id="day">
+      <option value="lundi">Lundi (fermé)</option>
+      <option value="mardi">Mardi (fermé)</option>
+      <option value="mercredi">Mercredi</option>
+      <option value="jeudi">Jeudi</option>
+      <option value="vendredi" selected>Vendredi</option>
+      <option value="samedi">Samedi</option>
+      <option value="dimanche">Dimanche</option>
+    </select>
+
+    <label>Période <span style="font-weight:400;color:#666;font-size:0.9em">(auto = déduite de la date)</span></label>
+    <select id="periodeOverride">
+      <option value="auto" selected>Auto</option>
+      <option value="P1">Forcer P1 (mai-sept, basse saison)</option>
+      <option value="P2">Forcer P2 (oct-avr, haute saison)</option>
+    </select>
+    <p class="legend" id="periodeIndicator">Période effective : —</p>
+
+    <label>Nombre de personnes</label>
+    <input type="number" id="nbPers" value="50" min="1" max="120">
+
+    <h3>Restauration</h3>
+    <label>Mode</label>
+    <select id="formuleType">
+      <option value="none">Aucune (privat salle seule, formation, etc.)</option>
+      <option value="custom" selected>Sur mesure (composition libre)</option>
+    </select>
+    <div id="customFormuleBlock">
+      <p class="legend">Compose la formule. Coûts &amp; prix HT par personne. TVA Resto = 10%, Bar = 20%.</p>
+      <div class="item-row" style="font-family:'Lexend',sans-serif;font-size:0.7em;text-transform:uppercase;letter-spacing:0.04em;color:#666;font-weight:500;border-bottom:1px solid rgba(0,0,0,0.08);padding:0 0 6px 0;margin-bottom:4px">
+        <div style="padding-left:8px">Libellé</div>
+        <div style="padding-right:8px;justify-self:end">Coût €/p</div>
+        <div style="padding-right:8px;justify-self:end">Prix €/p</div>
+        <div style="padding-left:8px">TVA</div>
+        <div></div>
+      </div>
+      <div id="itemsList"></div>
+      <div id="formuleTotalBox" style="display:none;padding:8px 10px;margin-top:6px;border-top:1px dashed rgba(0,0,0,0.15);font-size:0.82em;color:#444">
+        <strong>Marge formule :</strong> <span id="formuleMargePers"></span> &middot; <span id="formuleMargeTaux"></span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+        <button onclick="addItem()">+ Vide</button>
+        <select id="bddImportSelect" style="flex:1;min-width:140px" onchange="importerDepuisBdd(this)">
+          <option value="">+ Importer depuis base...</option>
+        </select>
+      </div>
+      <div style="margin-top:6px">
+        <select id="formuleLoadSelect" style="width:100%" onchange="formuleCharger(this)">
+          <option value="">📚 Charger une formule complète...</option>
+        </select>
+      </div>
+    </div>
+
+    <h3>Affichage du devis client</h3>
+    <label class="inline"><input type="radio" name="vueClient" value="decomposee" checked> Décomposé (lignes séparées)</label><br>
+    <label class="inline"><input type="radio" name="vueClient" value="prixPers"> Prix tout inclus par personne</label>
+    <label class="inline" style="margin-top:10px"><input type="checkbox" id="fondreFraisResa"> Fondre les frais de réservation dans le prix/pers</label>
+
+    <div id="forfaitLibelleBlock" style="margin-top:10px">
+      <label>Libellé du forfait (mode prix tout inclus)</label>
+      <input type="text" id="forfaitLibelle" placeholder="Ex : Forfait soirée Palace Comedy" value="Forfait événementiel tout inclus">
+      <input type="text" id="forfaitSousLibelle" placeholder="Sous-titre (ex : privatisation + spectacle + restauration)" value="privatisation + spectacle + restauration" style="margin-top:6px">
+    </div>
+
+    <div class="actions">
+      <button onclick="window.print()">Imprimer / PDF (devis)</button>
+      <button onclick="exportFicheEquipe()">📋 Fiche équipe (PDF)</button>
+      <button class="primary" onclick="copyDevisText()">Copier devis texte</button>
+    </div>
+  </aside>
+
+  <main class="card">
+    <h2>Résultat</h2>
+
+    <div class="kpi-grid">
+      <div class="kpi" id="kpiBoxTotalHT"><span class="label">Total HT</span><span class="value" id="kpiTotalHT">—</span></div>
+      <div class="kpi" id="kpiBoxTotalTTC"><span class="label">Total TTC</span><span class="value" id="kpiTotalTTC">—</span></div>
+      <div class="kpi" id="kpiBoxPrixPers"><span class="label">Prix HT / pers</span><span class="value" id="kpiPrixPers">—</span></div>
+      <div class="kpi" id="kpiBoxMarge"><span class="label">Marge brute</span><span class="value" id="kpiMarge">—</span></div>
+      <div class="kpi" id="kpiBoxTaux"><span class="label">Taux de marge</span><span class="value" id="kpiTaux">—</span></div>
+    </div>
+
+    <div id="alertesBox"></div>
+
+    <div id="couvertureBox" class="card" style="background:rgba(74,128,214,0.06);border-color:rgba(74,128,214,0.2);padding:14px 18px;margin-bottom:16px;display:none">
+      <h3 style="margin-top:0">Couverture du jour</h3>
+      <div id="couvertureContent"></div>
+    </div>
+
+    <h3>Vue interne — décomposition coûts &amp; marges</h3>
+    <table id="tableInterne">
+      <thead>
+        <tr>
+          <th>Ligne</th>
+          <th class="num">Coût HT</th>
+          <th class="num">Prix HT</th>
+          <th class="num">Marge</th>
+          <th class="num">TVA</th>
+          <th class="num">TTC</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
+
+    <h3>Vue client — devis</h3>
+    <table id="tableClient">
+      <thead>
+        <tr>
+          <th>Désignation</th>
+          <th class="num">Qté</th>
+          <th class="num">P.U. HT</th>
+          <th class="num">Total HT</th>
+          <th class="num">TVA</th>
+          <th class="num">Total TTC</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
+
+    <div class="info-note">
+      <strong>Rappel TVA</strong> &middot; <strong>Privatisation incluant spectacle</strong> : 20% sur l'ensemble (prestation événementielle globale, non dissociable). <strong>Billets de spectacle vendus à la personne</strong> (formule Groupe sur Palace classique) : 5,5%. <strong>Restauration sur place</strong> : 10%. <strong>Boissons alcoolisées / Bar</strong> : 20%. <strong>Privatisation salle seule</strong> : 20%.
+    </div>
+  </main>
+</div>
+
+<details class="advanced">
+  <summary>Base d'items restauration &mdash; bibliothèque réutilisable</summary>
+  <div class="card">
+    <p class="legend">Items enregistrés ici → réutilisables dans toutes les fiches via la liste « Importer depuis base ». Stockés en local et inclus dans l'export JSON.</p>
+
+    <h3>Items enregistrés</h3>
+    <table id="bddItemsTable" style="font-size:0.88em">
+      <thead>
+        <tr>
+          <th>Libellé</th>
+          <th class="num">Coût €/p</th>
+          <th class="num">Prix €/p</th>
+          <th>TVA</th>
+          <th class="num">Marge brute</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h3>Ajouter un nouvel item</h3>
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:center">
+      <input type="text" id="bddNouveauLibelle" placeholder="Ex : Plateau apéro premium">
+      <input type="number" id="bddNouveauCout" placeholder="Coût €/p" step="0.1" style="text-align:right">
+      <input type="number" id="bddNouveauPrix" placeholder="Prix €/p" step="0.1" style="text-align:right">
+      <select id="bddNouveauTva">
+        <option value="restauration">Resto 10%</option>
+        <option value="bar">Bar 20%</option>
+      </select>
+      <button onclick="bddAjouter()" class="primary" style="margin-top:0">Ajouter</button>
+    </div>
+    <p class="legend" id="bddFeedback" style="min-height:1.2em">&nbsp;</p>
+  </div>
+</details>
+
+<details class="advanced">
+  <summary>Bibliothèque &amp; paramètres de formules</summary>
+  <div class="card">
+
+    <h3>Paramètres des formules de prestation</h3>
+    <p class="legend">Coûts, marges et prix spécifiques à chaque formule de prestation. Modifications appliquées à toutes les fiches futures (les fiches déjà sauvegardées conservent leur snapshot chiffré).</p>
+
+    <h4>Formule &middot; Privatisation salle seule</h4>
+    <div class="grid-2">
+      <div><label>Forfait HT (€)</label><input type="number" id="forfaitSalleSeule" value="1200"></div>
+      <div><label>Coût réel HT (€)</label><input type="number" id="coutSalleSeule" value="150"></div>
+    </div>
+
+    <h4>Formule &middot; Atelier cocktail</h4>
+    <p class="legend">Le prix client est calculé : <em>(coût intervenant + coût matières × nb pers) × (1 + marge atelier)</em>.</p>
+    <div class="grid-3">
+      <div><label>Coût intervenant (€)</label><input type="number" id="coutInterCocktail" value="300"></div>
+      <div><label>Coût matières / pers (€)</label><input type="number" id="coutMatCocktail" value="8" step="0.5"></div>
+      <div><label>Marge atelier (%)</label><input type="number" id="margeAtelier" value="50" step="1"></div>
+    </div>
+
+    <h4>Formule &middot; Formation impro / team building</h4>
+    <div class="grid-2">
+      <div><label>Coût intervenant (€)</label><input type="number" id="coutInterImpro" value="250"></div>
+      <div><label>Prix client HT / pers (€)</label><input type="number" id="prixPersImpro" value="110"></div>
+    </div>
+
+    <h4>Formule &middot; Groupe sur soirée Palace classique</h4>
+    <div class="grid-2">
+      <div><label>Coût HT / pers (€)</label><input type="number" id="coutGroupe" value="14.21" step="0.01"></div>
+      <div><label>Prix client HT / pers (€)</label><input type="number" id="prixGroupe" value="50"></div>
+    </div>
+
+    <hr style="margin:24px 0;border:none;border-top:1px solid rgba(0,0,0,0.08)">
+
+    <h3>Compositions restauration réutilisables</h3>
+    <p class="legend">Une composition = liste d'items pré-assemblés (ex : « Apéro dînatoire standard » = 4 items). Chargeable en un clic dans la formule sur mesure d'une fiche.</p>
+
+    <h4>Compositions enregistrées</h4>
+    <table id="formulesTable" style="font-size:0.88em">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Items</th>
+          <th class="num">Prix/pers HT</th>
+          <th class="num">Marge brute</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h4>Capturer la composition courante</h4>
+    <p class="legend">Enregistrer la composition actuellement saisie dans la formule sur mesure comme nouvelle composition réutilisable.</p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="text" id="formuleNouveauNom" placeholder="Nom de la composition (ex : Apéro dînatoire standard)" style="flex:1;min-width:200px">
+      <button onclick="formuleCapture()" class="primary" style="margin-top:0">Capturer composition courante</button>
+    </div>
+    <p class="legend" id="formuleFeedback" style="min-height:1.2em">&nbsp;</p>
+  </div>
+</details>
+
+<details class="advanced">
+  <summary>Paramètres avancés &mdash; coûts, marges, paliers, TVA, plafonds</summary>
+  <div class="card">
+
+    <h3>Spectacle (privat full + show)</h3>
+    <div class="grid-2">
+      <div><label>Prix client HT (€)</label><input type="number" id="paramSpecPrix" value="1500"></div>
+      <div><label>Coût réel HT (€)</label><input type="number" id="paramSpecCout" value="950"></div>
+    </div>
+
+    <h3>CA habituel HT par jour &amp; période</h3>
+    <p class="legend">Source : ton historique B2C 12 derniers mois. P1 = mai à septembre. P2 = octobre à avril. Le seuil de couverture appliqué au devis est <strong>CA habituel × (1 + buffer)</strong>.</p>
+    <div class="grid-2">
+      <div><label>Buffer de couverture (%)</label><input type="number" id="bufferCouverture" value="20" step="1"></div>
+      <div></div>
+    </div>
+    <table id="caHabituelTable" style="margin-top:10px">
+      <thead><tr><th>Jour</th><th class="num">P1 (mai-sept)</th><th class="num">P2 (oct-avr)</th></tr></thead>
+      <tbody>
+        <tr><td>Lundi</td><td class="num"><input type="number" id="caLunP1" value="0" style="text-align:right"></td><td class="num"><input type="number" id="caLunP2" value="0" style="text-align:right"></td></tr>
+        <tr><td>Mardi</td><td class="num"><input type="number" id="caMarP1" value="0" style="text-align:right"></td><td class="num"><input type="number" id="caMarP2" value="0" style="text-align:right"></td></tr>
+        <tr><td>Mercredi</td><td class="num"><input type="number" id="caMerP1" value="1327" style="text-align:right"></td><td class="num"><input type="number" id="caMerP2" value="2146" style="text-align:right"></td></tr>
+        <tr><td>Jeudi</td><td class="num"><input type="number" id="caJeuP1" value="2114" style="text-align:right"></td><td class="num"><input type="number" id="caJeuP2" value="2811" style="text-align:right"></td></tr>
+        <tr><td>Vendredi</td><td class="num"><input type="number" id="caVenP1" value="2613" style="text-align:right"></td><td class="num"><input type="number" id="caVenP2" value="4098" style="text-align:right"></td></tr>
+        <tr><td>Samedi</td><td class="num"><input type="number" id="caSamP1" value="3052" style="text-align:right"></td><td class="num"><input type="number" id="caSamP2" value="4906" style="text-align:right"></td></tr>
+        <tr><td>Dimanche</td><td class="num"><input type="number" id="caDimP1" value="2037" style="text-align:right"></td><td class="num"><input type="number" id="caDimP2" value="2679" style="text-align:right"></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Personnel restaurant</h3>
+    <p class="legend">Le technicien spectacle est inclus dans le coût spectacle ci-dessus.</p>
+    <div class="grid-2">
+      <div><label>Coût horaire global (€)</label><input type="number" id="paramCoutHoraire" value="25" step="0.5"></div>
+      <div><label>Durée moyenne service (h)</label><input type="number" id="paramDuree" value="9" step="0.5"></div>
+    </div>
+    <h4>Paliers de personnel mobilisé</h4>
+    <table id="paliersTable">
+      <thead><tr><th>Jusqu'à X convives</th><th class="num">Nb personnel</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><input type="number" value="30"></td><td><input type="number" value="4"></td><td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td></tr>
+        <tr><td><input type="number" value="50"></td><td><input type="number" value="5"></td><td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td></tr>
+        <tr><td><input type="number" value="80"></td><td><input type="number" value="6"></td><td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td></tr>
+        <tr><td><input type="number" value="120"></td><td><input type="number" value="7"></td><td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td></tr>
+      </tbody>
+    </table>
+    <button onclick="addPalier()" style="margin-top:8px">+ Ajouter un palier</button>
+
+    <h3>Marges cibles appliquées par défaut</h3>
+    <p class="legend">⚠ La marge ici est un <strong>markup sur coût</strong> : marge 40% → prix HT = coût × 1,40. Cela correspond à une <strong>marge brute de 28,6%</strong> sur le prix HT. Pour viser 40% de marge brute sur le prix, paramétrer 67%.</p>
+    <div class="grid-2">
+      <div><label>Personnel (%)</label><input type="number" id="margePersonnel" value="40"></div>
+      <div><label>Intervenants externes (%)</label><input type="number" id="margeIntervenants" value="40"></div>
+    </div>
+
+    <h3>Taux de TVA (%)</h3>
+    <div class="grid-4">
+      <div><label>Spectacle vivant</label><input type="number" id="tvaSpectacle" value="5.5" step="0.1"></div>
+      <div><label>Restauration sur place</label><input type="number" id="tvaResto" value="10" step="0.1"></div>
+      <div><label>Bar / Alcool</label><input type="number" id="tvaBar" value="20" step="0.1"></div>
+      <div><label>Prestation / Privatisation</label><input type="number" id="tvaPresta" value="20" step="0.1"></div>
+    </div>
+
+    <h3>Plafonds commerciaux indicatifs (€/pers HT)</h3>
+    <p class="legend">Au-dessus → alerte « invendable ». À ajuster selon ton positionnement.</p>
+    <div class="grid-3">
+      <div><label>Lun-Mar (fermé)</label><input type="number" id="plafondLunMar" value="120"></div>
+      <div><label>Mer-Jeu-Dim</label><input type="number" id="plafondMid" value="160"></div>
+      <div><label>Ven-Sam</label><input type="number" id="plafondVenSam" value="200"></div>
+    </div>
+
+  </div>
+</details>
+
+</div><!-- /tabSimulateur -->
+
+<!-- ===== Onglet : Calendrier ===== -->
+<div id="tabCalendrier" class="tab-content hidden">
+  <div class="calendrierCard">
+    <div class="calendrierHeader">
+      <button onclick="calNav(-1)">← Mois précédent</button>
+      <h2 id="calTitle">—</h2>
+      <button onclick="calNav(+1)">Mois suivant →</button>
+      <button onclick="calToday()" class="primary" style="margin-top:0">Aujourd'hui</button>
+    </div>
+    <div class="calLegend">
+      <span><span class="dot brouillon"></span>Brouillon</span>
+      <span><span class="dot envoye"></span>Devis envoyé</span>
+      <span><span class="dot accepte"></span>Accepté</span>
+      <span><span class="dot refuse"></span>Refusé</span>
+    </div>
+    <div class="calGrid" id="calGrid"></div>
+    <p class="legend" style="margin-top:14px">Astuce : clique sur une fiche pour voir son aperçu, puis « Ouvrir dans le simulateur » pour la charger.</p>
+  </div>
+</div>
+
+<!-- ===== Modal aperçu fiche ===== -->
+<div id="ficheModal" class="modal hidden" onclick="if(event.target===this)closeFicheModal()">
+  <div class="modalContent">
+    <button class="modalClose" onclick="closeFicheModal()" title="Fermer">×</button>
+    <div id="ficheModalBody"></div>
+  </div>
+</div>
+
+<script type="module" src="/js/main.js"></script>
+
+</body>
+</html>
