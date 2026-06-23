@@ -8,7 +8,10 @@
 import { $, fmt } from './helpers.js';
 import { state } from './state.js';
 import { renderItems } from './items.js';
-import { recalcul, refreshForfaitLibelleVisibility, computeCurrentSnapshot } from './calcul.js';
+import {
+  recalcul, refreshForfaitLibelleVisibility,
+  computeCurrentSnapshot, computeBlocSnapshot
+} from './calcul.js';
 import { newBlocId } from './blocs.js';
 import {
   refreshBddTable, refreshBddSelect
@@ -321,6 +324,30 @@ function autoNomFiche(formData) {
 }
 
 export async function saveFiche() {
+  // Modèle C multi-formules : avant la sérialisation, snapshot des params
+  // effectifs PAR BLOC. Chaque bloc fige ses propres params au moment du save
+  // (opt-in : créé/refresh seulement à la (re)sauvegarde).
+  //
+  // Conséquence : modifier un type interne ou un override de formule APRÈS
+  // ce save ne change pas le calcul des blocs snapshotés.
+  //
+  // Le snapshot d'un bloc est purgé en RAM dès qu'on touche à sa formule ou
+  // ses items (voir blocs-ui.js) ; au prochain save, recalculé from scratch.
+  try {
+    if (Array.isArray(state.formules)) {
+      state.formules.forEach(b => {
+        b.snapshot = computeBlocSnapshot(b);
+      });
+      // Maintien du miroir legacy pour le bloc principal (lu par readCurrentForm)
+      state.currentSnapshot = state.formules[0]?.snapshot || null;
+    } else {
+      // Fallback : pas de state.formules → snapshot legacy via le bloc principal
+      state.currentSnapshot = computeCurrentSnapshot();
+    }
+  } catch (e) {
+    console.warn('[Modèle C multi] snapshot par bloc échoué', e);
+  }
+
   const data = readCurrentForm();
   const snapshot = window._lastDevis ? {
     totalHT: window._lastDevis.totalHT,
@@ -331,16 +358,9 @@ export async function saveFiche() {
   data.nomFiche = autoNomFiche(data);
   data.resultsSnapshot = snapshot;
 
-  // Modèle C : snapshot des params effectifs au moment du save.
-  // Garantit l'immuabilité de la fiche même si les types-internes / formules
-  // sont modifiés plus tard. Opt-in : créé seulement à la (re)sauvegarde.
-  try {
-    const paramSnap = computeCurrentSnapshot();
-    data.config = { ...data.config, snapshot: paramSnap };
-    state.currentSnapshot = paramSnap;
-  } catch (e) {
-    console.warn('[Modèle C] computeCurrentSnapshot a échoué — snapshot non écrit', e);
-  }
+  // Legacy mirror : config.snapshot = snapshot du bloc principal
+  // (rétro-compat lecture par une version antérieure du code). Cleanup commit 7.
+  data.config = { ...data.config, snapshot: state.currentSnapshot || null };
 
   const id = state.currentFicheId || genId();
   try {
