@@ -35,36 +35,48 @@ export function getParamForBloc(bloc, paramId) {
   return val(paramId);
 }
 
-// Synchronise state.formules[0] depuis le DOM. Garantit qu'on a toujours au
-// moins un bloc en RAM cohérent avec les inputs UI courants (commit 2 : UI
-// inchangée donc 1 seul bloc édité via #format/#nbPers/state.items).
-// Crée le bloc s'il n'existe pas. Préserve blocId et snapshot existants.
+// Synchronise les inputs hidden legacy (#format, #nbPers, #formuleType) avec
+// l'état du bloc principal de state.formules. Permet aux helpers et code legacy
+// qui lisent encore $('format') / val('nbPers') de voir des valeurs cohérentes.
+function syncDomFromCurrentBloc() {
+  const b = state.formules[0];
+  if (!b) return;
+  const fmt = $('format'); if (fmt && fmt.value !== b.typeId) fmt.value = b.typeId;
+  const np = $('nbPers'); if (np && parseInt(np.value) !== b.nbPers) np.value = b.nbPers;
+  const ft = $('formuleType'); if (ft && ft.value !== b.formuleType) ft.value = b.formuleType;
+}
+
+// Synchronise state.formules avec le DOM/RAM courant.
+// - Si state.formules est vide → en construit un depuis le DOM (cas init au boot
+//   ou newFiche avant que renderBlocs() n'ait été appelé).
+// - Sinon → state.formules est source de vérité, on resynchronise les inputs
+//   hidden DEPUIS state.formules[0] pour ne pas écraser les blocs édités via
+//   la nouvelle UI multi.
 export function syncCurrentBlocFromDom() {
-  const typeId = $('format').value;
-  const nbPers = Math.max(1, parseInt($('nbPers').value) || 1);
-  const formuleType = $('formuleType').value;
-  const formuleId = state.currentFormuleId || null;
-  if (!Array.isArray(state.formules) || state.formules.length === 0) {
-    state.formules = [{
-      blocId: state.currentBlocId || ('bloc_' + Date.now().toString(36)),
-      formuleId,
-      typeId,
-      nbPers,
-      items: state.items,
-      overrides: {},
-      snapshot: state.currentSnapshot || null,
-      formuleType
-    }];
-    state.currentBlocId = state.formules[0].blocId;
-  } else {
-    const b = state.formules[0];
-    b.typeId = typeId;
-    b.nbPers = nbPers;
-    b.formuleType = formuleType;
-    b.formuleId = formuleId;
-    b.items = state.items;  // re-binding au cas où state.items a été réassigné
-    b.snapshot = state.currentSnapshot || null;
+  if (Array.isArray(state.formules) && state.formules.length > 0) {
+    // state.formules est source de vérité depuis le commit 3 (UI multi-blocs).
+    // Sync l'inverse : inputs hidden ← bloc principal (rétro-compat val()).
+    // Re-bind state.items pour les helpers legacy qui lisent state.items.
+    state.formules[0].items = state.formules[0].items || [];
+    state.items = state.formules[0].items;
+    syncDomFromCurrentBloc();
+    return state.formules;
   }
+  // Bootstrap : state.formules vide → construire le bloc principal depuis DOM
+  const typeId = $('format')?.value || 'privat-full';
+  const nbPers = Math.max(1, parseInt($('nbPers')?.value) || 1);
+  const formuleType = $('formuleType')?.value || 'custom';
+  state.formules = [{
+    blocId: state.currentBlocId || ('bloc_' + Date.now().toString(36)),
+    formuleId: state.currentFormuleId || null,
+    typeId,
+    nbPers,
+    items: state.items,
+    overrides: {},
+    snapshot: state.currentSnapshot || null,
+    formuleType
+  }];
+  state.currentBlocId = state.formules[0].blocId;
   return state.formules;
 }
 
@@ -398,6 +410,12 @@ export function recalcul() {
   $('periodeIndicator').textContent = `Période effective : ${periode} (${source})`;
 
   window._lastDevis = { format, jour, nbPers, lignes, totalHT, totalTTC, tvaParTaux, prixPers, tauxMarge, periode };
+
+  // Multi-formules : rafraîchir le récap global (sans toucher aux inputs des
+  // cards pour ne pas perdre le focus pendant la saisie).
+  if (typeof window.renderRecapGlobal === 'function') {
+    window.renderRecapGlobal();
+  }
 }
 
 function renderCouverture(format, jour, lignes) {

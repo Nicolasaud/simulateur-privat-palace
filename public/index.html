@@ -119,21 +119,23 @@
   <aside class="card sidebar">
     <h2>Configuration du devis</h2>
 
-    <label>Formule de prestation</label>
-    <select id="formuleSelect">
-      <option value="">— Sélectionner —</option>
-    </select>
-    <!-- Input "format" historique : conservé en hidden, alimenté automatiquement
-         depuis la formule sélectionnée. Utilisé par calcul.js et persisté dans
-         config.format. Sera retiré à l'étape 5 quand calcul lira directement
-         depuis la formule. -->
-    <select id="format" style="display:none" aria-hidden="true">
-      <option value="privat-full">Privatisation show + repas</option>
-      <option value="privat-salle">Privatisation sans show</option>
-      <option value="atelier-cocktail">Atelier cocktail</option>
-      <option value="formation-impro">Formation impro / team building</option>
-      <option value="groupe-classique">Groupe sur soirée Palace classique</option>
-    </select>
+    <!-- Mono-formule UI (legacy) : entièrement masquée depuis le commit 3 du
+         chantier multi-formules. Les inputs restent dans le DOM pour rétro-
+         compat avec syncCurrentBlocFromDom (sens RAM→DOM pour le bloc principal).
+         Cleanup commit 7. -->
+    <div id="legacyMonoUI" style="display:none" aria-hidden="true">
+      <label>Formule de prestation</label>
+      <select id="formuleSelect">
+        <option value="">— Sélectionner —</option>
+      </select>
+      <select id="format">
+        <option value="privat-full">Privatisation show + repas</option>
+        <option value="privat-salle">Privatisation sans show</option>
+        <option value="atelier-cocktail">Atelier cocktail</option>
+        <option value="formation-impro">Formation impro / team building</option>
+        <option value="groupe-classique">Groupe sur soirée Palace classique</option>
+      </select>
+    </div>
 
     <label>Jour de la semaine</label>
     <select id="day">
@@ -154,40 +156,52 @@
     </select>
     <p class="legend" id="periodeIndicator">Période effective : —</p>
 
-    <label>Nombre de personnes</label>
-    <input type="number" id="nbPers" value="50" min="1" max="120">
+    <!-- Mono-formule UI (legacy) : entièrement masquée depuis le commit 3.
+         Les inputs restent dans le DOM pour rétro-compat avec syncDomFromCurrentBloc. -->
+    <div id="legacyMonoRestau" style="display:none" aria-hidden="true">
+      <label>Nombre de personnes</label>
+      <input type="number" id="nbPers" value="50" min="1" max="120">
 
-    <h3>Restauration</h3>
-    <label>Mode</label>
-    <select id="formuleType">
-      <option value="none">Aucune (privat salle seule, formation, etc.)</option>
-      <option value="custom" selected>Sur mesure (composition libre)</option>
-    </select>
-    <div id="customFormuleBlock">
-      <p class="legend">Compose la formule. Coûts &amp; prix HT par personne. TVA Resto = 10%, Bar = 20%.</p>
-      <div class="item-row" style="font-family:'Lexend',sans-serif;font-size:0.7em;text-transform:uppercase;letter-spacing:0.04em;color:#666;font-weight:500;border-bottom:1px solid rgba(0,0,0,0.08);padding:0 0 6px 0;margin-bottom:4px">
-        <div style="padding-left:8px">Libellé</div>
-        <div style="padding-right:8px;justify-self:end">Coût €/p</div>
-        <div style="padding-right:8px;justify-self:end">Prix €/p</div>
-        <div style="padding-left:8px">TVA</div>
-        <div></div>
-      </div>
-      <div id="itemsList"></div>
-      <div id="formuleTotalBox" style="display:none;padding:8px 10px;margin-top:6px;border-top:1px dashed rgba(0,0,0,0.15);font-size:0.82em;color:#444">
-        <strong>Marge formule :</strong> <span id="formuleMargePers"></span> &middot; <span id="formuleMargeTaux"></span>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
-        <button onclick="addItem()">+ Vide</button>
-        <select id="bddImportSelect" style="flex:1;min-width:140px" onchange="importerDepuisBdd(this)">
-          <option value="">+ Importer depuis base...</option>
-        </select>
-      </div>
-      <div style="margin-top:6px">
-        <select id="formuleLoadSelect" style="width:100%" onchange="formuleCharger(this)">
-          <option value="">📚 Charger une formule complète...</option>
-        </select>
+      <h3>Restauration</h3>
+      <label>Mode</label>
+      <select id="formuleType">
+        <option value="none">Aucune (privat salle seule, formation, etc.)</option>
+        <option value="custom" selected>Sur mesure (composition libre)</option>
+      </select>
+      <div id="customFormuleBlock">
+        <p class="legend">Compose la formule. Coûts &amp; prix HT par personne. TVA Resto = 10%, Bar = 20%.</p>
+        <div class="item-row" style="font-family:'Lexend',sans-serif;font-size:0.7em;text-transform:uppercase;letter-spacing:0.04em;color:#666;font-weight:500;border-bottom:1px solid rgba(0,0,0,0.08);padding:0 0 6px 0;margin-bottom:4px">
+          <div style="padding-left:8px">Libellé</div>
+          <div style="padding-right:8px;justify-self:end">Coût €/p</div>
+          <div style="padding-right:8px;justify-self:end">Prix €/p</div>
+          <div style="padding-left:8px">TVA</div>
+          <div></div>
+        </div>
+        <div id="itemsList"></div>
+        <div id="formuleTotalBox" style="display:none;padding:8px 10px;margin-top:6px;border-top:1px dashed rgba(0,0,0,0.15);font-size:0.82em;color:#444">
+          <strong>Marge formule :</strong> <span id="formuleMargePers"></span> &middot; <span id="formuleMargeTaux"></span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+          <button onclick="addItem()">+ Vide</button>
+          <select id="bddImportSelect" style="flex:1;min-width:140px" onchange="importerDepuisBdd(this)">
+            <option value="">+ Importer depuis base...</option>
+          </select>
+        </div>
+        <div style="margin-top:6px">
+          <select id="formuleLoadSelect" style="width:100%" onchange="formuleCharger(this)">
+            <option value="">📚 Charger une formule complète...</option>
+          </select>
+        </div>
       </div>
     </div>
+
+    <!-- Multi-formules : nouvelle UI (commit 3 chantier multi-formules) -->
+    <h3>Formules de prestation</h3>
+    <div id="blocsContainer"></div>
+    <div style="margin:8px 0 14px">
+      <button onclick="addBloc()" class="primary" style="margin-top:0">+ Ajouter une formule</button>
+    </div>
+    <div id="blocsRecapGlobal"></div>
 
     <h3>Affichage du devis client</h3>
     <label class="inline"><input type="radio" name="vueClient" value="decomposee" checked> Décomposé (lignes séparées)</label><br>

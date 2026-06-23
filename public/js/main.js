@@ -41,6 +41,10 @@ import {
   refreshTypesInternesUI, registerTypesInternesListeners
 } from './types-internes.js';
 import {
+  renderBlocs, renderRecapGlobal,
+  addBloc, removeBloc, addBlocItem, removeBlocItem
+} from './blocs-ui.js';
+import {
   newFiche, saveFiche, duplicateFiche, deleteFiche,
   exportAllJSON, importJSON,
   loadFichesIndexFromCloud, refreshFichesSelect, refreshDashboard,
@@ -170,6 +174,9 @@ Object.assign(window, {
   // (refresh croisé sans dépendance circulaire entre modules)
   refreshFormulesPrestaTable, refreshFormuleSelectInFiche,
   initFormuleSelectFromCurrentFormat,
+  // Multi-formules UI : handlers inline + render pour fiches.js + recalcul
+  renderBlocs, renderRecapGlobal,
+  addBloc, removeBloc, addBlocItem, removeBlocItem,
   // Fiches
   newFiche, saveFiche, duplicateFiche, deleteFiche,
   exportAllJSON, importJSON, exportFicheEquipe,
@@ -208,6 +215,7 @@ refreshTypesInternesUI();
 refreshFormulesPrestaTable();
 refreshFormuleSelectInFiche();
 initFormuleSelectFromCurrentFormat();
+renderBlocs();
 refreshHeureSpectacleVisibility();
 refreshStatutBadge();
 refreshForfaitLibelleVisibility();

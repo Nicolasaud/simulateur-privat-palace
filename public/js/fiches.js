@@ -219,6 +219,10 @@ export function writeFormFromFiche(f) {
   if (typeof window.initFormuleSelectFromCurrentFormat === 'function') {
     window.initFormuleSelectFromCurrentFormat();
   }
+  // Multi-formules : rendre les cards des blocs de la fiche chargée.
+  if (typeof window.renderBlocs === 'function') {
+    window.renderBlocs();
+  }
   recalcul();
 }
 
