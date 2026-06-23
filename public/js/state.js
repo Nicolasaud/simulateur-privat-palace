@@ -21,6 +21,10 @@ export const state = {
   // bundles type + params + items + builtIn. Seedés au premier login si vide.
   formulesPrestation: [],
 
+  // ID de la formule active sur la fiche en cours (intégré dans config.formuleId
+  // à l'étape 4). Persisté avec la fiche.
+  currentFormuleId: null,
+
   // INDEX léger des fiches (depuis GET /api/fiches) —
   // une fiche complète est récupérée à la demande via getFiche(id).
   // Champs : { id, nomFiche, client, dateEvent, statut, totalHT, updated_at, updated_by }

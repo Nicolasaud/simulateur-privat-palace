@@ -26,7 +26,14 @@ import {
   loadFormulesFromCloud, refreshFormulesTable, refreshFormulesSelect
 } from './formules.js';
 import {
-  loadFormulesV2FromCloud, seedFormulesIfEmpty, reconcileBuiltInFormules
+  loadFormulesV2FromCloud, seedFormulesIfEmpty, reconcileBuiltInFormules,
+  refreshFormulesPrestaTable, refreshFormuleSelectInFiche,
+  initFormuleSelectFromCurrentFormat, onFormuleSelectChange,
+  openFormulePrestaEditor, closeFormulePrestaEditor,
+  saveFormulePrestaFromEditor,
+  addFormulePrestaItemFromBdd, addFormulePrestaItemNew, removeFormulePrestaItem,
+  pushFormulePrestaItemToBdd,
+  duplicateFormulePresta, deleteFormulePresta
 } from './formules-prestation.js';
 import {
   newFiche, saveFiche, duplicateFiche, deleteFiche,
@@ -88,6 +95,8 @@ async function refreshAll() {
   refreshBddSelect();
   refreshFormulesTable();
   refreshFormulesSelect();
+  refreshFormulesPrestaTable();
+  refreshFormuleSelectInFiche();
   if (!document.getElementById('tabCalendrier').classList.contains('hidden')) renderCalendrier();
   recalcul();
   lastRefresh = Date.now();
@@ -104,6 +113,8 @@ window.addEventListener('focus', () => {
       refreshBddSelect();
       refreshFormulesTable();
       refreshFormulesSelect();
+      refreshFormulesPrestaTable();
+      refreshFormuleSelectInFiche();
       if (!document.getElementById('tabCalendrier').classList.contains('hidden')) renderCalendrier();
       lastRefresh = Date.now();
     })
@@ -126,8 +137,14 @@ Object.assign(window, {
   bddAjouter, importerDepuisBdd,
   // Paliers
   addPalier, deletePalier,
-  // Formules
+  // Formules (compositions legacy)
   formuleCapture, formuleCharger, formuleSupprimer,
+  // Formules de prestation (bundles type+params+items)
+  openFormulePrestaEditor, closeFormulePrestaEditor,
+  saveFormulePrestaFromEditor,
+  addFormulePrestaItemFromBdd, addFormulePrestaItemNew, removeFormulePrestaItem,
+  pushFormulePrestaItemToBdd,
+  duplicateFormulePresta, deleteFormulePresta,
   // Fiches
   newFiche, saveFiche, duplicateFiche, deleteFiche,
   exportAllJSON, importJSON, exportFicheEquipe,
@@ -146,6 +163,12 @@ registerPaliersListeners();
 registerFichesListeners();
 registerParamsListeners();
 
+// === Wire du dropdown formuleSelect (changement par l'utilisateur sur la fiche) ===
+const formuleSelectEl = document.getElementById('formuleSelect');
+if (formuleSelectEl) {
+  formuleSelectEl.addEventListener('change', e => onFormuleSelectChange(e.target));
+}
+
 // === Premier rendu ===
 refreshFichesSelect();
 refreshDashboard();
@@ -153,6 +176,9 @@ refreshBddTable();
 refreshBddSelect();
 refreshFormulesTable();
 refreshFormulesSelect();
+refreshFormulesPrestaTable();
+refreshFormuleSelectInFiche();
+initFormuleSelectFromCurrentFormat();
 refreshHeureSpectacleVisibility();
 refreshStatutBadge();
 refreshForfaitLibelleVisibility();

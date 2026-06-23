@@ -44,6 +44,11 @@
   <div class="modalContent" id="migrationModalBody"></div>
 </div>
 
+<!-- ===== Modal éditeur de formule de prestation ===== -->
+<div id="formulePrestaModal" class="modal hidden" onclick="if(event.target===this)closeFormulePrestaEditor()">
+  <div class="modalContent" id="formulePrestaModalBody" style="max-width:760px;width:96%"></div>
+</div>
+
 <!-- ===== Mini-dashboard pipe commercial ===== -->
 <div class="dashboard" id="dashboard">
   <div class="miniKpi"><span class="l">Total fiches</span><span class="v" id="dashTotal">0</span></div>
@@ -115,9 +120,16 @@
     <h2>Configuration du devis</h2>
 
     <label>Formule de prestation</label>
-    <select id="format">
-      <option value="privat-full">Privatisation full + show + repas</option>
-      <option value="privat-salle">Privatisation salle seule (sans show)</option>
+    <select id="formuleSelect">
+      <option value="">— Sélectionner —</option>
+    </select>
+    <!-- Input "format" historique : conservé en hidden, alimenté automatiquement
+         depuis la formule sélectionnée. Utilisé par calcul.js et persisté dans
+         config.format. Sera retiré à l'étape 5 quand calcul lira directement
+         depuis la formule. -->
+    <select id="format" style="display:none" aria-hidden="true">
+      <option value="privat-full">Privatisation show + repas</option>
+      <option value="privat-salle">Privatisation sans show</option>
       <option value="atelier-cocktail">Atelier cocktail</option>
       <option value="formation-impro">Formation impro / team building</option>
       <option value="groupe-classique">Groupe sur soirée Palace classique</option>
@@ -290,33 +302,36 @@
   <summary>Bibliothèque &amp; paramètres de formules</summary>
   <div class="card">
 
-    <h3>Paramètres des formules de prestation</h3>
-    <p class="legend">Coûts, marges et prix spécifiques à chaque formule de prestation. Modifications appliquées à toutes les fiches futures (les fiches déjà sauvegardées conservent leur snapshot chiffré).</p>
-
-    <h4>Formule &middot; Privatisation salle seule</h4>
-    <div class="grid-2">
-      <div><label>Forfait HT (€)</label><input type="number" id="forfaitSalleSeule" value="1200"></div>
-      <div><label>Coût réel HT (€)</label><input type="number" id="coutSalleSeule" value="150"></div>
+    <h3>Bibliothèque de formules</h3>
+    <p class="legend">Une formule = un type interne (la logique de calcul) + des paramètres + une liste d'items resto. Toutes les formules sont modifiables et supprimables. Tu peux dupliquer une formule existante pour en créer une variante.</p>
+    <div style="margin:10px 0 14px">
+      <button onclick="openFormulePrestaEditor(null)" class="primary" style="margin-top:0">+ Nouvelle formule</button>
     </div>
+    <table id="formulesPrestaTable" style="font-size:0.88em">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Type</th>
+          <th class="num">Items resto</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-    <h4>Formule &middot; Atelier cocktail</h4>
-    <p class="legend">Le prix client est calculé : <em>(coût intervenant + coût matières × nb pers) × (1 + marge atelier)</em>.</p>
-    <div class="grid-3">
-      <div><label>Coût intervenant (€)</label><input type="number" id="coutInterCocktail" value="300"></div>
-      <div><label>Coût matières / pers (€)</label><input type="number" id="coutMatCocktail" value="8" step="0.5"></div>
-      <div><label>Marge atelier (%)</label><input type="number" id="margeAtelier" value="50" step="1"></div>
-    </div>
-
-    <h4>Formule &middot; Formation impro / team building</h4>
-    <div class="grid-2">
-      <div><label>Coût intervenant (€)</label><input type="number" id="coutInterImpro" value="250"></div>
-      <div><label>Prix client HT / pers (€)</label><input type="number" id="prixPersImpro" value="110"></div>
-    </div>
-
-    <h4>Formule &middot; Groupe sur soirée Palace classique</h4>
-    <div class="grid-2">
-      <div><label>Coût HT / pers (€)</label><input type="number" id="coutGroupe" value="14.21" step="0.01"></div>
-      <div><label>Prix client HT / pers (€)</label><input type="number" id="prixGroupe" value="50"></div>
+    <!-- Inputs globaux historiques : déplacés dans les formules à l'étape 2,
+         conservés ici en caché pour ne pas casser calcul.js et params-sync.js
+         jusqu'à l'étape 5 (lecture des params depuis la formule active). -->
+    <div id="legacyFormuleInputs" style="display:none" aria-hidden="true">
+      <input type="number" id="forfaitSalleSeule" value="1200">
+      <input type="number" id="coutSalleSeule" value="150">
+      <input type="number" id="coutInterCocktail" value="300">
+      <input type="number" id="coutMatCocktail" value="8" step="0.5">
+      <input type="number" id="margeAtelier" value="50" step="1">
+      <input type="number" id="coutInterImpro" value="250">
+      <input type="number" id="prixPersImpro" value="110">
+      <input type="number" id="coutGroupe" value="14.21" step="0.01">
+      <input type="number" id="prixGroupe" value="50">
     </div>
 
     <hr style="margin:24px 0;border:none;border-top:1px solid rgba(0,0,0,0.08)">
