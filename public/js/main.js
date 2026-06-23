@@ -27,6 +27,7 @@ import {
 } from './formules.js';
 import {
   loadFormulesV2FromCloud, seedFormulesIfEmpty, reconcileBuiltInFormules,
+  migrateFormulesToModelC,
   refreshFormulesPrestaTable, refreshFormuleSelectInFiche,
   initFormuleSelectFromCurrentFormat, onFormuleSelectChange,
   openFormulePrestaEditor, closeFormulePrestaEditor,
@@ -74,14 +75,17 @@ async function loadAllFromCloud() {
 }
 await loadAllFromCloud();
 
-// === Seed initial (si blobs vides) ===
+// === Seed initial (si blobs vides) + migration Modèle C ===
 // Doit s'exécuter APRÈS loadParamsFromCloud() pour que les inputs globaux
 // contiennent les bonnes valeurs au moment du snapshot.
-// Ordre : types-internes AVANT formules (les formules peuvent référencer le type).
+// Ordre : types-internes AVANT formules (les formules référencent le type).
 await seedTypesInternesIfEmpty();
 reconcileTypesInternes();
 await seedFormulesIfEmpty();
 reconcileBuiltInFormules();
+// Migration Modèle C : transforme f.type → f.typeId, f.params → f.overrides
+// (uniquement les diffs avec les defaults du type interne).
+migrateFormulesToModelC();
 
 // === Migration legacy localStorage → cloud, si applicable ===
 const migrated = await maybeOfferMigration();

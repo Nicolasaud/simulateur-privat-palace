@@ -26,6 +26,7 @@ import { recalcul } from './calcul.js';
 import { renderItems } from './items.js';
 import { setDirty } from './fiches.js';
 import { saveItemToBdd } from './bdd-items.js';
+import { getTypeInterneById, getDefaultParam, getTypeLabel } from './types-internes.js';
 
 // Métadonnées par type : libellé, IDs des inputs globaux à migrer dans params.
 export const TYPES_META = {
@@ -62,8 +63,8 @@ export function getFormuleById(id) {
   return state.formulesPrestation.find(f => f.id === id) || null;
 }
 
-export function getFormulesByType(type) {
-  return state.formulesPrestation.filter(f => f.type === type);
+export function getFormulesByType(typeId) {
+  return state.formulesPrestation.filter(f => (f.typeId || f.type) === typeId);
 }
 
 // Snapshot des valeurs actuelles des inputs globaux pour un type donné.
@@ -79,21 +80,27 @@ function snapshotParamsForType(type) {
   return out;
 }
 
-// Construit les 5 formules de base à partir des inputs globaux actuellement chargés.
+// Construit les 5 formules de base — Modèle C : référence un typeId,
+// overrides vide (tous les params hérités du type interne).
 // Appelée uniquement si le blob /api/formules-v2 est vide.
 function buildDefaultFormules() {
   const stamp = nowIso();
-  return TYPE_IDS.map(type => ({
-    id: builtInId(type),
-    nom: TYPES_META[type].label,
-    type,
-    params: snapshotParamsForType(type),
+  return TYPE_IDS.map(typeId => ({
+    id: builtInId(typeId),
+    nom: TYPES_META[typeId].label,
+    typeId,
+    overrides: {},
     items: [],
     builtIn: true,
     dateCreation: stamp,
     dateModification: stamp
   }));
 }
+
+// Tolérance utilisée pour décider qu'une valeur est "identique au défaut"
+// au moment de la migration params → overrides.
+const FLOAT_EPSILON = 0.001;
+const closeEnough = (a, b) => Math.abs((+a || 0) - (+b || 0)) < FLOAT_EPSILON;
 
 export async function loadFormulesV2FromCloud() {
   try {
@@ -103,6 +110,61 @@ export async function loadFormulesV2FromCloud() {
     console.error('Lecture formules-v2 cloud échouée', e);
     state.formulesPrestation = [];
   }
+}
+
+// Migration douce vers le Modèle C — appelée APRÈS loadTypesInternesFromCloud
+// et seedTypesInternesIfEmpty (besoin des defaults pour calculer les diffs).
+// Transforme : { type, params: {…} }  →  { typeId, overrides: {…} }
+// - "type" alias vers "typeId" si absent
+// - chaque entry de "params" non close au défaut du type → mise dans overrides
+// - les autres (au défaut) sont éliminées (héritées du type)
+// - le champ legacy "params" est supprimé
+// Idempotente : un re-passage sur des données déjà migrées ne change rien.
+export function migrateFormulesToModelC() {
+  let touched = false;
+  state.formulesPrestation.forEach(f => {
+    // type → typeId
+    if (!f.typeId && f.type) {
+      f.typeId = f.type;
+      delete f.type;
+      touched = true;
+    } else if (f.typeId && f.type) {
+      // les deux présents : on garde typeId comme source de vérité
+      delete f.type;
+      touched = true;
+    }
+    // params → overrides
+    if (f.params && typeof f.params === 'object') {
+      const overrides = f.overrides && typeof f.overrides === 'object' ? { ...f.overrides } : {};
+      Object.entries(f.params).forEach(([pid, value]) => {
+        const def = getDefaultParam(f.typeId, pid);
+        if (!closeEnough(value, def)) {
+          overrides[pid] = +value;
+        }
+      });
+      f.overrides = overrides;
+      delete f.params;
+      touched = true;
+    }
+    // S'assurer que overrides existe toujours (même vide)
+    if (!f.overrides || typeof f.overrides !== 'object') {
+      f.overrides = {};
+      touched = true;
+    }
+    // builtIn n'est plus utilisé pour le verrou (commit 1) — on le garde quand
+    // même comme info historique. Pas de delete pour ne pas perdre info.
+  });
+  if (touched) persistFormulesV2();
+}
+
+// Valeur effective d'un paramètre pour une formule donnée : override > défaut type.
+// Le snapshot fiche est résolu côté calcul.js (commit 7).
+export function getEffectiveParam(formule, paramId) {
+  if (!formule) return 0;
+  if (formule.overrides && (paramId in formule.overrides)) {
+    return +formule.overrides[paramId];
+  }
+  return getDefaultParam(formule.typeId || formule.type, paramId);
 }
 
 export function persistFormulesV2() {
@@ -186,20 +248,26 @@ export function refreshFormuleSelectInFiche() {
 
 // Synchronise les inputs hidden (format + paramSpecPrix/forfaitSalleSeule/etc.)
 // avec la formule active. Permet à calcul.js de continuer à lire ses valeurs
-// inchangées jusqu'à l'étape 5.
+// inchangées jusqu'au commit 7 (où il lira directement via la chaîne).
+// Lecture : pour chaque paramId du type, override > défaut type interne.
 export function syncHiddenInputsFromFormule(formuleId) {
   const f = getFormuleById(formuleId);
   if (!f) return;
-  // Type interne
+  const typeId = f.typeId || f.type;
+  // Type interne hidden
   const fmt = $('format');
-  if (fmt && fmt.value !== f.type) {
-    fmt.value = f.type;
+  if (fmt && fmt.value !== typeId) {
+    fmt.value = typeId;
     fmt.dispatchEvent(new Event('change', { bubbles: true }));
   }
-  // Params spécifiques au type
-  Object.entries(f.params || {}).forEach(([pid, value]) => {
+  // Params effectifs (override ou défaut du type)
+  const meta = TYPES_META[typeId];
+  if (!meta) return;
+  meta.paramIds.forEach(pid => {
     const el = $(pid);
-    if (el) el.value = value;
+    if (!el) return;
+    const v = (f.overrides && pid in f.overrides) ? f.overrides[pid] : getDefaultParam(typeId, pid);
+    el.value = v;
   });
 }
 
@@ -246,7 +314,7 @@ export function initFormuleSelectFromCurrentFormat() {
   // Sinon match par type avec le format hidden
   const fmt = document.getElementById('format');
   const targetType = fmt?.value || 'privat-full';
-  const match = state.formulesPrestation.find(f => f.type === targetType);
+  const match = state.formulesPrestation.find(f => (f.typeId || f.type) === targetType);
   if (match) {
     sel.value = match.id;
     state.currentFormuleId = match.id;
@@ -268,7 +336,8 @@ export function refreshFormulesPrestaTable() {
   tbody.innerHTML = '';
   list.forEach(f => {
     const tr = document.createElement('tr');
-    const typeLabel = TYPES_META[f.type]?.label || f.type;
+    const typeId = f.typeId || f.type;
+    const typeLabel = getTypeLabel(typeId);
     tr.innerHTML = `
       <td style="padding:6px"><strong>${escapeHtml(f.nom)}</strong></td>
       <td style="padding:6px;font-size:0.88em;color:#555">${escapeHtml(typeLabel)}</td>
@@ -289,12 +358,16 @@ export function openFormulePrestaEditor(id) {
     const f = getFormuleById(id);
     if (!f) return;
     editorState = JSON.parse(JSON.stringify(f));
+    // Normalisation Modèle C (au cas où la migration douce n'a pas couru) :
+    if (!editorState.typeId && editorState.type) editorState.typeId = editorState.type;
+    delete editorState.type;
+    if (!editorState.overrides) editorState.overrides = {};
   } else {
     editorState = {
       id: newFormuleId(),
       nom: '',
-      type: 'privat-full',
-      params: snapshotParamsForType('privat-full'),
+      typeId: 'privat-full',
+      overrides: {},
       items: [],
       builtIn: false,
       dateCreation: nowIso(),
@@ -316,11 +389,16 @@ function renderEditor() {
   if (!body || !editorState) return;
   const title = editorState.__isNew ? 'Nouvelle formule de prestation' : `Éditer « ${escapeHtml(editorState.nom || '(sans nom)')} »`;
 
-  // Champs params spécifiques au type sélectionné
-  const meta = TYPES_META[editorState.type] || { paramIds: [] };
+  // Champs params spécifiques au type sélectionné.
+  // À ce stade (commit 4), on affiche la valeur EFFECTIVE (override ou défaut
+  // du type) sans distinguer hérité/personnalisé. Le commit 6 ajoute cette
+  // distinction visuelle + le bouton reset.
+  const meta = TYPES_META[editorState.typeId] || { paramIds: [] };
   const paramsHtml = meta.paramIds.map(pid => {
     const label = PARAM_LABELS[pid] || pid;
-    const v = editorState.params?.[pid] ?? '';
+    const v = (editorState.overrides && pid in editorState.overrides)
+      ? editorState.overrides[pid]
+      : getDefaultParam(editorState.typeId, pid);
     return `
       <div>
         <label style="font-size:0.85em">${escapeHtml(label)}</label>
@@ -364,7 +442,7 @@ function renderEditor() {
       <div>
         <label style="font-size:0.85em">Type interne (logique de calcul)</label>
         <select id="fpType">
-          ${TYPE_IDS.map(t => `<option value="${t}"${editorState.type===t?' selected':''}>${escapeHtml(TYPES_META[t].label)}</option>`).join('')}
+          ${TYPE_IDS.map(t => `<option value="${t}"${editorState.typeId===t?' selected':''}>${escapeHtml(getTypeLabel(t))}</option>`).join('')}
         </select>
       </div>
     </div>
@@ -434,17 +512,24 @@ function wireEditorListeners() {
   // Type → re-render (les params dépendent du type)
   const typeEl = document.getElementById('fpType');
   typeEl?.addEventListener('change', e => {
-    editorState.type = e.target.value;
-    // Réinitialise les params au snapshot des inputs globaux pour ce nouveau type
-    editorState.params = snapshotParamsForType(editorState.type);
+    editorState.typeId = e.target.value;
+    // En changeant de type, on perd les overrides précédents (les paramIds diffèrent)
+    editorState.overrides = {};
     renderEditor();
   });
 
-  // Params
+  // Params — chaque saisie devient un override SAUF si la valeur est identique
+  // au défaut du type (auquel cas on retire l'override pour rester "hérité").
   body.querySelectorAll('[data-fp-param]').forEach(el => {
     el.addEventListener('input', e => {
       const pid = el.dataset.fpParam;
-      editorState.params[pid] = parseFloat(e.target.value) || 0;
+      const v = parseFloat(e.target.value) || 0;
+      const def = getDefaultParam(editorState.typeId, pid);
+      if (Math.abs(v - def) < FLOAT_EPSILON) {
+        delete editorState.overrides[pid];
+      } else {
+        editorState.overrides[pid] = v;
+      }
     });
   });
 
