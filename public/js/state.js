@@ -13,8 +13,13 @@ export const state = {
   // Bibliothèque d'items réutilisables (rechargée depuis /api/bdd-items)
   bddItems: [],
 
-  // Bibliothèque de formules complètes (depuis /api/formules)
+  // Bibliothèque de formules complètes (depuis /api/formules) — historique "compositions"
+  // = liste d'items resto pré-assemblés et réutilisables.
   formulesList: [],
+
+  // Bibliothèque de formules de prestation (depuis /api/formules-v2) —
+  // bundles type + params + items + builtIn. Seedés au premier login si vide.
+  formulesPrestation: [],
 
   // INDEX léger des fiches (depuis GET /api/fiches) —
   // une fiche complète est récupérée à la demande via getFiche(id).

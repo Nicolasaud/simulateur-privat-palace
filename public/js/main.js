@@ -26,6 +26,9 @@ import {
   loadFormulesFromCloud, refreshFormulesTable, refreshFormulesSelect
 } from './formules.js';
 import {
+  loadFormulesV2FromCloud, seedFormulesIfEmpty, reconcileBuiltInFormules
+} from './formules-prestation.js';
+import {
   newFiche, saveFiche, duplicateFiche, deleteFiche,
   exportAllJSON, importJSON,
   loadFichesIndexFromCloud, refreshFichesSelect, refreshDashboard,
@@ -43,17 +46,28 @@ const nom = await requireAuth();
 const userInfoEl = document.getElementById('userInfo');
 if (userInfoEl) userInfoEl.textContent = nom;
 
+// Debug : exposition lecture seule de l'état (utile en attendant l'UI biblio)
+import { state as __state } from './state.js';
+window.__palaceState = __state;
+
 // === Chargement initial depuis le cloud ===
 async function loadAllFromCloud() {
   await Promise.all([
     loadFichesIndexFromCloud(),
     loadBddFromCloud(),
     loadFormulesFromCloud(),
+    loadFormulesV2FromCloud(),
     loadPaliersFromCloud(),
     loadParamsFromCloud()
   ]);
 }
 await loadAllFromCloud();
+
+// === Seed initial des formules de prestation (si blob vide) ===
+// Doit s'exécuter APRÈS loadParamsFromCloud() pour que les inputs globaux
+// contiennent les bonnes valeurs au moment du snapshot.
+await seedFormulesIfEmpty();
+reconcileBuiltInFormules();
 
 // === Migration legacy localStorage → cloud, si applicable ===
 const migrated = await maybeOfferMigration();
