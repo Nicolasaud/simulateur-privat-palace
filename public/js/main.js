@@ -37,7 +37,8 @@ import {
   duplicateFormulePresta, deleteFormulePresta
 } from './formules-prestation.js';
 import {
-  loadTypesInternesFromCloud, seedTypesInternesIfEmpty, reconcileTypesInternes
+  loadTypesInternesFromCloud, seedTypesInternesIfEmpty, reconcileTypesInternes,
+  refreshTypesInternesUI, registerTypesInternesListeners
 } from './types-internes.js';
 import {
   newFiche, saveFiche, duplicateFiche, deleteFiche,
@@ -106,6 +107,7 @@ async function refreshAll() {
   refreshBddSelect();
   refreshFormulesTable();
   refreshFormulesSelect();
+  refreshTypesInternesUI();
   refreshFormulesPrestaTable();
   refreshFormuleSelectInFiche();
   if (!document.getElementById('tabCalendrier').classList.contains('hidden')) renderCalendrier();
@@ -124,6 +126,7 @@ window.addEventListener('focus', () => {
       refreshBddSelect();
       refreshFormulesTable();
       refreshFormulesSelect();
+      refreshTypesInternesUI();
       refreshFormulesPrestaTable();
       refreshFormuleSelectInFiche();
       if (!document.getElementById('tabCalendrier').classList.contains('hidden')) renderCalendrier();
@@ -156,6 +159,9 @@ Object.assign(window, {
   addFormulePrestaItemFromBdd, addFormulePrestaItemNew, removeFormulePrestaItem,
   pushFormulePrestaItemToBdd,
   duplicateFormulePresta, deleteFormulePresta,
+  // Exposés sur window pour le listener des types-internes (refresh croisé sans
+  // dépendance circulaire entre modules)
+  refreshFormulesPrestaTable, refreshFormuleSelectInFiche,
   // Fiches
   newFiche, saveFiche, duplicateFiche, deleteFiche,
   exportAllJSON, importJSON, exportFicheEquipe,
@@ -180,6 +186,9 @@ if (formuleSelectEl) {
   formuleSelectEl.addEventListener('change', e => onFormuleSelectChange(e.target));
 }
 
+// === Listeners spécifiques à la section types-internes ===
+registerTypesInternesListeners();
+
 // === Premier rendu ===
 refreshFichesSelect();
 refreshDashboard();
@@ -187,6 +196,7 @@ refreshBddTable();
 refreshBddSelect();
 refreshFormulesTable();
 refreshFormulesSelect();
+refreshTypesInternesUI();
 refreshFormulesPrestaTable();
 refreshFormuleSelectInFiche();
 initFormuleSelectFromCurrentFormat();
