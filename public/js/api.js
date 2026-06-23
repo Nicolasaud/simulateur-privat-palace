@@ -104,6 +104,11 @@ export const putBddItems    = (arr)     => apiCall('PUT',    '/api/bdd-items', a
 export const getFormules    = ()        => apiCall('GET',    '/api/formules');
 export const putFormules    = (arr)     => apiCall('PUT',    '/api/formules', arr);
 
+// Formules de prestation v2 (bundles type+params+items réutilisables) —
+// blob distinct de `formules` (qui reste pour les compositions legacy).
+export const getFormulesV2  = ()        => apiCall('GET',    '/api/formules-v2');
+export const putFormulesV2  = (arr)     => apiCall('PUT',    '/api/formules-v2', arr);
+
 export const getPaliers     = ()        => apiCall('GET',    '/api/paliers');
 export const putPaliers     = (arr)     => apiCall('PUT',    '/api/paliers', arr);
 
