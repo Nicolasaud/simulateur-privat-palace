@@ -36,6 +36,9 @@ import {
   duplicateFormulePresta, deleteFormulePresta
 } from './formules-prestation.js';
 import {
+  loadTypesInternesFromCloud, seedTypesInternesIfEmpty, reconcileTypesInternes
+} from './types-internes.js';
+import {
   newFiche, saveFiche, duplicateFiche, deleteFiche,
   exportAllJSON, importJSON,
   loadFichesIndexFromCloud, refreshFichesSelect, refreshDashboard,
@@ -64,15 +67,19 @@ async function loadAllFromCloud() {
     loadBddFromCloud(),
     loadFormulesFromCloud(),
     loadFormulesV2FromCloud(),
+    loadTypesInternesFromCloud(),
     loadPaliersFromCloud(),
     loadParamsFromCloud()
   ]);
 }
 await loadAllFromCloud();
 
-// === Seed initial des formules de prestation (si blob vide) ===
+// === Seed initial (si blobs vides) ===
 // Doit s'exécuter APRÈS loadParamsFromCloud() pour que les inputs globaux
 // contiennent les bonnes valeurs au moment du snapshot.
+// Ordre : types-internes AVANT formules (les formules peuvent référencer le type).
+await seedTypesInternesIfEmpty();
+reconcileTypesInternes();
 await seedFormulesIfEmpty();
 reconcileBuiltInFormules();
 

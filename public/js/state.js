@@ -21,6 +21,11 @@ export const state = {
   // bundles type + params + items + builtIn. Seedés au premier login si vide.
   formulesPrestation: [],
 
+  // Niveau 1 du Modèle C : les 5 types internes figés (libellé éditable + params
+  // par défaut). Seedés au premier login si vide. Les formules-v2 ne stockent
+  // que les overrides par rapport à ces défauts.
+  typesInternes: [],
+
   // ID de la formule active sur la fiche en cours (intégré dans config.formuleId
   // à l'étape 4). Persisté avec la fiche.
   currentFormuleId: null,
