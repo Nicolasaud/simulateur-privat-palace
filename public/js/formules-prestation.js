@@ -390,19 +390,27 @@ function renderEditor() {
   const title = editorState.__isNew ? 'Nouvelle formule de prestation' : `Éditer « ${escapeHtml(editorState.nom || '(sans nom)')} »`;
 
   // Champs params spécifiques au type sélectionné.
-  // À ce stade (commit 4), on affiche la valeur EFFECTIVE (override ou défaut
-  // du type) sans distinguer hérité/personnalisé. Le commit 6 ajoute cette
-  // distinction visuelle + le bouton reset.
+  // Distinction visuelle hérité (gris italique) vs personnalisé (noir gras),
+  // + bouton "↺ reset" sur chaque param personnalisé.
   const meta = TYPES_META[editorState.typeId] || { paramIds: [] };
   const paramsHtml = meta.paramIds.map(pid => {
     const label = PARAM_LABELS[pid] || pid;
-    const v = (editorState.overrides && pid in editorState.overrides)
-      ? editorState.overrides[pid]
-      : getDefaultParam(editorState.typeId, pid);
+    const isOverride = !!(editorState.overrides && pid in editorState.overrides);
+    const v = isOverride ? editorState.overrides[pid] : getDefaultParam(editorState.typeId, pid);
+    const status = isOverride
+      ? `<span style="font-size:0.7em;color:#444;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">personnalisé</span>
+         <button type="button" data-fp-reset-param="${pid}" title="Réinitialiser au défaut du type" style="margin-left:6px;padding:1px 6px;font-size:0.78em;background:transparent;border:1px solid rgba(0,0,0,0.2);border-radius:4px;cursor:pointer">↺</button>`
+      : `<span style="font-size:0.7em;color:#888;font-style:italic">= défaut du type</span>`;
+    const inputStyle = isOverride
+      ? ''
+      : 'color:#888;font-style:italic;background:#fafafa';
     return `
       <div>
-        <label style="font-size:0.85em">${escapeHtml(label)}</label>
-        <input type="number" step="0.01" data-fp-param="${pid}" value="${v}">
+        <label style="font-size:0.85em;display:flex;align-items:center;gap:6px;justify-content:space-between">
+          <span>${escapeHtml(label)}</span>
+          <span style="display:inline-flex;align-items:center;gap:4px">${status}</span>
+        </label>
+        <input type="number" step="0.01" data-fp-param="${pid}" value="${v}" style="${inputStyle}">
       </div>`;
   }).join('');
 
@@ -447,7 +455,12 @@ function renderEditor() {
       </div>
     </div>
 
-    <h3 style="margin-top:18px;font-size:0.95em">Paramètres du type</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;margin-bottom:6px">
+      <h3 style="margin:0;font-size:0.95em">Paramètres du type</h3>
+      ${Object.keys(editorState.overrides || {}).length > 0
+        ? `<button type="button" id="fpResetAllParams" style="padding:3px 10px;font-size:0.8em;background:transparent;border:1px solid rgba(0,0,0,0.2);border-radius:4px;cursor:pointer">↺ Réinitialiser tous les params au défaut du type</button>`
+        : ''}
+    </div>
     <div id="fpParams" style="display:grid;grid-template-columns:repeat(${Math.max(2, meta.paramIds.length)},1fr);gap:10px;margin-bottom:18px">
       ${paramsHtml || '<p class="legend" style="grid-column:1/-1">(Aucun paramètre pour ce type)</p>'}
     </div>
@@ -520,6 +533,9 @@ function wireEditorListeners() {
 
   // Params — chaque saisie devient un override SAUF si la valeur est identique
   // au défaut du type (auquel cas on retire l'override pour rester "hérité").
+  // Note : on ne re-render PAS sur input pour ne pas faire sauter le focus.
+  // L'utilisateur verra le badge hérité/personnalisé se mettre à jour à la
+  // prochaine ouverture du modal OU au blur.
   body.querySelectorAll('[data-fp-param]').forEach(el => {
     el.addEventListener('input', e => {
       const pid = el.dataset.fpParam;
@@ -531,7 +547,30 @@ function wireEditorListeners() {
         editorState.overrides[pid] = v;
       }
     });
+    // Au blur (perte de focus), re-render pour rafraîchir le badge hérité/personnalisé
+    el.addEventListener('blur', () => renderEditor());
   });
+
+  // Reset d'un param individuel → supprime l'override + re-render
+  body.querySelectorAll('[data-fp-reset-param]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pid = btn.dataset.fpResetParam;
+      if (editorState.overrides && pid in editorState.overrides) {
+        delete editorState.overrides[pid];
+        renderEditor();
+      }
+    });
+  });
+
+  // Reset global de tous les overrides → confirm + clear
+  const resetAllBtn = document.getElementById('fpResetAllParams');
+  if (resetAllBtn) {
+    resetAllBtn.addEventListener('click', () => {
+      if (!confirm('Réinitialiser tous les paramètres aux valeurs par défaut du type ?')) return;
+      editorState.overrides = {};
+      renderEditor();
+    });
+  }
 
   // Items
   body.querySelectorAll('[data-fp-item-key]').forEach(el => {
