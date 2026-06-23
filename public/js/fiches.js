@@ -8,7 +8,7 @@
 import { $, fmt } from './helpers.js';
 import { state } from './state.js';
 import { renderItems } from './items.js';
-import { recalcul, refreshForfaitLibelleVisibility } from './calcul.js';
+import { recalcul, refreshForfaitLibelleVisibility, computeCurrentSnapshot } from './calcul.js';
 import {
   refreshBddTable, refreshBddSelect
 } from './bdd-items.js';
@@ -81,6 +81,10 @@ export function readCurrentForm() {
       periodeOverride: $('periodeOverride').value,
       nbPers: parseInt($('nbPers').value) || 1,
       formuleType: $('formuleType').value,
+      // Modèle C : ID de la formule choisie dans le dropdown #formuleSelect.
+      // Le snapshot des params effectifs est ajouté au save par saveFiche()
+      // (config.snapshot — pas ici pour ne pas polluer la détection dirty).
+      formuleId: state.currentFormuleId || null,
       items: JSON.parse(JSON.stringify(state.items)),
       vueClient: document.querySelector('input[name="vueClient"]:checked').value,
       fondreFraisResa: $('fondreFraisResa').checked,
@@ -113,11 +117,25 @@ export function writeFormFromFiche(f) {
     $('fondreFraisResa').checked = !!f.config.fondreFraisResa;
     $('forfaitLibelle').value = f.config.forfaitLibelle || 'Forfait événementiel tout inclus';
     $('forfaitSousLibelle').value = f.config.forfaitSousLibelle || 'privatisation + spectacle + restauration';
+    // Modèle C : restore formuleId + snapshot des params (si présents).
+    // Si config.formuleId absent (fiche legacy pré-pivot), null →
+    // initFormuleSelectFromCurrentFormat() résout par matching de type.
+    state.currentFormuleId = f.config.formuleId || null;
+    state.currentSnapshot = f.config.snapshot || null;
+  } else {
+    state.currentFormuleId = null;
+    state.currentSnapshot = null;
   }
   renderItems();
   refreshHeureSpectacleVisibility();
   refreshStatutBadge();
   refreshForfaitLibelleVisibility();
+  // Modèle C : aligner le dropdown #formuleSelect avec la fiche chargée.
+  // Si formuleId présent → sélectionne cette formule. Sinon (fiche legacy
+  // pré-pivot) → matching par type via #format hidden.
+  if (typeof window.initFormuleSelectFromCurrentFormat === 'function') {
+    window.initFormuleSelectFromCurrentFormat();
+  }
   recalcul();
 }
 
@@ -225,6 +243,17 @@ export async function saveFiche() {
   } : null;
   data.nomFiche = autoNomFiche(data);
   data.resultsSnapshot = snapshot;
+
+  // Modèle C : snapshot des params effectifs au moment du save.
+  // Garantit l'immuabilité de la fiche même si les types-internes / formules
+  // sont modifiés plus tard. Opt-in : créé seulement à la (re)sauvegarde.
+  try {
+    const paramSnap = computeCurrentSnapshot();
+    data.config = { ...data.config, snapshot: paramSnap };
+    state.currentSnapshot = paramSnap;
+  } catch (e) {
+    console.warn('[Modèle C] computeCurrentSnapshot a échoué — snapshot non écrit', e);
+  }
 
   const id = state.currentFicheId || genId();
   try {

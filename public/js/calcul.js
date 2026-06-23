@@ -6,6 +6,53 @@ import {
 } from './helpers.js';
 import { state } from './state.js';
 
+// Lecture d'un paramètre de type interne (paramSpecPrix, forfaitSalleSeule, etc.)
+// pour la FICHE EN COURS via la chaîne du Modèle C :
+//   1. Snapshot figé de la fiche (post-save) → valeur immuable
+//   2. Override de la formule active → personnalisation
+//   3. Défaut du type interne → source de vérité Modèle C niveau 1
+//   4. Fallback : input hidden legacy (rétro-compat)
+//
+// Important : la chaîne ne s'applique QU'AUX paramètres listés par les types
+// internes (state.typesInternes[*].params). Les autres globaux (margePersonnel,
+// margeIntervenants, bufferCouverture, CA habituels, TVA, plafonds, etc.)
+// continuent d'être lus via val() sans changement.
+function getParamForCurrentFiche(paramId) {
+  const snap = state.currentSnapshot;
+  if (snap && snap.params && paramId in snap.params) {
+    return +snap.params[paramId] || 0;
+  }
+  const fId = state.currentFormuleId;
+  const f = fId ? state.formulesPrestation.find(x => x.id === fId) : null;
+  if (f && f.overrides && paramId in f.overrides) {
+    return +f.overrides[paramId] || 0;
+  }
+  const typeId = (f && (f.typeId || f.type)) || $('format')?.value;
+  const t = typeId ? state.typesInternes.find(x => x.id === typeId) : null;
+  if (t && t.params && paramId in t.params) {
+    return +t.params[paramId] || 0;
+  }
+  return val(paramId);
+}
+
+// Compute snapshot des params effectifs pour la fiche courante.
+// Capturés au moment du save dans config.snapshot.
+export function computeCurrentSnapshot() {
+  const fId = state.currentFormuleId;
+  const f = fId ? state.formulesPrestation.find(x => x.id === fId) : null;
+  const typeId = (f && (f.typeId || f.type)) || $('format')?.value || 'privat-full';
+  const t = state.typesInternes.find(x => x.id === typeId);
+  const paramIds = t && t.params ? Object.keys(t.params) : [];
+  const params = {};
+  paramIds.forEach(pid => { params[pid] = getParamForCurrentFiche(pid); });
+  return {
+    typeId,
+    formuleId: fId,
+    params,
+    dateSnapshot: new Date().toISOString()
+  };
+}
+
 export function calculer() {
   const format = $('format').value;
   const jour = $('day').value;
@@ -19,9 +66,9 @@ export function calculer() {
     lignes.push({
       libelle: 'Spectacle (plateau humour)',
       qte: 1,
-      puHT: val('paramSpecPrix'),
-      totalHT: val('paramSpecPrix'),
-      coutHT: val('paramSpecCout'),
+      puHT: getParamForCurrentFiche('paramSpecPrix'),
+      totalHT: getParamForCurrentFiche('paramSpecPrix'),
+      coutHT: getParamForCurrentFiche('paramSpecCout'),
       tvaCat: 'prestation',
       type: 'spectacle'
     });
@@ -77,9 +124,9 @@ export function calculer() {
     lignes.push({
       libelle: 'Privatisation salle seule (sans spectacle)',
       qte: 1,
-      puHT: val('forfaitSalleSeule'),
-      totalHT: val('forfaitSalleSeule'),
-      coutHT: val('coutSalleSeule'),
+      puHT: getParamForCurrentFiche('forfaitSalleSeule'),
+      totalHT: getParamForCurrentFiche('forfaitSalleSeule'),
+      coutHT: getParamForCurrentFiche('coutSalleSeule'),
       tvaCat: 'prestation',
       type: 'privatSalle'
     });
@@ -130,9 +177,9 @@ export function calculer() {
     }
   }
   else if (format === 'atelier-cocktail') {
-    const coutInter = val('coutInterCocktail');
-    const coutMat = val('coutMatCocktail');
-    const margeAtelier = val('margeAtelier') / 100;
+    const coutInter = getParamForCurrentFiche('coutInterCocktail');
+    const coutMat = getParamForCurrentFiche('coutMatCocktail');
+    const margeAtelier = getParamForCurrentFiche('margeAtelier') / 100;
     lignes.push({
       libelle: 'Animation atelier cocktail (intervenant)',
       qte: 1,
@@ -154,7 +201,7 @@ export function calculer() {
     });
   }
   else if (format === 'formation-impro') {
-    const coutInter = val('coutInterImpro');
+    const coutInter = getParamForCurrentFiche('coutInterImpro');
     const prixInter = coutInter * (1 + margeInter);
     lignes.push({
       libelle: 'Animation formation impro (intervenant)',
@@ -165,7 +212,7 @@ export function calculer() {
       tvaCat: 'prestation',
       type: 'inter'
     });
-    const prixParticip = val('prixPersImpro');
+    const prixParticip = getParamForCurrentFiche('prixPersImpro');
     const prixParticipNet = Math.max(0, prixParticip - prixInter / nbPers);
     lignes.push({
       libelle: 'Formation impro — par participant',
@@ -178,12 +225,14 @@ export function calculer() {
     });
   }
   else if (format === 'groupe-classique') {
+    const prixGroupe = getParamForCurrentFiche('prixGroupe');
+    const coutGroupe = getParamForCurrentFiche('coutGroupe');
     lignes.push({
       libelle: 'Soirée Palace Comedy — billet groupe',
       qte: nbPers,
-      puHT: val('prixGroupe'),
-      totalHT: val('prixGroupe') * nbPers,
-      coutHT: val('coutGroupe') * nbPers,
+      puHT: prixGroupe,
+      totalHT: prixGroupe * nbPers,
+      coutHT: coutGroupe * nbPers,
       tvaCat: 'spectacle',
       type: 'billet'
     });

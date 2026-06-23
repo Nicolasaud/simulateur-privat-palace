@@ -26,9 +26,14 @@ export const state = {
   // que les overrides par rapport à ces défauts.
   typesInternes: [],
 
-  // ID de la formule active sur la fiche en cours (intégré dans config.formuleId
-  // à l'étape 4). Persisté avec la fiche.
+  // ID de la formule active sur la fiche en cours (intégré dans config.formuleId).
+  // Persisté avec la fiche.
   currentFormuleId: null,
+
+  // Snapshot figé des params effectifs au moment du dernier save de la fiche
+  // courante. Null si la fiche n'a jamais été (re)sauvegardée depuis le pivot
+  // Modèle C. Au calcul, lu en priorité : snapshot > override formule > défaut type.
+  currentSnapshot: null,
 
   // INDEX léger des fiches (depuis GET /api/fiches) —
   // une fiche complète est récupérée à la demande via getFiche(id).

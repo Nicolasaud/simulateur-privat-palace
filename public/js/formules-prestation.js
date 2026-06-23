@@ -291,9 +291,13 @@ export function onFormuleSelectChange(selectEl) {
     }
   }
   state.currentFormuleId = newId;
+  // Modèle C : changement de formule active = snapshot précédent obsolète.
+  // On le purge → calcul utilisera la chaîne override > défaut type.
+  state.currentSnapshot = null;
   // Charger les items resto (snapshot indépendant)
   state.items = JSON.parse(JSON.stringify(f.items || []));
-  // Synchroniser les inputs hidden (compat calcul.js jusqu'à l'étape 5)
+  // Synchroniser les inputs hidden (rétro-compat avec val() partout où
+  // getParamForCurrentFiche n'est pas utilisé — fonction utilitaire seulement)
   syncHiddenInputsFromFormule(newId);
   renderItems();
   recalcul();

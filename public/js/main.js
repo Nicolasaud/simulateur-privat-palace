@@ -159,9 +159,10 @@ Object.assign(window, {
   addFormulePrestaItemFromBdd, addFormulePrestaItemNew, removeFormulePrestaItem,
   pushFormulePrestaItemToBdd,
   duplicateFormulePresta, deleteFormulePresta,
-  // Exposés sur window pour le listener des types-internes (refresh croisé sans
-  // dépendance circulaire entre modules)
+  // Exposés sur window pour le listener des types-internes + fiches.js
+  // (refresh croisé sans dépendance circulaire entre modules)
   refreshFormulesPrestaTable, refreshFormuleSelectInFiche,
+  initFormuleSelectFromCurrentFormat,
   // Fiches
   newFiche, saveFiche, duplicateFiche, deleteFiche,
   exportAllJSON, importJSON, exportFicheEquipe,
