@@ -45,7 +45,8 @@ import {
   exportAllJSON, importJSON,
   loadFichesIndexFromCloud, refreshFichesSelect, refreshDashboard,
   refreshHeureSpectacleVisibility, refreshStatutBadge,
-  registerFichesListeners
+  registerFichesListeners,
+  readCurrentForm
 } from './fiches.js';
 import { exportFicheEquipe } from './export-fiche.js';
 import { requireAuth, logout } from './auth.js';
@@ -58,9 +59,15 @@ const nom = await requireAuth();
 const userInfoEl = document.getElementById('userInfo');
 if (userInfoEl) userInfoEl.textContent = nom;
 
-// Debug : exposition lecture seule de l'état (utile en attendant l'UI biblio)
+// Debug : exposition lecture seule de l'état (utile pour valider migrations).
+// __palaceState : tout l'état RAM (formulesPrestation, typesInternes, items,
+//   currentFormuleId, currentSnapshot, currentBlocId, fichesList…).
+// dumpFiche() : snapshot de la fiche en cours sous forme d'objet sérialisable
+//   (équivalent de ce qui est envoyé au save). Inclut config.formules pour
+//   valider la migration mono→multi.
 import { state as __state } from './state.js';
 window.__palaceState = __state;
+window.dumpFiche = readCurrentForm;
 
 // === Chargement initial depuis le cloud ===
 async function loadAllFromCloud() {

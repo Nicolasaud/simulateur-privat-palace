@@ -9,6 +9,7 @@ import { $, fmt } from './helpers.js';
 import { state } from './state.js';
 import { renderItems } from './items.js';
 import { recalcul, refreshForfaitLibelleVisibility, computeCurrentSnapshot } from './calcul.js';
+import { newBlocId } from './blocs.js';
 import {
   refreshBddTable, refreshBddSelect
 } from './bdd-items.js';
@@ -65,6 +66,30 @@ function buildIndexEntry(fiche) {
 
 // --- Sérialisation : on capture l'état du formulaire dans un objet ---
 export function readCurrentForm() {
+  // S'assure d'un blocId stable pour la fiche en cours.
+  // Sans ça, chaque appel à readCurrentForm() régénérerait un blocId différent
+  // → fausse détection dirty.
+  if (!state.currentBlocId) state.currentBlocId = newBlocId();
+
+  const nbPers = parseInt($('nbPers').value) || 1;
+  const items = JSON.parse(JSON.stringify(state.items));
+  const formuleId = state.currentFormuleId || null;
+  const formuleType = $('formuleType').value;
+  const format = $('format').value;
+
+  // Bloc principal (commit 1 : un seul bloc). Au commit 3, on itérera sur
+  // tous les blocs en RAM via state.formules.
+  const bloc = {
+    blocId: state.currentBlocId,
+    formuleId,
+    typeId: format,
+    nbPers,
+    items,
+    overrides: {},
+    snapshot: state.currentSnapshot || null,
+    formuleType
+  };
+
   return {
     nomFiche: $('ficheNom').value.trim(),
     client: $('ficheClient').value.trim(),
@@ -76,16 +101,20 @@ export function readCurrentForm() {
     statut: $('ficheStatut').value,
     notes: $('ficheNotes').value,
     config: {
-      format: $('format').value,
+      // === Nouveau format multi-formules ===
+      formules: [bloc],
+
+      // === Champs racine legacy : conservés en doublon jusqu'au commit 7 ===
+      // Permettent : (a) à une version antérieure du code de relire la fiche
+      // (rétro-compat de revert) ; (b) à writeFormFromFiche de fallback si
+      // pour une raison X formules est absent. Cleanup commit 7.
+      format,
       day: $('day').value,
       periodeOverride: $('periodeOverride').value,
-      nbPers: parseInt($('nbPers').value) || 1,
-      formuleType: $('formuleType').value,
-      // Modèle C : ID de la formule choisie dans le dropdown #formuleSelect.
-      // Le snapshot des params effectifs est ajouté au save par saveFiche()
-      // (config.snapshot — pas ici pour ne pas polluer la détection dirty).
-      formuleId: state.currentFormuleId || null,
-      items: JSON.parse(JSON.stringify(state.items)),
+      nbPers,
+      formuleType,
+      formuleId,
+      items,
       vueClient: document.querySelector('input[name="vueClient"]:checked').value,
       fondreFraisResa: $('fondreFraisResa').checked,
       forfaitLibelle: $('forfaitLibelle').value,
@@ -105,26 +134,36 @@ export function writeFormFromFiche(f) {
   $('ficheStatut').value = f.statut || 'brouillon';
   $('ficheNotes').value = f.notes || '';
   if (f.config) {
-    $('format').value = f.config.format || 'privat-full';
+    // Multi-formules : priorité au bloc 0 si présent (format nouveau),
+    // sinon fallback sur les champs legacy racine (format ancien).
+    const bloc = Array.isArray(f.config.formules) && f.config.formules.length > 0
+      ? f.config.formules[0]
+      : null;
+
+    $('format').value = (bloc?.typeId) || f.config.format || 'privat-full';
     $('day').value = f.config.day || 'vendredi';
     $('periodeOverride').value = f.config.periodeOverride || 'auto';
-    $('nbPers').value = f.config.nbPers || 50;
-    $('formuleType').value = f.config.formuleType || 'custom';
-    $('customFormuleBlock').style.display = (f.config.formuleType || 'custom') === 'custom' ? 'block' : 'none';
-    if (Array.isArray(f.config.items)) state.items = JSON.parse(JSON.stringify(f.config.items));
+    $('nbPers').value = (bloc?.nbPers) || f.config.nbPers || 50;
+    $('formuleType').value = (bloc?.formuleType) || f.config.formuleType || 'custom';
+    $('customFormuleBlock').style.display = ($('formuleType').value === 'custom') ? 'block' : 'none';
+
+    const items = bloc?.items ?? f.config.items;
+    if (Array.isArray(items)) state.items = JSON.parse(JSON.stringify(items));
+
     const vueRadio = document.querySelector(`input[name="vueClient"][value="${f.config.vueClient || 'decomposee'}"]`);
     if (vueRadio) vueRadio.checked = true;
     $('fondreFraisResa').checked = !!f.config.fondreFraisResa;
     $('forfaitLibelle').value = f.config.forfaitLibelle || 'Forfait événementiel tout inclus';
     $('forfaitSousLibelle').value = f.config.forfaitSousLibelle || 'privatisation + spectacle + restauration';
-    // Modèle C : restore formuleId + snapshot des params (si présents).
-    // Si config.formuleId absent (fiche legacy pré-pivot), null →
-    // initFormuleSelectFromCurrentFormat() résout par matching de type.
-    state.currentFormuleId = f.config.formuleId || null;
-    state.currentSnapshot = f.config.snapshot || null;
+
+    // Modèle C : restore formuleId + snapshot des params + blocId stable.
+    state.currentFormuleId = (bloc?.formuleId) || f.config.formuleId || null;
+    state.currentSnapshot = (bloc?.snapshot) || f.config.snapshot || null;
+    state.currentBlocId = (bloc?.blocId) || newBlocId();
   } else {
     state.currentFormuleId = null;
     state.currentSnapshot = null;
+    state.currentBlocId = null;
   }
   renderItems();
   refreshHeureSpectacleVisibility();

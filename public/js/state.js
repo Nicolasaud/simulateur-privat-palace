@@ -35,6 +35,12 @@ export const state = {
   // Modèle C. Au calcul, lu en priorité : snapshot > override formule > défaut type.
   currentSnapshot: null,
 
+  // Multi-formules (commit 1) — identifiant stable du bloc principal de la
+  // fiche en cours. Pour l'instant un seul bloc en RAM (UI inchangée) ;
+  // au commit 2 ce sera l'ID du bloc actif dans state.formules[].
+  // Persisté dans config.formules[0].blocId au save.
+  currentBlocId: null,
+
   // INDEX léger des fiches (depuis GET /api/fiches) —
   // une fiche complète est récupérée à la demande via getFiche(id).
   // Champs : { id, nomFiche, client, dateEvent, statut, totalHT, updated_at, updated_by }
