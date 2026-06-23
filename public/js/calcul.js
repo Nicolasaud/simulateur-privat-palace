@@ -6,28 +6,28 @@ import {
 } from './helpers.js';
 import { state } from './state.js';
 
-// Lecture d'un paramètre de type interne (paramSpecPrix, forfaitSalleSeule, etc.)
-// pour la FICHE EN COURS via la chaîne du Modèle C :
-//   1. Snapshot figé de la fiche (post-save) → valeur immuable
-//   2. Override de la formule active → personnalisation
-//   3. Défaut du type interne → source de vérité Modèle C niveau 1
-//   4. Fallback : input hidden legacy (rétro-compat)
-//
-// Important : la chaîne ne s'applique QU'AUX paramètres listés par les types
-// internes (state.typesInternes[*].params). Les autres globaux (margePersonnel,
-// margeIntervenants, bufferCouverture, CA habituels, TVA, plafonds, etc.)
-// continuent d'être lus via val() sans changement.
-function getParamForCurrentFiche(paramId) {
-  const snap = state.currentSnapshot;
-  if (snap && snap.params && paramId in snap.params) {
-    return +snap.params[paramId] || 0;
+// Lecture d'un paramètre de type interne pour UN BLOC précis (multi-formules).
+// Chaîne du Modèle C étendue au niveau bloc :
+//   1. snapshot du bloc (post-save) → immuable
+//   2. overrides du bloc (commits ultérieurs : UI bloc-spécifique)
+//   3. overrides de la formule référencée par le bloc
+//   4. défaut du type interne (state.typesInternes[bloc.typeId].params)
+//   5. fallback val() — utile seulement pour le bloc actif (DOM legacy)
+export function getParamForBloc(bloc, paramId) {
+  if (!bloc) return val(paramId);
+  if (bloc.snapshot && bloc.snapshot.params && paramId in bloc.snapshot.params) {
+    return +bloc.snapshot.params[paramId] || 0;
   }
-  const fId = state.currentFormuleId;
-  const f = fId ? state.formulesPrestation.find(x => x.id === fId) : null;
+  if (bloc.overrides && paramId in bloc.overrides) {
+    return +bloc.overrides[paramId] || 0;
+  }
+  const f = bloc.formuleId
+    ? state.formulesPrestation.find(x => x.id === bloc.formuleId)
+    : null;
   if (f && f.overrides && paramId in f.overrides) {
     return +f.overrides[paramId] || 0;
   }
-  const typeId = (f && (f.typeId || f.type)) || $('format')?.value;
+  const typeId = bloc.typeId || (f && (f.typeId || f.type));
   const t = typeId ? state.typesInternes.find(x => x.id === typeId) : null;
   if (t && t.params && paramId in t.params) {
     return +t.params[paramId] || 0;
@@ -35,29 +35,82 @@ function getParamForCurrentFiche(paramId) {
   return val(paramId);
 }
 
-// Compute snapshot des params effectifs pour la fiche courante.
-// Capturés au moment du save dans config.snapshot.
-export function computeCurrentSnapshot() {
-  const fId = state.currentFormuleId;
-  const f = fId ? state.formulesPrestation.find(x => x.id === fId) : null;
-  const typeId = (f && (f.typeId || f.type)) || $('format')?.value || 'privat-full';
+// Synchronise state.formules[0] depuis le DOM. Garantit qu'on a toujours au
+// moins un bloc en RAM cohérent avec les inputs UI courants (commit 2 : UI
+// inchangée donc 1 seul bloc édité via #format/#nbPers/state.items).
+// Crée le bloc s'il n'existe pas. Préserve blocId et snapshot existants.
+export function syncCurrentBlocFromDom() {
+  const typeId = $('format').value;
+  const nbPers = Math.max(1, parseInt($('nbPers').value) || 1);
+  const formuleType = $('formuleType').value;
+  const formuleId = state.currentFormuleId || null;
+  if (!Array.isArray(state.formules) || state.formules.length === 0) {
+    state.formules = [{
+      blocId: state.currentBlocId || ('bloc_' + Date.now().toString(36)),
+      formuleId,
+      typeId,
+      nbPers,
+      items: state.items,
+      overrides: {},
+      snapshot: state.currentSnapshot || null,
+      formuleType
+    }];
+    state.currentBlocId = state.formules[0].blocId;
+  } else {
+    const b = state.formules[0];
+    b.typeId = typeId;
+    b.nbPers = nbPers;
+    b.formuleType = formuleType;
+    b.formuleId = formuleId;
+    b.items = state.items;  // re-binding au cas où state.items a été réassigné
+    b.snapshot = state.currentSnapshot || null;
+  }
+  return state.formules;
+}
+
+// Compute snapshot des params effectifs d'un bloc donné.
+// Capturés au moment du save dans bloc.snapshot.
+export function computeBlocSnapshot(bloc) {
+  if (!bloc) return null;
+  const typeId = bloc.typeId || 'privat-full';
   const t = state.typesInternes.find(x => x.id === typeId);
   const paramIds = t && t.params ? Object.keys(t.params) : [];
   const params = {};
-  paramIds.forEach(pid => { params[pid] = getParamForCurrentFiche(pid); });
+  paramIds.forEach(pid => { params[pid] = getParamForBloc(bloc, pid); });
   return {
     typeId,
-    formuleId: fId,
+    formuleId: bloc.formuleId || null,
     params,
     dateSnapshot: new Date().toISOString()
   };
 }
 
-export function calculer() {
-  const format = $('format').value;
-  const jour = $('day').value;
-  const nbPers = Math.max(1, parseInt($('nbPers').value) || 1);
-  const formuleType = $('formuleType').value;
+// Alias rétro-compat utilisé par fiches.saveFiche : capture le snapshot du
+// bloc principal de la fiche en cours.
+export function computeCurrentSnapshot() {
+  syncCurrentBlocFromDom();
+  return computeBlocSnapshot(state.formules[0]);
+}
+
+// Alias rétro-compat pour le bloc principal — utilisé en interne ci-dessous.
+function getParamForCurrentFiche(paramId) {
+  syncCurrentBlocFromDom();
+  return getParamForBloc(state.formules[0], paramId);
+}
+
+// Calcule les lignes d'un bloc isolé. Toute la logique du dispatch par type
+// vit ici. Au commit 2, calculer() itère sur state.formules avec 1 seul
+// élément (UI inchangée). Au commit 3, la boucle traitera N blocs.
+//
+// Les valeurs non-bloc-spécifiques (margePersonnel, margeIntervenants,
+// bufferCouverture, CA habituels, getPersonnel, jourEstFerme...) sont lues
+// via val() / helpers globaux. Les params de type interne passent par
+// getParamForBloc(bloc, paramId) qui suit la chaîne du Modèle C.
+export function calculerBloc(bloc, jour) {
+  const format = bloc.typeId;
+  const nbPers = Math.max(1, bloc.nbPers || 1);
+  const formuleType = bloc.formuleType || 'custom';
+  const items = Array.isArray(bloc.items) ? bloc.items : [];
   const margeInter = val('margeIntervenants') / 100;
 
   const lignes = [];
@@ -66,9 +119,9 @@ export function calculer() {
     lignes.push({
       libelle: 'Spectacle (plateau humour)',
       qte: 1,
-      puHT: getParamForCurrentFiche('paramSpecPrix'),
-      totalHT: getParamForCurrentFiche('paramSpecPrix'),
-      coutHT: getParamForCurrentFiche('paramSpecCout'),
+      puHT: getParamForBloc(bloc, 'paramSpecPrix'),
+      totalHT: getParamForBloc(bloc, 'paramSpecPrix'),
+      coutHT: getParamForBloc(bloc, 'paramSpecCout'),
       tvaCat: 'prestation',
       type: 'spectacle'
     });
@@ -87,7 +140,7 @@ export function calculer() {
     });
 
     if (formuleType === 'custom') {
-      state.items.forEach(item => {
+      items.forEach(item => {
         lignes.push({
           libelle: item.libelle,
           qte: nbPers,
@@ -124,9 +177,9 @@ export function calculer() {
     lignes.push({
       libelle: 'Privatisation salle seule (sans spectacle)',
       qte: 1,
-      puHT: getParamForCurrentFiche('forfaitSalleSeule'),
-      totalHT: getParamForCurrentFiche('forfaitSalleSeule'),
-      coutHT: getParamForCurrentFiche('coutSalleSeule'),
+      puHT: getParamForBloc(bloc, 'forfaitSalleSeule'),
+      totalHT: getParamForBloc(bloc, 'forfaitSalleSeule'),
+      coutHT: getParamForBloc(bloc, 'coutSalleSeule'),
       tvaCat: 'prestation',
       type: 'privatSalle'
     });
@@ -144,7 +197,7 @@ export function calculer() {
           type: 'personnel'
         });
       }
-      state.items.forEach(item => {
+      items.forEach(item => {
         lignes.push({
           libelle: item.libelle,
           qte: nbPers,
@@ -177,9 +230,9 @@ export function calculer() {
     }
   }
   else if (format === 'atelier-cocktail') {
-    const coutInter = getParamForCurrentFiche('coutInterCocktail');
-    const coutMat = getParamForCurrentFiche('coutMatCocktail');
-    const margeAtelier = getParamForCurrentFiche('margeAtelier') / 100;
+    const coutInter = getParamForBloc(bloc, 'coutInterCocktail');
+    const coutMat = getParamForBloc(bloc, 'coutMatCocktail');
+    const margeAtelier = getParamForBloc(bloc, 'margeAtelier') / 100;
     lignes.push({
       libelle: 'Animation atelier cocktail (intervenant)',
       qte: 1,
@@ -201,7 +254,7 @@ export function calculer() {
     });
   }
   else if (format === 'formation-impro') {
-    const coutInter = getParamForCurrentFiche('coutInterImpro');
+    const coutInter = getParamForBloc(bloc, 'coutInterImpro');
     const prixInter = coutInter * (1 + margeInter);
     lignes.push({
       libelle: 'Animation formation impro (intervenant)',
@@ -212,7 +265,7 @@ export function calculer() {
       tvaCat: 'prestation',
       type: 'inter'
     });
-    const prixParticip = getParamForCurrentFiche('prixPersImpro');
+    const prixParticip = getParamForBloc(bloc, 'prixPersImpro');
     const prixParticipNet = Math.max(0, prixParticip - prixInter / nbPers);
     lignes.push({
       libelle: 'Formation impro — par participant',
@@ -225,8 +278,8 @@ export function calculer() {
     });
   }
   else if (format === 'groupe-classique') {
-    const prixGroupe = getParamForCurrentFiche('prixGroupe');
-    const coutGroupe = getParamForCurrentFiche('coutGroupe');
+    const prixGroupe = getParamForBloc(bloc, 'prixGroupe');
+    const coutGroupe = getParamForBloc(bloc, 'coutGroupe');
     lignes.push({
       libelle: 'Soirée Palace Comedy — billet groupe',
       qte: nbPers,
@@ -237,7 +290,7 @@ export function calculer() {
       type: 'billet'
     });
     if (formuleType === 'custom') {
-      state.items.forEach(item => {
+      items.forEach(item => {
         lignes.push({
           libelle: item.libelle,
           qte: nbPers,
@@ -251,7 +304,30 @@ export function calculer() {
     }
   }
 
-  return { format, jour, nbPers, lignes };
+  return lignes;
+}
+
+export function calculer() {
+  const jour = $('day').value;
+  syncCurrentBlocFromDom();
+  const blocs = state.formules;
+
+  const lignes = [];
+  blocs.forEach(bloc => {
+    lignes.push(...calculerBloc(bloc, jour));
+  });
+
+  // Méta retournée pour recalcul() : reflète la fiche entière.
+  // Commit 2 (1 bloc) : format = type du bloc principal, nbPers = nbPers du bloc.
+  // Commit 3+ : format reste celui du bloc principal (utilisé pour les alertes
+  // bas-de-page), nbPers = somme des nbPers de tous les blocs.
+  const principal = blocs[0];
+  return {
+    format: principal ? principal.typeId : 'privat-full',
+    jour,
+    nbPers: blocs.reduce((s, b) => s + (b.nbPers || 0), 0) || 1,
+    lignes
+  };
 }
 
 export function recalcul() {

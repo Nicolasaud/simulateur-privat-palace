@@ -77,18 +77,40 @@ export function readCurrentForm() {
   const formuleType = $('formuleType').value;
   const format = $('format').value;
 
-  // Bloc principal (commit 1 : un seul bloc). Au commit 3, on itérera sur
-  // tous les blocs en RAM via state.formules.
-  const bloc = {
-    blocId: state.currentBlocId,
-    formuleId,
-    typeId: format,
-    nbPers,
-    items,
-    overrides: {},
-    snapshot: state.currentSnapshot || null,
-    formuleType
-  };
+  // Multi-formules (commit 2) : on sérialise tous les blocs de state.formules.
+  // Pour le bloc principal (state.formules[0] ou seul), on resynchronise les
+  // valeurs courantes du DOM (inputs UI mono). Les éventuels blocs supplémentaires
+  // (commit 3+) sont sérialisés tels quels en RAM.
+  let formules;
+  if (Array.isArray(state.formules) && state.formules.length > 0) {
+    formules = state.formules.map((b, idx) => {
+      if (idx === 0) {
+        return {
+          blocId: b.blocId || state.currentBlocId,
+          formuleId,
+          typeId: format,
+          nbPers,
+          items: JSON.parse(JSON.stringify(items)),
+          overrides: b.overrides || {},
+          snapshot: state.currentSnapshot || null,
+          formuleType
+        };
+      }
+      // Autres blocs : deep-clone pour découpler de la RAM
+      return JSON.parse(JSON.stringify(b));
+    });
+  } else {
+    formules = [{
+      blocId: state.currentBlocId,
+      formuleId,
+      typeId: format,
+      nbPers,
+      items,
+      overrides: {},
+      snapshot: state.currentSnapshot || null,
+      formuleType
+    }];
+  }
 
   return {
     nomFiche: $('ficheNom').value.trim(),
@@ -102,7 +124,7 @@ export function readCurrentForm() {
     notes: $('ficheNotes').value,
     config: {
       // === Nouveau format multi-formules ===
-      formules: [bloc],
+      formules,
 
       // === Champs racine legacy : conservés en doublon jusqu'au commit 7 ===
       // Permettent : (a) à une version antérieure du code de relire la fiche
@@ -160,10 +182,32 @@ export function writeFormFromFiche(f) {
     state.currentFormuleId = (bloc?.formuleId) || f.config.formuleId || null;
     state.currentSnapshot = (bloc?.snapshot) || f.config.snapshot || null;
     state.currentBlocId = (bloc?.blocId) || newBlocId();
+
+    // Multi-formules (commit 2) : populer state.formules. Si config.formules
+    // est présent → clone. Sinon → construit un bloc unique depuis legacy.
+    // Au commit 2, on n'utilise QUE state.formules[0] (UI mono).
+    if (Array.isArray(f.config.formules) && f.config.formules.length > 0) {
+      state.formules = JSON.parse(JSON.stringify(f.config.formules));
+      // Re-bind par référence l'items du bloc 0 et state.items pour que les
+      // mutations sur state.items (via items.js) se répercutent dans le bloc.
+      state.formules[0].items = state.items;
+    } else {
+      state.formules = [{
+        blocId: state.currentBlocId,
+        formuleId: state.currentFormuleId,
+        typeId: $('format').value,
+        nbPers: parseInt($('nbPers').value) || 50,
+        items: state.items,
+        overrides: {},
+        snapshot: state.currentSnapshot,
+        formuleType: $('formuleType').value
+      }];
+    }
   } else {
     state.currentFormuleId = null;
     state.currentSnapshot = null;
     state.currentBlocId = null;
+    state.formules = [];
   }
   renderItems();
   refreshHeureSpectacleVisibility();

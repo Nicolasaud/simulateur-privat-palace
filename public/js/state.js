@@ -41,6 +41,13 @@ export const state = {
   // Persisté dans config.formules[0].blocId au save.
   currentBlocId: null,
 
+  // Multi-formules (commit 2) — blocs de la fiche en cours.
+  // Au commit 2 : un seul bloc, synchronisé en début de chaque calculer()
+  // depuis le DOM (inputs #format, #nbPers, state.items, etc.).
+  // Au commit 3+ : N blocs, rendus dans l'UI via blocs.js.
+  // Format d'un bloc : voir public/js/blocs.js.
+  formules: [],
+
   // INDEX léger des fiches (depuis GET /api/fiches) —
   // une fiche complète est récupérée à la demande via getFiche(id).
   // Champs : { id, nomFiche, client, dateEvent, statut, totalHT, updated_at, updated_by }
