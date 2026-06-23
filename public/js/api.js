@@ -109,6 +109,12 @@ export const putFormules    = (arr)     => apiCall('PUT',    '/api/formules', ar
 export const getFormulesV2  = ()        => apiCall('GET',    '/api/formules-v2');
 export const putFormulesV2  = (arr)     => apiCall('PUT',    '/api/formules-v2', arr);
 
+// Types internes (Modèle C — niveau 1) : 5 types figés portant les params par
+// défaut. Les formules-v2 référencent un typeId et ne stockent que leurs
+// overrides par-param.
+export const getTypesInternes = () => apiCall('GET', '/api/types-internes');
+export const putTypesInternes = (arr) => apiCall('PUT', '/api/types-internes', arr);
+
 export const getPaliers     = ()        => apiCall('GET',    '/api/paliers');
 export const putPaliers     = (arr)     => apiCall('PUT',    '/api/paliers', arr);
 
