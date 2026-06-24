@@ -2,12 +2,13 @@
 // ouvert dans une fenêtre pop-up pour impression / PDF.
 
 import { readCurrentForm, formatHasSpectacle } from './fiches.js';
+import { state } from './state.js';
 
 export function exportFicheEquipe() {
   const data = readCurrentForm();
   const formatLabels = {
-    'privat-full': 'Privatisation full + spectacle + repas',
-    'privat-salle': 'Privatisation salle seule',
+    'privat-full': 'Privatisation show + repas',
+    'privat-salle': 'Privatisation sans show',
     'atelier-cocktail': 'Atelier cocktail',
     'formation-impro': 'Formation impro / team building',
     'groupe-classique': 'Groupe sur soirée Palace classique'
@@ -17,17 +18,52 @@ export function exportFicheEquipe() {
     'accepte': 'Accepté ✓', 'refuse': 'Refusé'
   };
   const dateEvent = data.dateEvent ? new Date(data.dateEvent).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : '— non renseignée —';
-  const formatHasSpec = formatHasSpectacle(data.config.format);
 
-  let compositionHTML = '';
-  if (data.config.formuleType === 'custom' && data.config.items.length > 0) {
-    compositionHTML = `
-      <h2>Composition de la formule</h2>
-      <ul class="composition">
-        ${data.config.items.map(item => `<li>${item.libelle.replace(/</g, '&lt;')}</li>`).join('')}
-      </ul>
+  // Multi-formules : récupère les blocs depuis data.config.formules (avec
+  // fallback legacy si jamais le format est très ancien).
+  const blocs = Array.isArray(data.config.formules) && data.config.formules.length > 0
+    ? data.config.formules
+    : [{
+        formuleId: data.config.formuleId,
+        typeId: data.config.format,
+        nbPers: data.config.nbPers,
+        items: data.config.items || [],
+        formuleType: data.config.formuleType || 'custom'
+      }];
+
+  const totalPers = blocs.reduce((s, b) => s + (b.nbPers || 0), 0);
+  // Heure du spectacle : visible si au moins un bloc a un type avec spectacle
+  const formatHasSpec = blocs.some(b => formatHasSpectacle(b.typeId));
+
+  // Bandeau "N formules" si plusieurs
+  const headerBlocs = blocs.length > 1
+    ? `<div class="badge" style="background:#1a1a1a;color:#fff">${blocs.length} formules</div>`
+    : '';
+
+  // Pour chaque bloc : section avec nom de formule, nb pers, items resto
+  const blocsHTML = blocs.map((bloc, idx) => {
+    const formuleNom = bloc.formuleId
+      ? (state.formulesPrestation.find(f => f.id === bloc.formuleId)?.nom || '(formule supprimée)')
+      : formatLabels[bloc.typeId] || bloc.typeId;
+    const typeLabel = formatLabels[bloc.typeId] || bloc.typeId;
+    const compositionItems = (bloc.formuleType === 'custom' && Array.isArray(bloc.items) && bloc.items.length > 0)
+      ? `<h4>Composition restauration</h4>
+         <ul class="composition">
+           ${bloc.items.map(item => `<li>${(item.libelle || '').replace(/</g, '&lt;')}</li>`).join('')}
+         </ul>`
+      : '<p style="color:#888;font-size:0.88em;margin-top:6px">Aucun item resto sur ce bloc.</p>';
+    const titre = blocs.length > 1 ? `Formule ${idx + 1} — ${formuleNom}` : formuleNom;
+    return `
+      <section class="bloc-section">
+        <h3>${titre.replace(/</g, '&lt;')}</h3>
+        <div class="infoGrid">
+          <div class="l">Type</div><div class="v">${typeLabel.replace(/</g, '&lt;')}</div>
+          <div class="l">Nombre de personnes</div><div class="v">${bloc.nbPers}</div>
+        </div>
+        ${compositionItems}
+      </section>
     `;
-  }
+  }).join('');
 
   const escape = s => String(s || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
   const now = new Date();
@@ -53,6 +89,10 @@ export function exportFicheEquipe() {
   .composition { padding-left: 22px; }
   .composition li { margin: 4px 0; }
   .notes { background: #f8f8f8; border-left: 3px solid #888; padding: 10px 14px; border-radius: 4px; white-space: pre-wrap; font-size: 0.92em; }
+  .bloc-section { margin-top: 18px; padding: 14px 16px; background: #fafafa; border: 1px solid #e0e0e0; border-radius: 6px; page-break-inside: avoid; }
+  .bloc-section h3 { font-size: 1em; margin-bottom: 10px; color: #1a1a1a; }
+  .bloc-section h4 { font-size: 0.92em; margin: 12px 0 6px; color: #444; }
+  .bloc-section .infoGrid { margin-bottom: 4px; }
   .footer { margin-top: 32px; padding-top: 14px; border-top: 1px solid #ccc; font-size: 0.78em; color: #888; display: flex; justify-content: space-between; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: 500; background: #f0f0f0; color: #555; }
   @media print {
@@ -67,7 +107,7 @@ export function exportFicheEquipe() {
 
   <div class="header">
     <h1>Fiche opérationnelle — Palace Comedy</h1>
-    <p class="meta">${escape(data.nomFiche || '(fiche sans nom)')} · <span class="badge">${escape(statutLabels[data.statut] || data.statut)}</span></p>
+    <p class="meta">${escape(data.nomFiche || '(fiche sans nom)')} · <span class="badge">${escape(statutLabels[data.statut] || data.statut)}</span> ${headerBlocs}</p>
   </div>
 
   <h2>Client &amp; événement</h2>
@@ -78,11 +118,11 @@ export function exportFicheEquipe() {
     <div class="l">Date</div><div class="v">${dateEvent}</div>
     <div class="l">Heure d'arrivée invités</div><div class="v">${escape(data.heureArrivee || '—')}</div>
     ${formatHasSpec ? `<div class="l">Heure du spectacle</div><div class="v">${escape(data.heureSpectacle || '—')}</div>` : ''}
-    <div class="l">Formule</div><div class="v">${escape(formatLabels[data.config.format] || data.config.format)}</div>
-    <div class="l">Nombre de personnes</div><div class="v">${data.config.nbPers}</div>
+    <div class="l">Total personnes</div><div class="v">${totalPers}${blocs.length > 1 ? ` (réparti sur ${blocs.length} formules)` : ''}</div>
   </div>
 
-  ${compositionHTML}
+  <h2>Formule${blocs.length > 1 ? 's' : ''} de prestation</h2>
+  ${blocsHTML}
 
   ${data.notes ? `<h2>Notes</h2><div class="notes">${escape(data.notes)}</div>` : ''}
 

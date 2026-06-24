@@ -325,8 +325,10 @@ export function calculer() {
   const blocs = state.formules;
 
   const lignes = [];
-  blocs.forEach(bloc => {
-    lignes.push(...calculerBloc(bloc, jour));
+  blocs.forEach((bloc, idx) => {
+    // Tag chaque ligne avec son blocIdx pour permettre le groupage par bloc
+    // dans renderVueClient + l'export équipe.
+    calculerBloc(bloc, jour).forEach(l => lignes.push({ ...l, blocIdx: idx }));
   });
 
   // Méta retournée pour recalcul() : reflète la fiche entière.
@@ -483,39 +485,77 @@ function renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux) {
   }
 
   if (vueMode === 'decomposee') {
-    const lignesGrp = [];
-    const restoBuckets = {};
-    lignesClient.forEach(l => {
-      if (l.type === 'resto') {
-        const tva = getTva(l.tvaCat);
-        const k = `${tva}`;
-        if (!restoBuckets[k]) restoBuckets[k] = { totalHT: 0, qte: nbPers, tvaCat: l.tvaCat, tva };
-        restoBuckets[k].totalHT += l.totalHT;
-      } else {
-        lignesGrp.push(l);
-      }
-    });
-    Object.values(restoBuckets).forEach(b => {
-      lignesGrp.push({
-        libelle: b.tva === 10 ? 'Prestation restauration' : (b.tva === 20 ? 'Boissons (bar)' : `Restauration (TVA ${b.tva}%)`),
-        qte: b.qte,
-        puHT: b.totalHT / b.qte,
-        totalHT: b.totalHT,
-        tvaCat: b.tvaCat
-      });
-    });
+    // Multi-formules : grouper par bloc si > 1 bloc, avec un sous-total par bloc.
+    // Mono (1 bloc) : comportement identique à avant.
+    const nbBlocs = (Array.isArray(state.formules) ? state.formules.length : 1);
+    const groupes = nbBlocs > 1
+      ? state.formules.map((b, idx) => ({
+          bloc: b,
+          idx,
+          lignes: lignesClient.filter(l => (l.blocIdx ?? 0) === idx)
+        }))
+      : [{ bloc: null, idx: 0, lignes: lignesClient }];
 
-    lignesGrp.forEach(l => {
-      const tva = getTva(l.tvaCat);
-      const ttc = l.totalHT * (1 + tva/100);
-      tbodyC.innerHTML += `<tr>
-        <td>${l.libelle}</td>
-        <td class="num">${l.qte}</td>
-        <td class="num">${fmt(l.puHT)}</td>
-        <td class="num">${fmt(l.totalHT)}</td>
-        <td class="num">${tva}%</td>
-        <td class="num">${fmt(ttc)}</td>
-      </tr>`;
+    groupes.forEach((grp, gIdx) => {
+      // Titre de section pour chaque bloc en multi
+      if (nbBlocs > 1) {
+        const formuleNom = grp.bloc.formuleId
+          ? (state.formulesPrestation.find(f => f.id === grp.bloc.formuleId)?.nom || `Formule ${gIdx + 1}`)
+          : `Formule ${gIdx + 1}`;
+        tbodyC.innerHTML += `<tr style="background:#f8f8f8">
+          <td colspan="6" style="font-weight:600;padding:8px 6px;border-top:${gIdx === 0 ? 'none' : '2px solid #ddd'}">
+            ${formuleNom.replace(/</g, '&lt;')} — ${grp.bloc.nbPers} pers
+          </td>
+        </tr>`;
+      }
+
+      const blocNbPers = grp.bloc ? grp.bloc.nbPers : nbPers;
+      const lignesGrp = [];
+      const restoBuckets = {};
+      grp.lignes.forEach(l => {
+        if (l.type === 'resto') {
+          const tva = getTva(l.tvaCat);
+          const k = `${tva}`;
+          if (!restoBuckets[k]) restoBuckets[k] = { totalHT: 0, qte: blocNbPers, tvaCat: l.tvaCat, tva };
+          restoBuckets[k].totalHT += l.totalHT;
+        } else {
+          lignesGrp.push(l);
+        }
+      });
+      Object.values(restoBuckets).forEach(b => {
+        lignesGrp.push({
+          libelle: b.tva === 10 ? 'Prestation restauration' : (b.tva === 20 ? 'Boissons (bar)' : `Restauration (TVA ${b.tva}%)`),
+          qte: b.qte,
+          puHT: b.totalHT / b.qte,
+          totalHT: b.totalHT,
+          tvaCat: b.tvaCat
+        });
+      });
+
+      lignesGrp.forEach(l => {
+        const tva = getTva(l.tvaCat);
+        const ttc = l.totalHT * (1 + tva/100);
+        tbodyC.innerHTML += `<tr>
+          <td>${l.libelle}</td>
+          <td class="num">${l.qte}</td>
+          <td class="num">${fmt(l.puHT)}</td>
+          <td class="num">${fmt(l.totalHT)}</td>
+          <td class="num">${tva}%</td>
+          <td class="num">${fmt(ttc)}</td>
+        </tr>`;
+      });
+
+      // Sous-total bloc en multi
+      if (nbBlocs > 1) {
+        const stHT = lignesGrp.reduce((s, l) => s + l.totalHT, 0);
+        const stTTC = lignesGrp.reduce((s, l) => s + l.totalHT * (1 + getTva(l.tvaCat)/100), 0);
+        tbodyC.innerHTML += `<tr style="font-weight:600;color:#444">
+          <td colspan="3" style="text-align:right;padding-right:10px">Sous-total formule</td>
+          <td class="num">${fmt(stHT)}</td>
+          <td></td>
+          <td class="num">${fmt(stTTC)}</td>
+        </tr>`;
+      }
     });
   } else {
     const prixPers = totalHT / nbPers;
