@@ -10,7 +10,8 @@
     "hash-code": "node scripts/hash-code.js"
   },
   "dependencies": {
-    "@netlify/blobs": "^8.1.0"
+    "@netlify/blobs": "^8.1.0",
+    "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
     "netlify-cli": "^17.36.0"
