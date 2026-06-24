@@ -84,46 +84,23 @@ export function readCurrentForm() {
   // → fausse détection dirty.
   if (!state.currentBlocId) state.currentBlocId = newBlocId();
 
-  const nbPers = parseInt($('nbPers').value) || 1;
-  const items = JSON.parse(JSON.stringify(state.items));
-  const formuleId = state.currentFormuleId || null;
-  const formuleType = $('formuleType').value;
-  const format = $('format').value;
-
-  // Multi-formules (commit 2) : on sérialise tous les blocs de state.formules.
-  // Pour le bloc principal (state.formules[0] ou seul), on resynchronise les
-  // valeurs courantes du DOM (inputs UI mono). Les éventuels blocs supplémentaires
-  // (commit 3+) sont sérialisés tels quels en RAM.
-  let formules;
-  if (Array.isArray(state.formules) && state.formules.length > 0) {
-    formules = state.formules.map((b, idx) => {
-      if (idx === 0) {
-        return {
-          blocId: b.blocId || state.currentBlocId,
-          formuleId,
-          typeId: format,
-          nbPers,
-          items: JSON.parse(JSON.stringify(items)),
-          overrides: b.overrides || {},
-          snapshot: state.currentSnapshot || null,
-          formuleType
-        };
-      }
-      // Autres blocs : deep-clone pour découpler de la RAM
-      return JSON.parse(JSON.stringify(b));
-    });
-  } else {
-    formules = [{
+  // Multi-formules pur (cleanup commit 7) : state.formules est l'unique source
+  // de vérité. Plus de lecture des inputs DOM legacy (supprimés du HTML).
+  // Si state.formules est vide (cas edge boot), un bloc par défaut est créé.
+  if (!Array.isArray(state.formules) || state.formules.length === 0) {
+    state.formules = [{
       blocId: state.currentBlocId,
-      formuleId,
-      typeId: format,
-      nbPers,
-      items,
+      formuleId: state.currentFormuleId || null,
+      typeId: 'privat-full',
+      nbPers: 50,
+      items: state.items || [],
       overrides: {},
       snapshot: state.currentSnapshot || null,
-      formuleType
+      formuleType: 'custom'
     }];
   }
+  // Deep clone des blocs pour découpler la fiche sérialisée de la RAM
+  const formules = JSON.parse(JSON.stringify(state.formules));
 
   return {
     nomFiche: $('ficheNom').value.trim(),
@@ -136,20 +113,12 @@ export function readCurrentForm() {
     statut: $('ficheStatut').value,
     notes: $('ficheNotes').value,
     config: {
-      // === Nouveau format multi-formules ===
+      // Format pur post-cleanup commit 7 : plus de champs racine legacy.
+      // Source de vérité : config.formules[*] (Migration cloud exécutée
+      // au préalable via scripts/migrate-fiches-to-multi.js --write).
       formules,
-
-      // === Champs racine legacy : conservés en doublon jusqu'au commit 7 ===
-      // Permettent : (a) à une version antérieure du code de relire la fiche
-      // (rétro-compat de revert) ; (b) à writeFormFromFiche de fallback si
-      // pour une raison X formules est absent. Cleanup commit 7.
-      format,
       day: $('day').value,
       periodeOverride: $('periodeOverride').value,
-      nbPers,
-      formuleType,
-      formuleId,
-      items,
       vueClient: document.querySelector('input[name="vueClient"]:checked').value,
       fondreFraisResa: $('fondreFraisResa').checked,
       forfaitLibelle: $('forfaitLibelle').value,
@@ -169,69 +138,48 @@ export function writeFormFromFiche(f) {
   $('ficheStatut').value = f.statut || 'brouillon';
   $('ficheNotes').value = f.notes || '';
   if (f.config) {
-    // Multi-formules : priorité au bloc 0 si présent (format nouveau),
-    // sinon fallback sur les champs legacy racine (format ancien).
-    const bloc = Array.isArray(f.config.formules) && f.config.formules.length > 0
-      ? f.config.formules[0]
-      : null;
+    // Multi-formules pur (cleanup commit 7) : on attend config.formules[].
+    // Le fallback legacy a été retiré — la migration cloud des fiches mono a
+    // été exécutée au préalable via scripts/migrate-fiches-to-multi.js --write.
+    const blocs = Array.isArray(f.config.formules) && f.config.formules.length > 0
+      ? f.config.formules
+      : [{
+          blocId: newBlocId(),
+          formuleId: null,
+          typeId: 'privat-full',
+          nbPers: 50,
+          items: [],
+          overrides: {},
+          snapshot: null,
+          formuleType: 'custom'
+        }];
 
-    $('format').value = (bloc?.typeId) || f.config.format || 'privat-full';
+    state.formules = JSON.parse(JSON.stringify(blocs));
+    const bloc0 = state.formules[0];
+
+    // state.items reste un alias r/w du bloc principal (rétro-compat bdd-items.js)
+    state.items = bloc0.items;
+    state.currentBlocId = bloc0.blocId || newBlocId();
+    state.currentFormuleId = bloc0.formuleId || null;
+    state.currentSnapshot = bloc0.snapshot || null;
+
     $('day').value = f.config.day || 'vendredi';
     $('periodeOverride').value = f.config.periodeOverride || 'auto';
-    $('nbPers').value = (bloc?.nbPers) || f.config.nbPers || 50;
-    $('formuleType').value = (bloc?.formuleType) || f.config.formuleType || 'custom';
-    $('customFormuleBlock').style.display = ($('formuleType').value === 'custom') ? 'block' : 'none';
-
-    const items = bloc?.items ?? f.config.items;
-    if (Array.isArray(items)) state.items = JSON.parse(JSON.stringify(items));
-
     const vueRadio = document.querySelector(`input[name="vueClient"][value="${f.config.vueClient || 'decomposee'}"]`);
     if (vueRadio) vueRadio.checked = true;
     $('fondreFraisResa').checked = !!f.config.fondreFraisResa;
     $('forfaitLibelle').value = f.config.forfaitLibelle || 'Forfait événementiel tout inclus';
     $('forfaitSousLibelle').value = f.config.forfaitSousLibelle || 'privatisation + spectacle + restauration';
-
-    // Modèle C : restore formuleId + snapshot des params + blocId stable.
-    state.currentFormuleId = (bloc?.formuleId) || f.config.formuleId || null;
-    state.currentSnapshot = (bloc?.snapshot) || f.config.snapshot || null;
-    state.currentBlocId = (bloc?.blocId) || newBlocId();
-
-    // Multi-formules (commit 2) : populer state.formules. Si config.formules
-    // est présent → clone. Sinon → construit un bloc unique depuis legacy.
-    // Au commit 2, on n'utilise QUE state.formules[0] (UI mono).
-    if (Array.isArray(f.config.formules) && f.config.formules.length > 0) {
-      state.formules = JSON.parse(JSON.stringify(f.config.formules));
-      // Re-bind par référence l'items du bloc 0 et state.items pour que les
-      // mutations sur state.items (via items.js) se répercutent dans le bloc.
-      state.formules[0].items = state.items;
-    } else {
-      state.formules = [{
-        blocId: state.currentBlocId,
-        formuleId: state.currentFormuleId,
-        typeId: $('format').value,
-        nbPers: parseInt($('nbPers').value) || 50,
-        items: state.items,
-        overrides: {},
-        snapshot: state.currentSnapshot,
-        formuleType: $('formuleType').value
-      }];
-    }
   } else {
     state.currentFormuleId = null;
     state.currentSnapshot = null;
     state.currentBlocId = null;
     state.formules = [];
+    state.items = [];
   }
-  renderItems();
   refreshHeureSpectacleVisibility();
   refreshStatutBadge();
   refreshForfaitLibelleVisibility();
-  // Modèle C : aligner le dropdown #formuleSelect avec la fiche chargée.
-  // Si formuleId présent → sélectionne cette formule. Sinon (fiche legacy
-  // pré-pivot) → matching par type via #format hidden.
-  if (typeof window.initFormuleSelectFromCurrentFormat === 'function') {
-    window.initFormuleSelectFromCurrentFormat();
-  }
   // Multi-formules : rendre les cards des blocs de la fiche chargée.
   if (typeof window.renderBlocs === 'function') {
     window.renderBlocs();
@@ -239,8 +187,13 @@ export function writeFormFromFiche(f) {
   recalcul();
 }
 
+// Multi-formules : visible si AU MOINS un bloc a un type avec spectacle
+// (cohérent avec l'affichage PDF équipe).
 export function refreshHeureSpectacleVisibility() {
-  const show = formatHasSpectacle($('format').value);
+  const blocs = Array.isArray(state.formules) ? state.formules : [];
+  const show = blocs.length > 0
+    ? blocs.some(b => formatHasSpectacle(b.typeId))
+    : false;
   $('ficheHeureSpectacleBlock').classList.toggle('hidden', !show);
 }
 
@@ -632,7 +585,9 @@ export function registerFichesListeners() {
     if (e.target.dataset && e.target.dataset.i !== undefined) setDirty(true);
   }, true);
 
-  $('format').addEventListener('change', refreshHeureSpectacleVisibility);
+  // Le listener #format a été retiré au cleanup commit 7 — l'input n'existe
+  // plus dans le DOM. refreshHeureSpectacleVisibility est désormais appelé
+  // depuis blocs-ui.js (changement de formule sur un bloc) et au load.
 
   window.addEventListener('beforeunload', e => {
     if (state.isDirty) {

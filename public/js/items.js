@@ -7,6 +7,10 @@ import { saveItemToBdd } from './bdd-items.js';
 
 export function renderItems() {
   const list = $('itemsList');
+  // Cleanup commit 7 : l'UI mono #itemsList a été supprimée du DOM.
+  // renderItems devient no-op (les appels restants sont des reliquats).
+  // Les items resto sont désormais rendus PAR BLOC via blocs-ui.js.
+  if (!list) return;
   list.innerHTML = '';
   state.items.forEach((item, i) => {
     const row = document.createElement('div');

@@ -15,21 +15,16 @@
 
 import { getParams, putParams, scheduleFlush } from './api.js';
 
+// Cleanup commit 7 : les params spécifiques par TYPE (paramSpecPrix,
+// forfaitSalleSeule, coutInterCocktail, etc.) ont été déplacés dans
+// state.typesInternes (Modèle C). Leurs inputs DOM ont été supprimés.
+// Cette liste ne contient désormais que les params GLOBAUX (jamais
+// liés à un type particulier).
 const PARAM_IDS = [
-  // Spectacle
-  'paramSpecPrix', 'paramSpecCout',
   // Personnel (durée + coût horaire — les paliers sont gérés à part)
   'paramDuree', 'paramCoutHoraire',
   // Marges
-  'margePersonnel', 'margeIntervenants', 'margeAtelier',
-  // Atelier cocktail
-  'coutInterCocktail', 'coutMatCocktail',
-  // Formation impro
-  'coutInterImpro', 'prixPersImpro',
-  // Groupe classique
-  'prixGroupe', 'coutGroupe',
-  // Privatisation salle seule
-  'forfaitSalleSeule', 'coutSalleSeule',
+  'margePersonnel', 'margeIntervenants',
   // Frais de réservation
   'bufferCouverture',
   // CA habituels B2C par jour & période

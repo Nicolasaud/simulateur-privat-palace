@@ -195,12 +195,6 @@ registerPaliersListeners();
 registerFichesListeners();
 registerParamsListeners();
 
-// === Wire du dropdown formuleSelect (changement par l'utilisateur sur la fiche) ===
-const formuleSelectEl = document.getElementById('formuleSelect');
-if (formuleSelectEl) {
-  formuleSelectEl.addEventListener('change', e => onFormuleSelectChange(e.target));
-}
-
 // === Listeners spécifiques à la section types-internes ===
 registerTypesInternesListeners();
 
@@ -213,8 +207,6 @@ refreshFormulesTable();
 refreshFormulesSelect();
 refreshTypesInternesUI();
 refreshFormulesPrestaTable();
-refreshFormuleSelectInFiche();
-initFormuleSelectFromCurrentFormat();
 renderBlocs();
 refreshHeureSpectacleVisibility();
 refreshStatutBadge();

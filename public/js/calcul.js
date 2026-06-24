@@ -35,48 +35,30 @@ export function getParamForBloc(bloc, paramId) {
   return val(paramId);
 }
 
-// Synchronise les inputs hidden legacy (#format, #nbPers, #formuleType) avec
-// l'état du bloc principal de state.formules. Permet aux helpers et code legacy
-// qui lisent encore $('format') / val('nbPers') de voir des valeurs cohérentes.
-function syncDomFromCurrentBloc() {
-  const b = state.formules[0];
-  if (!b) return;
-  const fmt = $('format'); if (fmt && fmt.value !== b.typeId) fmt.value = b.typeId;
-  const np = $('nbPers'); if (np && parseInt(np.value) !== b.nbPers) np.value = b.nbPers;
-  const ft = $('formuleType'); if (ft && ft.value !== b.formuleType) ft.value = b.formuleType;
-}
-
-// Synchronise state.formules avec le DOM/RAM courant.
-// - Si state.formules est vide → en construit un depuis le DOM (cas init au boot
-//   ou newFiche avant que renderBlocs() n'ait été appelé).
-// - Sinon → state.formules est source de vérité, on resynchronise les inputs
-//   hidden DEPUIS state.formules[0] pour ne pas écraser les blocs édités via
-//   la nouvelle UI multi.
+// Garantit qu'on a toujours au moins un bloc en RAM. Crée un bloc par défaut
+// si state.formules est vide (cas edge : init au boot avant le premier
+// writeFormFromFiche, ou état corrompu). state.items est synchronisé par
+// référence avec le bloc principal pour rétro-compat avec items.js / bdd-items.
+//
+// Pas de lecture DOM depuis le commit 7 cleanup radical : tout l'état vient
+// de state.formules, la nouvelle UI multi-blocs édite directement state.
 export function syncCurrentBlocFromDom() {
-  if (Array.isArray(state.formules) && state.formules.length > 0) {
-    // state.formules est source de vérité depuis le commit 3 (UI multi-blocs).
-    // Sync l'inverse : inputs hidden ← bloc principal (rétro-compat val()).
-    // Re-bind state.items pour les helpers legacy qui lisent state.items.
-    state.formules[0].items = state.formules[0].items || [];
-    state.items = state.formules[0].items;
-    syncDomFromCurrentBloc();
-    return state.formules;
+  if (!Array.isArray(state.formules) || state.formules.length === 0) {
+    state.formules = [{
+      blocId: state.currentBlocId || ('bloc_' + Date.now().toString(36)),
+      formuleId: state.currentFormuleId || null,
+      typeId: 'privat-full',
+      nbPers: 50,
+      items: state.items || [],
+      overrides: {},
+      snapshot: state.currentSnapshot || null,
+      formuleType: 'custom'
+    }];
+    state.currentBlocId = state.formules[0].blocId;
   }
-  // Bootstrap : state.formules vide → construire le bloc principal depuis DOM
-  const typeId = $('format')?.value || 'privat-full';
-  const nbPers = Math.max(1, parseInt($('nbPers')?.value) || 1);
-  const formuleType = $('formuleType')?.value || 'custom';
-  state.formules = [{
-    blocId: state.currentBlocId || ('bloc_' + Date.now().toString(36)),
-    formuleId: state.currentFormuleId || null,
-    typeId,
-    nbPers,
-    items: state.items,
-    overrides: {},
-    snapshot: state.currentSnapshot || null,
-    formuleType
-  }];
-  state.currentBlocId = state.formules[0].blocId;
+  // Re-bind référence partagée bloc principal ↔ state.items
+  state.formules[0].items = state.formules[0].items || [];
+  state.items = state.formules[0].items;
   return state.formules;
 }
 
@@ -414,9 +396,13 @@ export function recalcul() {
   window._lastDevis = { format, jour, nbPers, lignes, totalHT, totalTTC, tvaParTaux, prixPers, tauxMarge, periode };
 
   // Multi-formules : rafraîchir le récap global (sans toucher aux inputs des
-  // cards pour ne pas perdre le focus pendant la saisie).
+  // cards pour ne pas perdre le focus pendant la saisie) + visibilité de
+  // l'heure spectacle (dépend du typeId de chaque bloc).
   if (typeof window.renderRecapGlobal === 'function') {
     window.renderRecapGlobal();
+  }
+  if (typeof window.refreshHeureSpectacleVisibility === 'function') {
+    window.refreshHeureSpectacleVisibility();
   }
 }
 
@@ -669,9 +655,8 @@ export function refreshForfaitLibelleVisibility() {
 }
 
 export function registerCalculListeners() {
-  $('formuleType').addEventListener('change', e => {
-    $('customFormuleBlock').style.display = e.target.value === 'custom' ? 'block' : 'none';
-  });
+  // L'ancien listener sur #formuleType (qui toggle #customFormuleBlock) a été
+  // retiré au cleanup commit 7 — ces inputs n'existent plus dans le DOM.
   document.querySelectorAll('input[name="vueClient"]').forEach(r => {
     r.addEventListener('change', refreshForfaitLibelleVisibility);
   });

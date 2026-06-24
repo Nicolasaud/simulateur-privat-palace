@@ -224,6 +224,9 @@ let editorState = null;
 
 // Rafraîchit le dropdown "Formule de prestation" de la fiche depuis la bibliothèque.
 // Préserve la valeur sélectionnée si la formule existe encore, sinon "" + badge handled ailleurs.
+// Cleanup commit 7 : #formuleSelect a été supprimé du DOM (la sélection de
+// formule se fait désormais PAR BLOC via blocs-ui.js). Cette fonction reste
+// exportée pour ne pas casser les imports, mais devient no-op.
 export function refreshFormuleSelectInFiche() {
   const sel = document.getElementById('formuleSelect');
   if (!sel) return;
@@ -250,6 +253,10 @@ export function refreshFormuleSelectInFiche() {
 // avec la formule active. Permet à calcul.js de continuer à lire ses valeurs
 // inchangées jusqu'au commit 7 (où il lira directement via la chaîne).
 // Lecture : pour chaque paramId du type, override > défaut type interne.
+// Cleanup commit 7 : les inputs hidden #format / #nbPers / #paramSpec*… ont
+// été supprimés du DOM. Cette fonction reste exportée pour ne pas casser les
+// imports internes (onFormuleSelectChange, initFormuleSelectFromCurrentFormat
+// — devenues no-op aussi), mais ses opérations sont guarded.
 export function syncHiddenInputsFromFormule(formuleId) {
   const f = getFormuleById(formuleId);
   if (!f) return;
