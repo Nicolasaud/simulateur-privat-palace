@@ -11,13 +11,28 @@ import { showToast } from './ui-feedback.js';
 
 export function formatLabel(format) {
   const labels = {
-    'privat-full': 'Privatisation full + spectacle + repas',
-    'privat-salle': 'Privatisation salle seule',
+    'privat-full': 'Privatisation show + repas',
+    'privat-salle': 'Privatisation sans show',
     'atelier-cocktail': 'Atelier cocktail',
     'formation-impro': 'Formation impro / team building',
     'groupe-classique': 'Groupe sur Palace classique'
   };
   return labels[format] || format;
+}
+
+// Récupère les blocs d'une fiche (multi-formules) avec fallback legacy mono.
+function getBlocs(f) {
+  const blocs = f.config?.formules;
+  if (Array.isArray(blocs) && blocs.length > 0) return blocs;
+  // Fallback : fiche mono pré-migration → reconstruit un bloc unique
+  if (f.config?.format || f.config?.nbPers) {
+    return [{
+      typeId: f.config.format,
+      nbPers: f.config.nbPers,
+      formuleId: f.config.formuleId
+    }];
+  }
+  return [];
 }
 
 export async function openFicheModal(id) {
@@ -37,7 +52,37 @@ export async function openFicheModal(id) {
   const dateStr = f.dateEvent ? new Date(f.dateEvent).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—';
   const snap = f.resultsSnapshot;
   const escape = s => String(s || '').replace(/</g, '&lt;');
-  const hasSpec = formatHasSpectacle(f.config?.format);
+
+  // Multi-formules : lecture des blocs (avec fallback legacy mono)
+  const blocs = getBlocs(f);
+  const hasSpec = blocs.some(b => formatHasSpectacle(b.typeId));
+
+  // Résolution du nom de chaque formule : la bibliothèque a peut-être été
+  // renommée depuis le save — on prend le nom courant si dispo, sinon le
+  // libellé du type, sinon "(formule supprimée)".
+  const nomBloc = (bloc) => {
+    if (bloc.formuleId) {
+      const f0 = state.formulesPrestation.find(x => x.id === bloc.formuleId);
+      if (f0?.nom) return f0.nom;
+    }
+    return formatLabel(bloc.typeId) || '(formule supprimée)';
+  };
+
+  // Cellule "Formule(s)" — mono = libellé simple ; multi = liste compacte
+  const formulesCell = blocs.length <= 1
+    ? `<div><strong>Formule</strong><br>${escape(nomBloc(blocs[0] || {}))}</div>`
+    : `<div style="grid-column:1/-1"><strong>${blocs.length} formules</strong>
+         <ul style="margin:4px 0 0 18px;padding:0;font-size:0.92em">
+           ${blocs.map(b => `<li>${escape(nomBloc(b))} — <strong>${b.nbPers ?? '—'}</strong> p</li>`).join('')}
+         </ul>
+       </div>`;
+
+  // Cellule "Nombre de personnes" — mono = nb pers du bloc unique ;
+  // multi = total + détail entre parenthèses
+  const totalPers = blocs.reduce((s, b) => s + (b.nbPers || 0), 0);
+  const persCell = blocs.length <= 1
+    ? `<div><strong>Nombre de personnes</strong><br>${blocs[0]?.nbPers ?? f.config?.nbPers ?? '—'}</div>`
+    : `<div><strong>Total personnes</strong><br>${totalPers} <span style="color:#888;font-size:0.85em">(${blocs.map(b => b.nbPers || 0).join(' + ')})</span></div>`;
 
   $('ficheModalBody').innerHTML = `
     <h2 style="margin-top:0;margin-bottom:6px">${escape(f.nomFiche || '(sans nom)')}</h2>
@@ -46,8 +91,8 @@ export async function openFicheModal(id) {
     <div class="modalGrid">
       <div><strong>Client</strong><br>${escape(f.client || '—')}</div>
       <div><strong>Date</strong><br>${dateStr}</div>
-      <div><strong>Formule</strong><br>${escape(formatLabel(f.config?.format))}</div>
-      <div><strong>Nombre de personnes</strong><br>${f.config?.nbPers ?? '—'}</div>
+      ${formulesCell}
+      ${persCell}
       ${f.heureArrivee ? `<div><strong>Arrivée invités</strong><br>${escape(f.heureArrivee)}</div>` : ''}
       ${hasSpec && f.heureSpectacle ? `<div><strong>Heure spectacle</strong><br>${escape(f.heureSpectacle)}</div>` : ''}
       ${f.contactEmail ? `<div><strong>Email</strong><br>${escape(f.contactEmail)}</div>` : ''}
