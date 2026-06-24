@@ -3,6 +3,25 @@
 import { $ } from './helpers.js';
 import { state } from './state.js';
 
+// Mapping compact des types internes pour l'affichage calendrier.
+const TYPE_SHORT_LABEL = {
+  'privat-full': 'Show',
+  'privat-salle': 'Salle',
+  'atelier-cocktail': 'Cocktail',
+  'formation-impro': 'Impro',
+  'groupe-classique': 'Groupe'
+};
+
+// Construit un label compact des formules d'une fiche pour le calendrier.
+// - 1 formule  → null (rien à afficher, comportement mono inchangé)
+// - 2 formules → "Show + Cocktail"
+// - 3+         → "3 formules"
+function compactFormulesLabel(types) {
+  if (!Array.isArray(types) || types.length <= 1) return null;
+  if (types.length >= 3) return `${types.length} formules`;
+  return types.map(t => TYPE_SHORT_LABEL[t] || t).join(' + ');
+}
+
 export function calNav(delta) {
   state.calCurrentMonth += delta;
   if (state.calCurrentMonth < 0) { state.calCurrentMonth = 11; state.calCurrentYear--; }
@@ -65,7 +84,13 @@ export function renderCalendrier() {
       const statut = f.statut || 'brouillon';
       const label = (f.client || f.nomFiche || '?').replace(/"/g, '&quot;');
       const shortLabel = label.length > 14 ? label.slice(0, 13) + '…' : label;
-      chipsHTML += `<div class="ficheChip ${statut}" onclick="event.stopPropagation();openFicheModal('${f.id}')" title="${label} — ${statut}">${shortLabel}</div>`;
+      const compact = compactFormulesLabel(f.formulesTypes);
+      const titleExt = compact ? ` — ${compact}` : '';
+      const subLine = compact
+        ? `<div class="ficheChipFormules">${compact}</div>`
+        : '';
+      const chipCls = compact ? `ficheChip ${statut} multi` : `ficheChip ${statut}`;
+      chipsHTML += `<div class="${chipCls}" onclick="event.stopPropagation();openFicheModal('${f.id}')" title="${label} — ${statut}${titleExt}">${shortLabel}${subLine}</div>`;
     });
     if (fichesJour.length > maxVisible) {
       const reste = fichesJour.length - maxVisible;

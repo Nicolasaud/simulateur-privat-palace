@@ -55,6 +55,15 @@ export function formatHasSpectacle(format) {
 // Construit une entrée d'index à partir d'une fiche complète (pour MAJ locale
 // immédiate après PUT, sans relire l'index entier).
 function buildIndexEntry(fiche) {
+  // Multi-formules : extraire les typeIds des blocs pour l'affichage calendrier.
+  // Fallback legacy : fiche.config.format pour les fiches mono pré-migration.
+  let formulesTypes = null;
+  const blocs = fiche.config?.formules;
+  if (Array.isArray(blocs) && blocs.length > 0) {
+    formulesTypes = blocs.map(b => b.typeId || b.type || null).filter(Boolean);
+  } else if (fiche.config?.format) {
+    formulesTypes = [fiche.config.format];
+  }
   return {
     id: fiche.id,
     nomFiche: fiche.nomFiche || '',
@@ -62,6 +71,7 @@ function buildIndexEntry(fiche) {
     dateEvent: fiche.dateEvent || '',
     statut: fiche.statut || 'brouillon',
     totalHT: fiche.resultsSnapshot?.totalHT ?? null,
+    formulesTypes,
     updated_at: fiche.updated_at,
     updated_by: fiche.updated_by
   };

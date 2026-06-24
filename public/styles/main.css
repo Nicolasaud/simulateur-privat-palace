@@ -96,6 +96,8 @@ button.delete { color: #c44; border-color: #c44; padding: 4px 8px; font-size: 0.
 .ficheChip.envoye { background: #e0e8f5; color: #1a4a8a; border-left: 2px solid #4a80d6; }
 .ficheChip.accepte { background: #d4f4dd; color: #0a5c2c; border-left: 2px solid #2a8a4a; }
 .ficheChip.refuse { background: #f5d0d0; color: #8a1a1a; border-left: 2px solid #c44; }
+.ficheChip.multi { white-space: normal; }
+.ficheChipFormules { font-size: 0.85em; color: rgba(0,0,0,0.55); font-style: italic; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ficheChipMore { font-size: 0.68em; color: #888; cursor: pointer; padding: 1px 4px; }
 .ficheChipMore:hover { color: #1a1a1a; text-decoration: underline; }
 
