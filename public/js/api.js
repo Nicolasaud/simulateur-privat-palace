@@ -115,6 +115,14 @@ export const putFormulesV2  = (arr)     => apiCall('PUT',    '/api/formules-v2',
 export const getTypesInternes = () => apiCall('GET', '/api/types-internes');
 export const putTypesInternes = (arr) => apiCall('PUT', '/api/types-internes', arr);
 
+// Programmation artistique mensuelle (Phase 2b).
+// listProgrammationMois  : retourne ['YYYY-MM', ...] des mois ayant des données
+// getProgrammationMois   : retourne { 'YYYY-MM-DD': [creneaux...] } (objet vide si mois absent)
+// putProgrammationMois   : remplace intégralement le mois ; valide la structure côté serveur
+export const listProgrammationMois = () => apiCall('GET', '/api/programmation');
+export const getProgrammationMois = (mois) => apiCall('GET', `/api/programmation/${encodeURIComponent(mois)}`);
+export const putProgrammationMois = (mois, obj) => apiCall('PUT', `/api/programmation/${encodeURIComponent(mois)}`, obj);
+
 export const getPaliers     = ()        => apiCall('GET',    '/api/paliers');
 export const putPaliers     = (arr)     => apiCall('PUT',    '/api/paliers', arr);
 
