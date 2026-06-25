@@ -10,11 +10,15 @@
 //
 // STRUCTURE attendue dans le body PUT (objet, pas tableau) :
 //   {
-//     "YYYY-MM-DD": [
-//       { "heure": "19h", "artistes": ["NOM 1", "NOM 2"], "notes": "", "manuelle": true? }
-//     ],
+//     "YYYY-MM-DD": {
+//       "artistes": ["NOM 1", "NOM 2"],
+//       "creneaux": ["19h", "21h"],
+//       "notes": "...",
+//       "manuelle": false
+//     },
 //     ...
 //   }
+// Les artistes jouent sur tous les créneaux du jour (modèle simplifié).
 // Chaque clé doit appartenir au mois ciblé (validation côté serveur).
 
 import { requireAuth, readJsonBody, jsonResponse, methodNotAllowed } from '../lib/auth-guard.js';
@@ -47,35 +51,33 @@ async function addToIndex(mois) {
   }
 }
 
-// Validation : chaque clé date du body doit appartenir au mois ciblé,
-// et chaque valeur doit être un tableau de créneaux.
+// Validation : chaque clé date doit appartenir au mois, et chaque valeur doit
+// être un objet de forme { artistes:string[], creneaux:string[], notes?:string, manuelle?:bool }.
 function validateBody(body, mois) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return { ok: false, error: 'expected_object' };
   }
-  for (const [dateKey, creneaux] of Object.entries(body)) {
+  for (const [dateKey, jour] of Object.entries(body)) {
     if (!DATE_RE.test(dateKey)) {
       return { ok: false, error: 'invalid_date_key', detail: dateKey };
     }
     if (!dateKey.startsWith(mois + '-')) {
       return { ok: false, error: 'date_not_in_month', detail: `${dateKey} hors ${mois}` };
     }
-    if (!Array.isArray(creneaux)) {
-      return { ok: false, error: 'creneaux_must_be_array', detail: dateKey };
+    if (!jour || typeof jour !== 'object' || Array.isArray(jour)) {
+      return { ok: false, error: 'jour_must_be_object', detail: dateKey };
     }
-    for (const c of creneaux) {
-      if (!c || typeof c !== 'object' || Array.isArray(c)) {
-        return { ok: false, error: 'creneau_must_be_object', detail: dateKey };
-      }
-      if (typeof c.heure !== 'string') {
-        return { ok: false, error: 'creneau_heure_must_be_string', detail: dateKey };
-      }
-      if (!Array.isArray(c.artistes) || c.artistes.some(a => typeof a !== 'string')) {
-        return { ok: false, error: 'creneau_artistes_must_be_string_array', detail: dateKey };
-      }
-      if (c.notes !== undefined && typeof c.notes !== 'string') {
-        return { ok: false, error: 'creneau_notes_must_be_string', detail: dateKey };
-      }
+    if (!Array.isArray(jour.artistes) || jour.artistes.some(a => typeof a !== 'string')) {
+      return { ok: false, error: 'artistes_must_be_string_array', detail: dateKey };
+    }
+    if (!Array.isArray(jour.creneaux) || jour.creneaux.some(h => typeof h !== 'string')) {
+      return { ok: false, error: 'creneaux_must_be_string_array', detail: dateKey };
+    }
+    if (jour.notes !== undefined && typeof jour.notes !== 'string') {
+      return { ok: false, error: 'notes_must_be_string', detail: dateKey };
+    }
+    if (jour.manuelle !== undefined && typeof jour.manuelle !== 'boolean') {
+      return { ok: false, error: 'manuelle_must_be_boolean', detail: dateKey };
     }
   }
   return { ok: true };
@@ -116,8 +118,9 @@ export default async (req) => {
     await writeJson(moisKey(mois), parsed.body);
     await addToIndex(mois);
     const nbDates = Object.keys(parsed.body).length;
-    const nbCreneaux = Object.values(parsed.body).reduce((s, arr) => s + arr.length, 0);
-    return jsonResponse(200, { ok: true, mois, nbDates, nbCreneaux });
+    const nbCreneaux = Object.values(parsed.body).reduce((s, j) => s + (j.creneaux?.length || 0), 0);
+    const nbArtistes = Object.values(parsed.body).reduce((s, j) => s + (j.artistes?.length || 0), 0);
+    return jsonResponse(200, { ok: true, mois, nbDates, nbCreneaux, nbArtistes });
   }
 
   return methodNotAllowed(['GET', 'PUT']);

@@ -39,26 +39,31 @@ export async function ensureMonthLoaded(mois) {
   return p;
 }
 
-// Renvoie les créneaux d'une date donnée ('YYYY-MM-DD') depuis le cache.
-// Retourne [] si pas de programmation pour ce jour.
-export function getCreneauxForDate(dateStr) {
+// Renvoie la "fiche jour" pour une date ('YYYY-MM-DD').
+// Modèle simplifié : { artistes: string[], creneaux: string[], notes: string, manuelle: bool }.
+// Retourne null si rien pour ce jour.
+export function getJour(dateStr) {
   const mois = monthKeyOf(dateStr);
-  if (!mois) return [];
+  if (!mois) return null;
   const monthData = state.programmationMonths[mois];
-  if (!monthData) return [];
-  return Array.isArray(monthData[dateStr]) ? monthData[dateStr] : [];
+  if (!monthData) return null;
+  const j = monthData[dateStr];
+  if (!j || typeof j !== 'object') return null;
+  return j;
 }
 
-// Total artistes pour un jour (somme sur tous les créneaux, déduplication).
+// Nombre d'artistes pour un jour.
 export function countArtistesForDate(dateStr) {
-  const creneaux = getCreneauxForDate(dateStr);
-  const set = new Set();
-  creneaux.forEach(c => (c.artistes || []).forEach(a => set.add(a)));
-  return set.size;
+  const j = getJour(dateStr);
+  return j && Array.isArray(j.artistes) ? j.artistes.length : 0;
 }
 
-// True si la date a au moins un créneau avec contenu (artiste ou note).
+// True si la date a au moins un artiste OU une note non vide OU un créneau.
 export function hasProgrammation(dateStr) {
-  const creneaux = getCreneauxForDate(dateStr);
-  return creneaux.some(c => (c.artistes && c.artistes.length > 0) || (c.notes && c.notes.trim()));
+  const j = getJour(dateStr);
+  if (!j) return false;
+  if (Array.isArray(j.artistes) && j.artistes.length > 0) return true;
+  if (j.notes && j.notes.trim()) return true;
+  if (Array.isArray(j.creneaux) && j.creneaux.length > 0) return true;
+  return false;
 }

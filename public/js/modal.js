@@ -8,7 +8,7 @@ import { formatHasSpectacle, loadFiche } from './fiches.js';
 import { switchTab } from './onglets.js';
 import { getFiche } from './api.js';
 import { showToast } from './ui-feedback.js';
-import { ensureMonthLoaded, getCreneauxForDate } from './programmation.js';
+import { ensureMonthLoaded, getJour } from './programmation.js';
 
 export function formatLabel(format) {
   const labels = {
@@ -127,11 +127,15 @@ export async function openDayModal(dateStr) {
   // Programmation : on charge le mois si pas en cache (await silencieux)
   const mois = dateStr.slice(0, 7);
   await ensureMonthLoaded(mois);
-  const creneaux = getCreneauxForDate(dateStr);
+  const jour = getJour(dateStr);
+  const hasProg = jour && (
+    (Array.isArray(jour.artistes) && jour.artistes.length > 0) ||
+    (Array.isArray(jour.creneaux) && jour.creneaux.length > 0) ||
+    (jour.notes && jour.notes.trim())
+  );
 
   // S'il n'y a NI fiche NI programmation, on n'ouvre pas la modal
-  // (cas où on clique sur un jour vide via outsideMonth, etc.)
-  if (fichesJour.length === 0 && creneaux.length === 0) return;
+  if (fichesJour.length === 0 && !hasProg) return;
 
   const dateLabel = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const statutLabels = { brouillon: 'Brouillon', envoye: 'Envoyé', accepte: 'Accepté', refuse: 'Refusé' };
@@ -162,32 +166,50 @@ export async function openDayModal(dateStr) {
   }
 
   let progHTML = '';
-  if (creneaux.length > 0) {
-    const lignesCreneaux = creneaux.map(c => {
-      const heure = c.heure ? `<strong>${escape(c.heure)}</strong>` : '<em style="color:#888">sans horaire</em>';
-      const artistes = (c.artistes && c.artistes.length > 0)
-        ? c.artistes.map(a => escape(a)).join(', ')
-        : '<em style="color:#888">aucun artiste</em>';
-      const notes = c.notes ? `<div style="font-size:0.85em;color:#666;margin-top:3px;font-style:italic">${escape(c.notes)}</div>` : '';
-      return `
-        <div style="padding:8px 10px;border:1px solid rgba(0,0,0,0.08);border-radius:6px;margin-bottom:6px;background:#fbf8fd">
-          <div style="display:flex;gap:10px;align-items:baseline">
-            <span style="min-width:54px">${heure}</span>
-            <span style="flex:1">${artistes}</span>
-          </div>
-          ${notes}
-        </div>
-      `;
-    }).join('');
+  let progCountForHeader = 0;
+  if (hasProg) {
+    const artistes = Array.isArray(jour.artistes) ? jour.artistes : [];
+    const creneaux = Array.isArray(jour.creneaux) ? jour.creneaux : [];
+    const notes = jour.notes || '';
+    progCountForHeader = creneaux.length;
+
+    const artistesHTML = artistes.length > 0
+      ? `<div style="padding:10px 12px;background:#fbf8fd;border:1px solid #ead8f3;border-radius:6px">
+           <div style="font-size:0.78em;color:#6b4a8a;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">Artistes</div>
+           <div>${artistes.map(a => escape(a)).join(', ')}</div>
+         </div>`
+      : `<div style="padding:10px 12px;background:#fafafa;border:1px solid rgba(0,0,0,0.06);border-radius:6px;color:#888;font-style:italic">Aucun artiste renseigné</div>`;
+
+    const creneauxHTML = creneaux.length > 0
+      ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+           <span style="font-size:0.78em;color:#666;text-transform:uppercase;letter-spacing:0.04em">Créneaux :</span>
+           ${creneaux.map(h => `<span style="display:inline-block;padding:2px 8px;background:#fff;border:1px solid #ead8f3;color:#6b4a8a;border-radius:12px;font-size:0.85em;font-weight:500">${escape(h)}</span>`).join('')}
+         </div>`
+      : '';
+
+    const notesHTML = notes
+      ? `<div style="margin-top:8px;padding:8px 12px;background:#fff8e7;border-left:3px solid #d4a843;border-radius:4px;font-style:italic;font-size:0.9em;color:#5a4a1a">${escape(notes)}</div>`
+      : '';
+
+    const manuelleBadge = jour.manuelle
+      ? ` <span style="font-size:0.7em;color:#fff;background:#8a4ad6;padding:1px 6px;border-radius:3px;vertical-align:middle;font-weight:500">SAISIE MANUELLE</span>`
+      : '';
+
     progHTML = `
-      <h3 style="margin:18px 0 8px;font-size:0.95em">🎤 Programmation artistique (${creneaux.length} créneau${creneaux.length > 1 ? 'x' : ''})</h3>
-      ${lignesCreneaux}
+      <h3 style="margin:18px 0 8px;font-size:0.95em">🎤 Programmation artistique${manuelleBadge}</h3>
+      ${artistesHTML}
+      ${creneauxHTML}
+      ${notesHTML}
     `;
   }
 
+  const subHeader = hasProg
+    ? `${fichesJour.length} fiche${fichesJour.length>1?'s':''} · ${progCountForHeader} créneau${progCountForHeader > 1 ? 'x' : ''} de prog`
+    : `${fichesJour.length} fiche${fichesJour.length>1?'s':''} ce jour`;
+
   $('ficheModalBody').innerHTML = `
     <h2 style="margin-top:0">${dateLabel}</h2>
-    <p style="color:#666;margin-bottom:14px">${fichesJour.length} fiche${fichesJour.length>1?'s':''} · ${creneaux.length} créneau${creneaux.length > 1 ? 'x' : ''} de prog</p>
+    <p style="color:#666;margin-bottom:14px">${subHeader}</p>
     ${fichesHTML}
     ${progHTML}
     <div class="modalActions">

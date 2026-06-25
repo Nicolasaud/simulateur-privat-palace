@@ -24,7 +24,8 @@
 //   → Le marqueur OUI/NON FERME la cellule d'un jour. C'est notre pivot.
 //
 // SORTIE
-// { "YYYY-MM-DD": [ { heure, artistes: [...], notes }, ... ] }
+// { "YYYY-MM-DD": { artistes: [...], creneaux: [...], notes: "..." } }
+// Les artistes jouent sur tous les créneaux du jour (modèle simplifié).
 
 const DATE_RE = /(\d{2})\/(\d{2})\/(\d{4})/g;
 const HEURE_RE = /^\d{1,2}h\d{0,2}$/;
@@ -223,36 +224,44 @@ export function parseProgrammation(rawText) {
       i++;
     }
 
-    // Composer les créneaux pour chaque jour de la semaine
+    // Composer la fiche jour pour chaque date de la semaine (nouveau modèle :
+    // artistes au niveau jour, créneaux = liste plate des horaires).
     dates.forEach((d, j) => {
       const horaires = horairesPerDay[j] || [];
-      const artistes = artistesPerDay[j] || [];
+      // Dédup artistes (préserve l'ordre d'apparition)
+      const seen = new Set();
+      const artistesDedup = [];
+      for (const a of (artistesPerDay[j] || [])) {
+        const k = a.toUpperCase();
+        if (seen.has(k)) continue;
+        seen.add(k);
+        artistesDedup.push(a);
+      }
       const notes = notesPerDay[j] || '';
 
-      // Au moins 1 créneau si on a des horaires ; sinon un créneau "default" si artistes ou notes
-      const creneaux = [];
-      if (horaires.length > 0) {
-        // Tous les artistes du jour sont répartis sur le premier créneau par défaut
-        // (le format PDF ne permet pas de savoir précisément quel artiste va dans
-        // quel créneau quand il y en a plusieurs)
-        horaires.forEach((h, hi) => {
-          creneaux.push({
-            heure: h,
-            artistes: hi === 0 ? [...artistes] : [],
-            notes: hi === 0 ? notes : ''
-          });
-        });
-      } else if (artistes.length > 0 || notes) {
-        creneaux.push({ heure: '', artistes, notes });
+      // Skip si jour totalement vide
+      if (horaires.length === 0 && artistesDedup.length === 0 && !notes) {
+        log.push(`  ∅ ${d.iso} : aucun contenu`);
+        return;
       }
 
-      if (creneaux.length > 0) {
-        if (!result[d.iso]) result[d.iso] = [];
-        result[d.iso].push(...creneaux);
-        log.push(`  ✓ ${d.iso} : ${creneaux.length} créneau(x), artistes=[${artistes.join(', ')}]${notes ? ', notes="' + notes + '"' : ''}`);
+      // Fusion si la date apparaît plusieurs fois dans le PDF (récap fantôme,
+      // double passage…). Improbable en pratique mais on accumule proprement.
+      if (!result[d.iso]) {
+        result[d.iso] = { artistes: artistesDedup, creneaux: horaires, notes };
       } else {
-        log.push(`  ∅ ${d.iso} : aucun contenu`);
+        const cur = result[d.iso];
+        const seenCur = new Set(cur.artistes.map(a => a.toUpperCase()));
+        artistesDedup.forEach(a => {
+          if (!seenCur.has(a.toUpperCase())) cur.artistes.push(a);
+        });
+        const seenH = new Set(cur.creneaux);
+        horaires.forEach(h => { if (!seenH.has(h)) cur.creneaux.push(h); });
+        if (notes && !cur.notes.includes(notes)) {
+          cur.notes = cur.notes ? `${cur.notes} ${notes}` : notes;
+        }
       }
+      log.push(`  ✓ ${d.iso} : ${horaires.length} créneau(x), ${artistesDedup.length} artiste(s)${notes ? ', notes="' + notes + '"' : ''}`);
     });
   }
 
