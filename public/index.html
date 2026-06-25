@@ -390,6 +390,7 @@
       <h2 id="calTitle">—</h2>
       <button onclick="calNav(+1)">Mois suivant →</button>
       <button onclick="calToday()" class="primary" style="margin-top:0">Aujourd'hui</button>
+      <button onclick="openImportProgrammation()" style="margin-left:auto" title="Importer un PDF mensuel de programmation">📥 Importer programmation PDF</button>
     </div>
     <div class="calLegend">
       <span><span class="dot brouillon"></span>Brouillon</span>
@@ -403,6 +404,14 @@
     </div>
     <div class="calGrid" id="calGrid"></div>
     <p class="legend" style="margin-top:14px">Astuce : clique sur une fiche pour voir son aperçu, puis « Ouvrir dans le simulateur » pour la charger.</p>
+  </div>
+</div>
+
+<!-- ===== Modal import programmation PDF ===== -->
+<div id="importProgModal" class="modal hidden" onclick="if(event.target===this)closeImportProgrammation()">
+  <div class="modalContent" style="max-width:760px;width:96%">
+    <button class="modalClose" onclick="closeImportProgrammation()" title="Fermer">×</button>
+    <div id="importProgModalBody"></div>
   </div>
 </div>
 

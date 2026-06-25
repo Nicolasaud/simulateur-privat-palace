@@ -123,6 +123,9 @@ export const listProgrammationMois = () => apiCall('GET', '/api/programmation');
 export const getProgrammationMois = (mois) => apiCall('GET', `/api/programmation/${encodeURIComponent(mois)}`);
 export const putProgrammationMois = (mois, obj) => apiCall('PUT', `/api/programmation/${encodeURIComponent(mois)}`, obj);
 
+// Parser PDF (Phase 2a) : POST { pdfBase64 } → { dates, chars, log }
+export const parseProgrammationPdf = (pdfBase64) => apiCall('POST', '/api/parse-programmation', { pdfBase64 });
+
 export const getPaliers     = ()        => apiCall('GET',    '/api/paliers');
 export const putPaliers     = (arr)     => apiCall('PUT',    '/api/paliers', arr);
 

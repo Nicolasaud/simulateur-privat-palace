@@ -10,6 +10,10 @@ import { addItem, renderItems, registerItemsListeners } from './items.js';
 import { recalcul, copyDevisText, refreshForfaitLibelleVisibility, registerCalculListeners } from './calcul.js';
 import { calNav, calToday, renderCalendrier } from './calendrier.js';
 import {
+  openImportProgrammation, closeImportProgrammation,
+  analyzeImportPdf, toggleImportGroup, applyImport
+} from './programmation-import.js';
+import {
   openFicheModal, openDayModal, closeFicheModal, loadFicheFromModal,
   registerModalListeners
 } from './modal.js';
@@ -155,7 +159,10 @@ Object.assign(window, {
   // Onglets
   switchTab,
   // Calendrier
-  calNav, calToday,
+  calNav, calToday, renderCalendrier,
+  // Import programmation PDF (Phase 2b3)
+  openImportProgrammation, closeImportProgrammation,
+  analyzeImportPdf, toggleImportGroup, applyImport,
   // Modal
   openFicheModal, openDayModal, closeFicheModal, loadFicheFromModal,
   // Base d'items
