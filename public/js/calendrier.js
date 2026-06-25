@@ -2,6 +2,7 @@
 
 import { $ } from './helpers.js';
 import { state } from './state.js';
+import { ensureMonthLoaded, countArtistesForDate, hasProgrammation } from './programmation.js';
 
 // Mapping compact des types internes pour l'affichage calendrier.
 const TYPE_SHORT_LABEL = {
@@ -40,6 +41,32 @@ export function renderCalendrier() {
   const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   const titleEl = $('calTitle');
   if (titleEl) titleEl.textContent = `${monthNames[state.calCurrentMonth]} ${state.calCurrentYear}`;
+
+  // Multi-mois : si la prog est affichée, charger en arrière-plan le mois
+  // courant ET celui d'avant/après si une cellule "outsideMonth" est rendue
+  // (les 3 mois min couvrent toute la grille 6x7 vue).
+  if (state.showProgrammation) {
+    const cur = `${state.calCurrentYear}-${String(state.calCurrentMonth + 1).padStart(2, '0')}`;
+    const prevDate = new Date(state.calCurrentYear, state.calCurrentMonth - 1, 1);
+    const nextDate = new Date(state.calCurrentYear, state.calCurrentMonth + 1, 1);
+    const prev = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+    const next = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+    Promise.all([ensureMonthLoaded(cur), ensureMonthLoaded(prev), ensureMonthLoaded(next)])
+      .then(() => {
+        // Re-render seulement si on est toujours sur le même mois (sinon déjà
+        // re-rendered par la navigation)
+        if (state.calCurrentYear === parseInt(cur.slice(0,4)) && state.calCurrentMonth === parseInt(cur.slice(5,7)) - 1) {
+          _renderGrid();
+        }
+      });
+  }
+
+  _renderGrid();
+}
+
+function _renderGrid() {
+  const titleEl = $('calTitle');
+  // titleEl already set by renderCalendrier — pas besoin de re-set
 
   const grid = $('calGrid');
   if (!grid) return;
@@ -96,6 +123,15 @@ export function renderCalendrier() {
       const reste = fichesJour.length - maxVisible;
       chipsHTML += `<div class="ficheChipMore" onclick="openDayModal('${dateStr}')">+ ${reste} autre${reste>1?'s':''}</div>`;
     }
+
+    // Programmation artistique — chip discret si toggle activé et au moins
+    // un artiste/note ce jour-là. Click → modal détail jour (openDayModal).
+    if (state.showProgrammation && hasProgrammation(dateStr)) {
+      const n = countArtistesForDate(dateStr);
+      const label = n > 0 ? `🎤 ${n} artiste${n > 1 ? 's' : ''}` : '🎤 note';
+      chipsHTML += `<div class="progChip" onclick="event.stopPropagation();openDayModal('${dateStr}')" title="Voir la programmation du jour">${label}</div>`;
+    }
+
     cell.innerHTML = chipsHTML;
     grid.appendChild(cell);
   }

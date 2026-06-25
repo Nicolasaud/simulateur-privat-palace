@@ -57,5 +57,12 @@ export const state = {
 
   // Calendrier
   calCurrentMonth: new Date().getMonth(),
-  calCurrentYear: new Date().getFullYear()
+  calCurrentYear: new Date().getFullYear(),
+
+  // Programmation artistique (Phase 2b)
+  // - showProgrammation : toggle UI, désactivé par défaut
+  // - programmationMonths : { 'YYYY-MM': { 'YYYY-MM-DD': [creneaux], … } }
+  //   cache RAM des mois déjà fetchés, évite les rappels API au switch mois
+  showProgrammation: false,
+  programmationMonths: {}
 };

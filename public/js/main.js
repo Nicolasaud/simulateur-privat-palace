@@ -198,6 +198,17 @@ registerParamsListeners();
 // === Listeners spécifiques à la section types-internes ===
 registerTypesInternesListeners();
 
+// === Toggle "Afficher la programmation" sur l'onglet Calendrier (Phase 2b2) ===
+// __state (= state) déjà importé plus haut pour l'expo window.__palaceState
+const _toggleProg = document.getElementById('toggleProgrammation');
+if (_toggleProg) {
+  _toggleProg.checked = !!__state.showProgrammation;
+  _toggleProg.addEventListener('change', e => {
+    __state.showProgrammation = !!e.target.checked;
+    renderCalendrier();
+  });
+}
+
 // === Premier rendu ===
 refreshFichesSelect();
 refreshDashboard();

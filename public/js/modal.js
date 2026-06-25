@@ -8,6 +8,7 @@ import { formatHasSpectacle, loadFiche } from './fiches.js';
 import { switchTab } from './onglets.js';
 import { getFiche } from './api.js';
 import { showToast } from './ui-feedback.js';
+import { ensureMonthLoaded, getCreneauxForDate } from './programmation.js';
 
 export function formatLabel(format) {
   const labels = {
@@ -123,32 +124,72 @@ export async function openDayModal(dateStr) {
   // L'index contient déjà ce qu'il faut pour la liste du jour : pas de fetch
   // par fiche (on les chargera à la demande quand l'utilisateur clique "Voir").
   const fichesJour = state.fichesList.filter(f => f.dateEvent === dateStr);
-  if (fichesJour.length === 0) return;
+  // Programmation : on charge le mois si pas en cache (await silencieux)
+  const mois = dateStr.slice(0, 7);
+  await ensureMonthLoaded(mois);
+  const creneaux = getCreneauxForDate(dateStr);
+
+  // S'il n'y a NI fiche NI programmation, on n'ouvre pas la modal
+  // (cas où on clique sur un jour vide via outsideMonth, etc.)
+  if (fichesJour.length === 0 && creneaux.length === 0) return;
+
   const dateLabel = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const statutLabels = { brouillon: 'Brouillon', envoye: 'Envoyé', accepte: 'Accepté', refuse: 'Refusé' };
   const escape = s => String(s || '').replace(/</g, '&lt;');
 
-  let listHTML = '';
-  fichesJour.forEach(f => {
-    const totalLine = typeof f.totalHT === 'number' ? `${fmt(f.totalHT)} HT` : '';
-    const updateLine = f.updated_by ? `modif. : ${escape(f.updated_by)}` : '';
-    const sub = [totalLine, updateLine].filter(Boolean).join(' · ');
-    listHTML += `
-      <div style="padding:10px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px">
-        <div>
-          <strong>${escape(f.client || f.nomFiche || '?')}</strong>
-          <span class="statutBadge ${f.statut || 'brouillon'}" style="margin-left:0">${escape(statutLabels[f.statut] || f.statut)}</span>
-          ${sub ? `<br><span style="font-size:0.85em;color:#666">${sub}</span>` : ''}
+  let fichesHTML = '';
+  if (fichesJour.length > 0) {
+    let listHTML = '';
+    fichesJour.forEach(f => {
+      const totalLine = typeof f.totalHT === 'number' ? `${fmt(f.totalHT)} HT` : '';
+      const updateLine = f.updated_by ? `modif. : ${escape(f.updated_by)}` : '';
+      const sub = [totalLine, updateLine].filter(Boolean).join(' · ');
+      listHTML += `
+        <div style="padding:10px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <div>
+            <strong>${escape(f.client || f.nomFiche || '?')}</strong>
+            <span class="statutBadge ${f.statut || 'brouillon'}" style="margin-left:0">${escape(statutLabels[f.statut] || f.statut)}</span>
+            ${sub ? `<br><span style="font-size:0.85em;color:#666">${sub}</span>` : ''}
+          </div>
+          <button onclick="closeFicheModal();openFicheModal('${f.id}')">Voir</button>
         </div>
-        <button onclick="closeFicheModal();openFicheModal('${f.id}')">Voir</button>
-      </div>
+      `;
+    });
+    fichesHTML = `
+      <h3 style="margin:18px 0 8px;font-size:0.95em">Fiches devis (${fichesJour.length})</h3>
+      ${listHTML}
     `;
-  });
+  }
+
+  let progHTML = '';
+  if (creneaux.length > 0) {
+    const lignesCreneaux = creneaux.map(c => {
+      const heure = c.heure ? `<strong>${escape(c.heure)}</strong>` : '<em style="color:#888">sans horaire</em>';
+      const artistes = (c.artistes && c.artistes.length > 0)
+        ? c.artistes.map(a => escape(a)).join(', ')
+        : '<em style="color:#888">aucun artiste</em>';
+      const notes = c.notes ? `<div style="font-size:0.85em;color:#666;margin-top:3px;font-style:italic">${escape(c.notes)}</div>` : '';
+      return `
+        <div style="padding:8px 10px;border:1px solid rgba(0,0,0,0.08);border-radius:6px;margin-bottom:6px;background:#fbf8fd">
+          <div style="display:flex;gap:10px;align-items:baseline">
+            <span style="min-width:54px">${heure}</span>
+            <span style="flex:1">${artistes}</span>
+          </div>
+          ${notes}
+        </div>
+      `;
+    }).join('');
+    progHTML = `
+      <h3 style="margin:18px 0 8px;font-size:0.95em">🎤 Programmation artistique (${creneaux.length} créneau${creneaux.length > 1 ? 'x' : ''})</h3>
+      ${lignesCreneaux}
+    `;
+  }
 
   $('ficheModalBody').innerHTML = `
     <h2 style="margin-top:0">${dateLabel}</h2>
-    <p style="color:#666;margin-bottom:14px">${fichesJour.length} fiche${fichesJour.length>1?'s':''} ce jour</p>
-    ${listHTML}
+    <p style="color:#666;margin-bottom:14px">${fichesJour.length} fiche${fichesJour.length>1?'s':''} · ${creneaux.length} créneau${creneaux.length > 1 ? 'x' : ''} de prog</p>
+    ${fichesHTML}
+    ${progHTML}
     <div class="modalActions">
       <button onclick="closeFicheModal()">Fermer</button>
     </div>
