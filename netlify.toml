@@ -26,6 +26,18 @@
   targetPort = 0
 
 # ============================================================
+# Bundling spécifique : la function parse-programmation utilise pdf-parse v2,
+# qui charge dynamiquement pdf.worker.mjs via `await import(workerSrc)`. esbuild
+# (utilisé par netlify-cli) ne suit pas ce dynamic import → le worker n'est
+# pas copié dans le bundle et la function plante avec "Cannot find module
+# pdf.worker.mjs". On inclut explicitement le worker.
+# ============================================================
+[functions."parse-programmation"]
+  included_files = [
+    "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"
+  ]
+
+# ============================================================
 # Redirections : /api/* → fonctions Netlify
 # ============================================================
 # Permet d'appeler les futures fonctions via /api/auth, /api/fiches, etc.
