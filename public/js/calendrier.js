@@ -105,7 +105,9 @@ function _renderGrid() {
     const dateStr = `${state.calCurrentYear}-${String(state.calCurrentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const fichesJour = state.fichesList.filter(f => f.dateEvent === dateStr);
 
-    let chipsHTML = `<div class="dayNumber">${d}</div>`;
+    // Le numéro du jour est cliquable pour ouvrir la modal — permet d'éditer
+    // la programmation même sur un jour sans fiche ni chip (Phase 2b4).
+    let chipsHTML = `<div class="dayNumber" onclick="openDayModal('${dateStr}')" style="cursor:pointer" title="Ouvrir le détail du jour">${d}</div>`;
     const maxVisible = 3;
     fichesJour.slice(0, maxVisible).forEach(f => {
       const statut = f.statut || 'brouillon';

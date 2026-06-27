@@ -15,7 +15,11 @@ import {
 } from './programmation-import.js';
 import {
   openFicheModal, openDayModal, closeFicheModal, loadFicheFromModal,
-  registerModalListeners
+  registerModalListeners,
+  // Édition manuelle programmation (Phase 2b4)
+  startEditProgrammation, cancelEditProgrammation,
+  addEditCreneau, removeEditCreneau,
+  saveEditProgrammation, deleteProgrammation
 } from './modal.js';
 import { switchTab } from './onglets.js';
 import {
@@ -165,6 +169,10 @@ Object.assign(window, {
   analyzeImportPdf, toggleImportGroup, applyImport,
   // Modal
   openFicheModal, openDayModal, closeFicheModal, loadFicheFromModal,
+  // Édition manuelle programmation (Phase 2b4)
+  startEditProgrammation, cancelEditProgrammation,
+  addEditCreneau, removeEditCreneau,
+  saveEditProgrammation, deleteProgrammation,
   // Base d'items
   bddAjouter, importerDepuisBdd,
   // Paliers
