@@ -193,13 +193,16 @@ def fiche_index_entry(f: dict) -> dict:
         formules_types = [b.get('typeId') or b.get('type') for b in blocs if (b.get('typeId') or b.get('type'))]
     elif (f.get('config') or {}).get('format'):
         formules_types = [f['config']['format']]
+    snap = f.get('resultsSnapshot') or {}
     return {
         'id': f.get('id'),
         'nomFiche': f.get('nomFiche') or '',
         'client': f.get('client') or '',
         'dateEvent': f.get('dateEvent') or '',
         'statut': f.get('statut') or 'brouillon',
-        'totalHT': (f.get('resultsSnapshot') or {}).get('totalHT'),
+        'totalHT': snap.get('totalHT'),
+        'margeBrute': snap.get('margeBrute'),
+        'tauxMarge': snap.get('tauxMarge'),
         'formulesTypes': formules_types,
         'updated_at': f.get('updated_at'),
         'updated_by': f.get('updated_by'),
