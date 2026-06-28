@@ -31,6 +31,7 @@ load_dotenv(ROOT_DIR / '.env')
 MONGO_URL = os.environ['MONGO_URL']
 DB_NAME = os.environ['DB_NAME']
 ACCESS_CODE = os.environ.get('ACCESS_CODE', 'PALACE2026')
+OBJECTIFS_PASSWORD = os.environ.get('OBJECTIFS_PASSWORD', 'Stand16up!')
 SESSION_SECRET = os.environ.get('SESSION_SECRET', 'dev-secret-not-for-prod-please-change')
 COOKIE_NAME = 'palace_session'
 COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 jours
@@ -282,6 +283,8 @@ def crm_index_entry(p: dict) -> dict:
         'statut': p.get('statut') or 'a_contacter',
         'dateProchainContact': p.get('dateProchainContact') or '',
         'nbFichesLiees': len(p.get('fichesIds') or []),
+        'created_at': p.get('created_at'),
+        'created_by': p.get('created_by'),
         'updated_at': p.get('updated_at'),
         'updated_by': p.get('updated_by'),
     }
@@ -348,6 +351,69 @@ async def crm_delete(request: Request, pid: str):
     index = await blob_get('crm/_index', []) or []
     await blob_set('crm/_index', [e for e in index if e.get('id') != pid])
     return {"ok": True}
+
+
+# ============================================================
+#  Objectifs CA (mensuel / annuel) — édition protégée par mdp séparé
+# ============================================================
+import re
+_KEY_RE = re.compile(r'^(mensuel-\d{4}-\d{2}|annuel-\d{4})$')
+
+
+@api.get("/objectifs/{key}")
+async def objectifs_get(request: Request, key: str):
+    require_session(request)
+    if not _KEY_RE.match(key):
+        raise HTTPException(status_code=400, detail="invalid_key")
+    return await blob_get(f'objectifs/{key}', None)
+
+
+@api.put("/objectifs/{key}")
+async def objectifs_put(request: Request, key: str):
+    sess = require_session(request)
+    if not _KEY_RE.match(key):
+        raise HTTPException(status_code=400, detail="invalid_key")
+    provided = request.headers.get('x-objectifs-password') or ''
+    if provided != OBJECTIFS_PASSWORD:
+        raise HTTPException(status_code=403, detail="wrong_objectifs_password")
+    body = await request.json()
+    if not isinstance(body, dict) or not isinstance(body.get('ca'), (int, float)) or body['ca'] < 0:
+        raise HTTPException(status_code=400, detail="expected_ca_number")
+    payload = {
+        'ca': float(body['ca']),
+        'updated_at': now_iso(),
+        'updated_by': sess['nom'],
+    }
+    await blob_set(f'objectifs/{key}', payload)
+    return payload
+
+
+# ============================================================
+#  CRM TODO manuelles (notes & tâches semaine)
+# ============================================================
+@api.get("/crm-todo")
+async def crm_todo_get(request: Request):
+    require_session(request)
+    return await blob_get('crm/todo-manual', []) or []
+
+
+@api.put("/crm-todo")
+async def crm_todo_put(request: Request):
+    require_session(request)
+    body = await request.json()
+    if not isinstance(body, list):
+        raise HTTPException(status_code=400, detail="expected_array")
+    sanitized = []
+    import time
+    for it in body:
+        if isinstance(it, dict) and isinstance(it.get('text'), str):
+            sanitized.append({
+                'id': it['id'] if isinstance(it.get('id'), str) else f't_{int(time.time()*1000):x}_{len(sanitized)}',
+                'text': it['text'],
+                'done': bool(it.get('done')),
+            })
+    await blob_set('crm/todo-manual', sanitized)
+    return sanitized
 
 
 # ============================================================
