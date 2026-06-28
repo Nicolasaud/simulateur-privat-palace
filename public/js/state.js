@@ -55,6 +55,20 @@ export const state = {
   currentFicheId: null,
   isDirty: false,
 
+  // INDEX léger des prospects CRM (depuis GET /api/crm) —
+  // prospect complet récupéré à la demande via getProspect(id).
+  crmList: [],
+
+  // Notes & tâches manuelles CRM (semaine) — synchro cloud via /api/crm-todo
+  crmTodoManual: [],
+
+  // Cache local des objectifs CA (clé "mensuel-YYYY-MM" / "annuel-YYYY")
+  // Chargés à la demande à l'ouverture de l'onglet Accueil.
+  objectifs: {},
+  // Flag de session : true si l'utilisateur a saisi le mdp objectifs
+  objectifsUnlocked: false,
+  objectifsPassword: null,  // gardé en mémoire pour les PUT (jamais persisté)
+
   // Calendrier
   calCurrentMonth: new Date().getMonth(),
   calCurrentYear: new Date().getFullYear(),

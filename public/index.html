@@ -9,7 +9,12 @@
 </head>
 <body>
 
-<h1>Simulateur Devis Privatisations — Palace Comedy</h1>
+<h1 class="appHeader">
+  <a href="/" class="appHeaderLogo" aria-label="Palace Comedy — Privat & Co">
+    <img src="/assets/logo-palace.svg" alt="Palace Comedy">
+    <span class="appHeaderTagline">Privat &amp; Co</span>
+  </a>
+</h1>
 <p class="meta">Version 11 juin — 18h55. V2.6 — « Format » renommé « formule ». Paramètres des formules de prestation déplacés dans la bibliothèque.</p>
 
 <!-- ===== Bandeau gestion des fiches ===== -->
@@ -61,58 +66,96 @@
 
 <!-- ===== Onglets ===== -->
 <div class="tabsBar">
-  <button class="tab active" data-tab="simulateur" onclick="switchTab('simulateur')">Simulateur</button>
+  <button class="tab active" data-tab="accueil" onclick="switchTab('accueil')">🏠 Accueil</button>
+  <button class="tab" data-tab="crm" onclick="switchTab('crm')">📊 CRM</button>
   <button class="tab" data-tab="calendrier" onclick="switchTab('calendrier')">📅 Calendrier</button>
+  <button class="tab" data-tab="simulateur" onclick="switchTab('simulateur')">🧮 Simulateur</button>
+</div>
+
+<!-- ===== Onglet : Accueil ===== -->
+<div id="tabAccueil" class="tab-content">
+  <div id="accueilContent"></div>
 </div>
 
 <!-- ===== Onglet : Simulateur ===== -->
-<div id="tabSimulateur" class="tab-content">
+<div id="tabSimulateur" class="tab-content hidden">
 
 <!-- ===== Carte fiche en cours ===== -->
 <div class="ficheCard">
   <h2>Fiche en cours <span id="ficheStatutBadge" class="statutBadge brouillon">brouillon</span></h2>
   <p id="ficheTrace" class="ficheTrace hidden"></p>
   <div class="ficheGrid">
-    <div>
-      <label>Nom de la fiche</label>
-      <input type="text" id="ficheNom" placeholder="Ex : Devis CSE Cointreau 15-06">
+    <div class="ficheRow ficheRow-4">
+      <div>
+        <label>Nom de la fiche</label>
+        <input type="text" id="ficheNom" placeholder="Ex : Devis CSE Cointreau 15-06">
+      </div>
+      <div>
+        <label>Client (société / CSE)</label>
+        <input type="text" id="ficheClient" placeholder="Raison sociale">
+      </div>
+      <div>
+        <label>Adresse de facturation</label>
+        <input type="text" id="ficheAdresseFacturation" placeholder="Adresse complète, CP, ville">
+      </div>
+      <div>
+        <label>SIRET</label>
+        <input type="text" id="ficheSiret" placeholder="14 chiffres" maxlength="14" inputmode="numeric">
+      </div>
     </div>
-    <div>
-      <label>Client (société / CSE)</label>
-      <input type="text" id="ficheClient" placeholder="Ex : Cointreau">
-    </div>
-    <div>
-      <label>Contact email</label>
-      <input type="text" id="ficheEmail" placeholder="cse@..." inputmode="email">
-    </div>
-    <div>
-      <label>Contact téléphone</label>
-      <input type="text" id="ficheTel" placeholder="02 41..." inputmode="tel">
-    </div>
-    <div>
-      <label>Date de l'événement</label>
-      <input type="date" id="ficheDateEvent">
-    </div>
-    <div>
-      <label>Heure d'arrivée des invités</label>
-      <input type="time" id="ficheHeureArrivee">
-    </div>
-    <div id="ficheHeureSpectacleBlock">
-      <label>Heure du spectacle</label>
-      <input type="time" id="ficheHeureSpectacle">
-    </div>
-    <div>
-      <label>Statut</label>
-      <select id="ficheStatut">
-        <option value="brouillon">Brouillon</option>
-        <option value="envoye">Devis envoyé</option>
-        <option value="accepte">Accepté</option>
-        <option value="refuse">Refusé</option>
-      </select>
+    <div class="ficheRow ficheRow-6">
+      <div>
+        <label>Contact email</label>
+        <input type="text" id="ficheEmail" placeholder="cse@..." inputmode="email">
+      </div>
+      <div>
+        <label>Contact téléphone</label>
+        <input type="text" id="ficheTel" placeholder="02 41..." inputmode="tel">
+      </div>
+      <div>
+        <label>Date de l'événement</label>
+        <input type="date" id="ficheDateEvent">
+      </div>
+      <div>
+        <label>Heure d'arrivée des invités</label>
+        <input type="time" id="ficheHeureArrivee">
+      </div>
+      <div id="ficheHeureSpectacleBlock">
+        <label>Heure du spectacle</label>
+        <input type="time" id="ficheHeureSpectacle">
+      </div>
+      <div>
+        <label>Statut</label>
+        <select id="ficheStatut">
+          <option value="brouillon">Brouillon</option>
+          <option value="envoye">Devis envoyé</option>
+          <option value="accepte">Accepté</option>
+          <option value="refuse">Refusé</option>
+        </select>
+      </div>
     </div>
   </div>
   <label style="margin-top:14px">Notes</label>
   <textarea id="ficheNotes" placeholder="Notes libres : préférences client, points négociés, allergies, contraintes techniques, historique d'échanges..."></textarea>
+
+  <!-- Programme de la soirée — alimente Fiche client + Fiche équipe -->
+  <div class="programmeWrap">
+    <div class="programmeHeader">
+      <h3 style="margin:0">📅 Programme de la soirée</h3>
+      <button type="button" id="btnAddProgrammeMoment">+ Ajouter un moment</button>
+    </div>
+    <table id="tableProgramme" class="programmeTable">
+      <thead>
+        <tr>
+          <th style="width: 130px">Heure</th>
+          <th>Déroulé</th>
+          <th style="width: 50px"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p class="programmeHint">Ce programme sera repris automatiquement dans la <strong>fiche client</strong> et la <strong>fiche équipe</strong> PDF.</p>
+  </div>
 </div>
 
 <div class="layout">
@@ -160,6 +203,7 @@
     <div class="actions">
       <button onclick="window.print()">Imprimer / PDF (devis)</button>
       <button onclick="exportFicheEquipe()">📋 Fiche équipe (PDF)</button>
+      <button onclick="openFicheClientEditor()" class="primary">📋 Fiche client (PDF)</button>
       <button class="primary" onclick="copyDevisText()">Copier devis texte</button>
     </div>
   </aside>
@@ -420,6 +464,90 @@
   <div class="modalContent">
     <button class="modalClose" onclick="closeFicheModal()" title="Fermer">×</button>
     <div id="ficheModalBody"></div>
+  </div>
+</div>
+
+<!-- ===== Onglet : CRM ===== -->
+<div id="tabCrm" class="tab-content hidden">
+  <div class="crmIntro card">
+    <h2 style="margin-top:0">CRM — Pipeline de privatisation</h2>
+    <p style="margin:0 0 10px 0;color:#444">Centralise tous les contacts entrants &amp; en discussion. Convertis-les en fiche devis en un clic.</p>
+    <details class="crmConsignes">
+      <summary><strong>📋 Process commercial — à respecter</strong></summary>
+      <ol>
+        <li><strong>Qualifier sous 48h.</strong> Tout contact entrant est saisi ici dans la journée. Premier appel/email de qualif sous 48h ouvrées max.</li>
+        <li><strong>Cadrer le besoin avant de chiffrer.</strong> Type d'événement, date envisagée, nb de personnes, budget annoncé, attentes resto/spectacle. Tant que ces 5 infos ne sont pas dans la fiche, on reste en « En discussion ».</li>
+        <li><strong>Créer la fiche devis depuis le prospect</strong> (bouton « 📄 Créer fiche devis »). Les coordonnées sont auto-recopiées + lien CRM↔Devis créé automatiquement.</li>
+        <li><strong>Statut « Devis envoyé »</strong> dès l'envoi au client. Note systématique : date d'envoi + version du devis.</li>
+        <li><strong>Relance J+7</strong> si pas de retour client. Renseigne la « Prochaine relance » pour que le prospect remonte en tête de liste.</li>
+        <li><strong>Statut final « Gagné » ou « Perdu »</strong> dans les 30 jours. Si perdu, indique la raison en note (prix, date, concurrent, no-go…).</li>
+        <li><strong>Notes datées</strong> : préfixe toujours par JJ/MM (ex : <code>19/06 - relance email, attend retour budget CSE</code>). Permet à toute l'équipe de reprendre le dossier.</li>
+      </ol>
+    </details>
+  </div>
+
+  <!-- À faire cette semaine -->
+  <div class="card crmSemaine">
+    <h2 style="margin-top:0">📋 À faire cette semaine</h2>
+    <div id="crmTodoAuto" class="crmTodoAuto"></div>
+
+    <h3 style="margin-top:20px">📝 Notes &amp; tâches manuelles</h3>
+    <div class="crmTodoManualWrap">
+      <textarea id="crmTodoInput" placeholder="Ex : appeler Cointreau jeudi pour bouclage devis, envoyer mock-up scénographie à Pernod…" rows="2"></textarea>
+      <button id="btnCrmTodoAdd" class="primary">+ Ajouter</button>
+    </div>
+    <ul id="crmTodoList" class="crmTodoList"></ul>
+  </div>
+
+  <div class="crmToolbar">
+    <button class="primary" id="btnNewProspect" style="margin-top:0">+ Nouveau prospect</button>
+    <span class="sep"></span>
+    <input type="text" id="crmFilterQuery" placeholder="Rechercher société, contact, email…" style="flex:1;min-width:200px;max-width:340px">
+    <select id="crmFilterStatut" style="width:auto;min-width:140px"></select>
+    <select id="crmFilterSource" style="width:auto;min-width:140px"></select>
+    <select id="crmFilterType" style="width:auto;min-width:160px"></select>
+    <span class="sep"></span>
+    <div class="crmViewToggle">
+      <button data-view="table" class="active">Tableau</button>
+      <button data-view="kanban">Kanban</button>
+    </div>
+  </div>
+
+  <div id="crmViewTable">
+    <div class="card" style="padding:0;overflow:hidden">
+      <table id="crmTable" style="margin:0">
+        <thead>
+          <tr>
+            <th>Société / Contact</th>
+            <th>Coordonnées</th>
+            <th>Type</th>
+            <th class="num">Pers.</th>
+            <th>Date envisagée</th>
+            <th class="num">Budget HT</th>
+            <th>Statut</th>
+            <th>Prochaine relance</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="crmViewKanban" class="hidden">
+    <div class="crmKanbanGrid" id="crmKanbanGrid"></div>
+  </div>
+</div>
+
+<!-- ===== Modal éditeur prospect CRM ===== -->
+<div id="crmModal" class="modal hidden">
+  <div class="modalContent" id="crmModalBody" style="max-width:820px;width:96%"></div>
+</div>
+
+<!-- ===== Modal éditeur fiche client (proposition de privatisation) ===== -->
+<div id="ficheClientModal" class="modal hidden" onclick="if(event.target===this)closeFicheClientEditor()">
+  <div class="modalContent ficheClientEditor">
+    <button class="modalClose" onclick="closeFicheClientEditor()" title="Fermer">×</button>
+    <div id="ficheClientEditorBody"></div>
   </div>
 </div>
 

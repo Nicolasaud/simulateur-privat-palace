@@ -1,24 +1,56 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: transparent; color: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.5; font-size: 14px; }
+
+/* ============================================================
+   Palette SaaS — bleu nuit + indigo, fond blanc, gris neutres
+   ============================================================ */
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f9fafb;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text: #111827;          /* gris très foncé pour le texte */
+  --text-muted: #6b7280;
+  --text-faded: #9ca3af;
+
+  --primary: #1a1f3c;        /* bleu nuit — titres, headers */
+  --accent: #6366f1;         /* indigo — CTA, onglet actif */
+  --accent-hover: #4f46e5;
+  --accent-soft: #eef2ff;
+
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger:  #ef4444;
+  --info:    #3b82f6;
+  --purple:  #8b5cf6;
+
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.07);
+  --shadow-card-hover: 0 4px 14px rgba(0, 0, 0, 0.10);
+  --radius-card: 12px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+}
+
+html, body { background: var(--bg); color: var(--text); font-family: 'Lexend', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.55; font-size: 14px; }
 body { padding: 24px; max-width: 1400px; margin: 0 auto; }
 
-h1, h2, h3, h4 { font-family: 'Lexend', sans-serif; font-weight: 600; }
-h1 { font-size: 1.5em; margin-bottom: 4px; }
-h2 { font-size: 1.15em; margin: 24px 0 12px; }
+h1, h2, h3, h4 { font-family: 'Lexend', sans-serif; font-weight: 600; color: var(--primary); }
+h1 { font-size: 1.6em; margin-bottom: 4px; letter-spacing: -0.01em; }
+h2 { font-size: 1.18em; margin: 24px 0 12px; letter-spacing: -0.005em; }
 h3 { font-size: 1em; margin: 16px 0 8px; }
-h4 { font-size: 0.9em; margin: 12px 0 6px; color: #555; font-weight: 500; }
-.meta { color: #666; font-size: 0.85em; margin-bottom: 24px; }
+h4 { font-size: 0.9em; margin: 12px 0 6px; color: var(--text-muted); font-weight: 500; }
+.meta { color: var(--text-muted); font-size: 0.86em; margin-bottom: 24px; }
 
 .layout { display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start; }
 @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
 
-.card { background: rgba(255,255,255,0.65); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 20px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 20px; box-shadow: var(--shadow-card); }
 
-label { display: block; font-size: 0.82em; color: #444; margin: 12px 0 4px; font-weight: 500; }
+label { display: block; font-size: 0.82em; color: var(--text); margin: 12px 0 4px; font-weight: 500; }
 label.inline { display: inline-flex; align-items: center; gap: 6px; margin: 6px 0; font-weight: 400; }
-input[type="number"], input[type="text"], select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9em; font-family: inherit; background: white; }
-input:focus, select:focus { outline: 2px solid #4a80d6; outline-offset: -1px; border-color: transparent; }
-input[type="checkbox"], input[type="radio"] { margin-right: 4px; }
+input[type="number"], input[type="text"], input[type="date"], input[type="time"], input[type="email"], input[type="tel"], input[type="password"], select, textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-size: 0.9em; font-family: inherit; background: white; color: var(--text); transition: border-color 0.15s, box-shadow 0.15s; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
+input[type="checkbox"], input[type="radio"] { margin-right: 4px; accent-color: var(--accent); }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
@@ -52,11 +84,12 @@ details.advanced > summary { cursor: pointer; font-family: 'Lexend', sans-serif;
 details.advanced[open] > summary { margin-bottom: 12px; }
 details.advanced .card { margin-top: 8px; }
 
-button { padding: 8px 14px; border: 1px solid #888; background: white; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.88em; }
-button:hover { background: #f0f0f0; }
-button.primary { background: #1a1a1a; color: white; border-color: #1a1a1a; margin-top: 8px; }
-button.primary:hover { background: #333; }
-button.delete { color: #c44; border-color: #c44; padding: 4px 8px; font-size: 0.85em; min-width: auto; }
+button { padding: 9px 16px; border: 1px solid var(--border-strong); background: white; color: var(--text); border-radius: var(--radius-sm); cursor: pointer; font-family: inherit; font-size: 0.88em; font-weight: 500; transition: all 0.15s; }
+button:hover { background: var(--surface-2); border-color: var(--text-muted); }
+button.primary { background: var(--accent); color: white; border-color: var(--accent); margin-top: 8px; }
+button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25); }
+button.delete { color: var(--danger); border-color: var(--danger); background: white; padding: 5px 10px; font-size: 0.85em; min-width: auto; }
+button.delete:hover { background: var(--danger); color: white; }
 
 .item-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 6px; align-items: center; padding: 4px 0; }
 .item-row input, .item-row select { padding: 6px 8px; font-size: 0.82em; }
@@ -66,11 +99,19 @@ button.delete { color: #c44; border-color: #c44; padding: 4px 8px; font-size: 0.
 
 .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 
+/* ===== Select Statut coloré (fiche devis) ===== */
+#ficheStatut { font-weight: 600; color: white; border: none; cursor: pointer; transition: background-color 0.2s; }
+#ficheStatut.statut-brouillon { background-color: #eab308; }
+#ficheStatut.statut-envoye    { background-color: #f97316; }
+#ficheStatut.statut-accepte   { background-color: #22c55e; }
+#ficheStatut.statut-refuse    { background-color: #ef4444; }
+#ficheStatut option { background: white; color: var(--text); font-weight: 500; }
+
 /* ===== Onglets ===== */
-.tabsBar { display: flex; gap: 2px; margin-bottom: 16px; border-bottom: 2px solid rgba(0,0,0,0.08); }
-.tab { padding: 10px 18px; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; font-family: 'Lexend', sans-serif; font-weight: 500; font-size: 0.92em; color: #666; }
-.tab:hover { color: #1a1a1a; background: rgba(0,0,0,0.02); }
-.tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+.tabsBar { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+.tab { padding: 12px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; font-family: 'Lexend', sans-serif; font-weight: 500; font-size: 0.93em; color: var(--text-muted); transition: color 0.15s, border-color 0.15s; }
+.tab:hover { color: var(--primary); background: var(--surface-2); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
 /* ===== Calendrier ===== */
 .calendrierCard { background: rgba(255,255,255,0.65); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 20px; }
@@ -141,8 +182,18 @@ button.delete { color: #c44; border-color: #c44; padding: 4px 8px; font-size: 0.
 
 .ficheCard { background: rgba(255,255,255,0.65); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
 .ficheCard h2 { margin-top: 0; }
-.ficheGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.ficheGrid { display: flex; flex-direction: column; gap: 12px; }
 .ficheGrid label { margin-top: 0; }
+.ficheRow { display: grid; gap: 12px; }
+.ficheRow-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ficheRow-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@media (max-width: 1100px) {
+  .ficheRow-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ficheRow-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .ficheRow-6, .ficheRow-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .ficheCard textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; font-size: 0.9em; resize: vertical; background: white; }
 
 .ficheTrace { font-size: 0.78em; color: #888; margin: -4px 0 12px; font-style: italic; }
@@ -188,3 +239,328 @@ button.delete { color: #c44; border-color: #c44; padding: 4px 8px; font-size: 0.
 .toast.error    { background: #8a1a1a; }
 .toast.success  { background: #0a5c2c; }
 .toast.info     { background: #1a4a8a; }
+
+/* ============================================================
+   CRM — page prospects / pipeline de privatisation
+   ============================================================ */
+.crmIntro { margin-bottom: 16px; padding: 18px 22px; background: linear-gradient(135deg, rgba(74,128,214,0.06), rgba(255,255,255,0.65)); }
+.crmIntro h2 { margin-top: 0; }
+.crmConsignes { margin-top: 8px; }
+.crmConsignes > summary { cursor: pointer; padding: 6px 0; font-size: 0.92em; }
+.crmConsignes ol { margin: 10px 0 4px 22px; padding: 0; }
+.crmConsignes ol li { margin: 6px 0; font-size: 0.88em; line-height: 1.55; color: #333; }
+.crmConsignes ol li strong { color: #1a1a1a; }
+.crmConsignes code { background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 3px; font-size: 0.92em; }
+
+.crmToolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; margin-bottom: 14px; }
+.crmToolbar .sep { width: 1px; height: 22px; background: rgba(0,0,0,0.15); }
+.crmViewToggle { display: inline-flex; border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; overflow: hidden; }
+.crmViewToggle button { border: none; border-radius: 0; padding: 6px 14px; font-size: 0.85em; background: white; margin: 0; }
+.crmViewToggle button + button { border-left: 1px solid rgba(0,0,0,0.15); }
+.crmViewToggle button.active { background: #1a1a1a; color: white; }
+
+/* Tableau CRM */
+#crmTable tbody tr.crmRow { cursor: pointer; transition: background 0.12s; }
+#crmTable tbody tr.crmRow:hover { background: rgba(74,128,214,0.05); }
+#crmTable td { vertical-align: top; }
+
+/* Badge statut CRM — nouvelle palette */
+.crmStatutBadge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 0.74em; font-weight: 600; letter-spacing: 0.01em; }
+.crmStatutBadge.a_contacter    { background: rgba(59, 130, 246, 0.10); color: #1d4ed8; }
+.crmStatutBadge.en_discussion  { background: rgba(245, 158, 11, 0.12); color: #b45309; }
+.crmStatutBadge.devis_envoye   { background: rgba(139, 92, 246, 0.12); color: #6d28d9; }
+.crmStatutBadge.gagne          { background: rgba(34, 197, 94, 0.12); color: #15803d; }
+.crmStatutBadge.perdu          { background: rgba(239, 68, 68, 0.12); color: #b91c1c; }
+
+/* Kanban */
+.crmKanbanGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(180px, 1fr));
+  gap: 10px;
+}
+@media (max-width: 1100px) { .crmKanbanGrid { grid-template-columns: repeat(2, 1fr); } }
+.crmColumn { background: rgba(0,0,0,0.025); border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; min-height: 240px; display: flex; flex-direction: column; transition: background 0.15s; }
+.crmColumn.dropTarget { background: rgba(74,128,214,0.12); border-color: #4a80d6; }
+.crmColumnHeader { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(0,0,0,0.06); }
+.crmColumnTitle { font-family: 'Lexend', sans-serif; font-weight: 500; font-size: 0.86em; }
+.crmColumnCount { background: rgba(0,0,0,0.08); color: #444; padding: 1px 8px; border-radius: 10px; font-size: 0.75em; font-weight: 500; }
+.crmColumnBody { padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+
+.crmCard {
+  background: white;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 11px 13px;
+  cursor: grab;
+  font-size: 0.85em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+}
+.crmCard:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-1px); }
+.crmCard.dragging { opacity: 0.45; cursor: grabbing; }
+.crmCard.statut-a_contacter   { border-left-color: #3b82f6; }
+.crmCard.statut-en_discussion { border-left-color: #f59e0b; }
+.crmCard.statut-devis_envoye  { border-left-color: #8b5cf6; }
+.crmCard.statut-gagne         { border-left-color: #22c55e; }
+.crmCard.statut-perdu         { border-left-color: #ef4444; }
+.crmCardTitle { font-family: 'Lexend', sans-serif; font-weight: 600; font-size: 0.95em; color: var(--primary); margin-bottom: 2px; }
+.crmCardSub { color: var(--text-muted); font-size: 0.88em; margin-bottom: 6px; }
+.crmCardMeta { display: flex; flex-wrap: wrap; gap: 4px 8px; color: var(--text-muted); font-size: 0.82em; margin-top: 4px; }
+.crmCardMeta span { background: var(--surface-2); padding: 1px 7px; border-radius: 3px; }
+.crmCardBudget { margin-top: 6px; font-weight: 600; color: #15803d; font-size: 0.88em; }
+.crmCardDevis { margin-top: 4px; color: #6d28d9; font-size: 0.8em; }
+.crmCardRelance { margin-top: 4px; color: #b45309; font-size: 0.8em; font-weight: 500; }
+
+/* Éditeur prospect */
+.crmEditorGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 14px; margin-top: 8px; }
+.crmEditorGrid label { margin-top: 0; }
+#crmModalBody textarea { width: 100%; min-height: 110px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; font-size: 0.9em; resize: vertical; background: white; }
+.crmFichesLiees { margin-top: 12px; padding: 12px 14px; background: rgba(74,128,214,0.05); border-radius: 8px; border: 1px solid rgba(74,128,214,0.15); }
+.crmFichesLiees h3 { margin-top: 0; }
+.crmFichesList { list-style: none; padding: 0; margin: 6px 0 0 0; }
+.crmFichesList li { padding: 5px 0; font-size: 0.88em; border-bottom: 1px dashed rgba(0,0,0,0.08); }
+.crmFichesList li:last-child { border-bottom: none; }
+.crmFichesList a { color: #1a4a8a; text-decoration: none; font-weight: 500; }
+.crmFichesList a:hover { text-decoration: underline; }
+
+/* ============================================================
+   Header avec logo (remplace le titre texte)
+   ============================================================ */
+.appHeader { margin-bottom: 4px; padding: 0; font-size: 0; }
+.appHeaderLogo {
+  display: inline-flex; align-items: center; gap: 16px;
+  text-decoration: none; padding: 4px 0;
+}
+.appHeaderLogo img {
+  height: 40px; width: auto; display: block;
+}
+.appHeaderTagline {
+  font-family: 'Lexend', sans-serif; font-weight: 800;
+  font-size: 22px; color: #1a1f3c; letter-spacing: -0.01em;
+  border-left: 2px solid #e5e7eb; padding-left: 16px;
+  line-height: 1;
+}
+
+/* ============================================================
+   Programme de la soirée (table dans la fiche devis)
+   ============================================================ */
+.programmeWrap { margin-top: 22px; padding: 16px 18px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-card); }
+.programmeHeader { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.programmeHeader h3 { color: var(--primary); }
+.programmeHeader button { margin-top: 0; }
+.programmeTable { width: 100%; border-collapse: collapse; margin: 6px 0; background: white; border-radius: var(--radius-sm); overflow: hidden; }
+.programmeTable th { background: #1a1f3c; color: white; padding: 8px 10px; text-align: left; font-size: 0.82em; font-weight: 500; }
+.programmeTable td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.programmeTable input.prog-heure, .programmeTable textarea.prog-deroule {
+  width: 100%; padding: 6px 8px; border: 1px solid transparent; background: transparent;
+  font-family: inherit; font-size: 0.92em; resize: vertical; min-height: 24px;
+}
+.programmeTable input.prog-heure:hover, .programmeTable textarea.prog-deroule:hover {
+  border-color: var(--border);
+}
+.programmeTable input.prog-heure { font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; max-width: 110px; }
+.programmeTable textarea.prog-deroule { line-height: 1.5; }
+.programmeTable button.prog-del { padding: 2px 8px; font-size: 1em; line-height: 1; min-width: auto; }
+.programmeHint { color: var(--text-muted); font-size: 0.8em; margin-top: 8px; font-style: italic; }
+
+/* ============================================================
+   Accueil — slider mensuel
+   ============================================================ */
+.accueilMonthSlider {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.accueilMonthSlider .sliderBtn {
+  width: 34px; height: 34px; padding: 0; border-radius: 50%;
+  border: 1px solid var(--border); background: white;
+  font-size: 1.4em; line-height: 1; color: var(--primary);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 0.15s; cursor: pointer;
+}
+.accueilMonthSlider .sliderBtn:hover:not(:disabled) {
+  background: var(--accent); color: white; border-color: var(--accent);
+  transform: scale(1.05);
+}
+.accueilMonthSlider .sliderBtn:disabled { opacity: 0.3; cursor: not-allowed; }
+.accueilMonthSlider .accueilMonthLabel {
+  margin: 0; min-width: 200px; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.accueilMonthSlider .sliderTodayBtn {
+  margin: 0; padding: 5px 14px; font-size: 0.8em;
+  background: var(--accent-soft); color: var(--accent);
+  border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 100px;
+}
+.accueilMonthSlider .sliderTodayBtn:hover {
+  background: var(--accent); color: white; border-color: var(--accent);
+}
+
+/* Marge brute / taux marge (2e ligne après progress bar) */
+.accueilMargeRow {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  margin-top: 18px; padding-top: 16px;
+  border-top: 1px dashed var(--border);
+}
+@media (max-width: 700px) { .accueilMargeRow { grid-template-columns: 1fr; } }
+.accueilMargeKpi {
+  background: linear-gradient(135deg, #f9fafb, white);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 14px 18px; display: flex; flex-direction: column; gap: 4px;
+}
+.accueilMargeKpi .lbl { font-size: 0.75em; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+.accueilMargeKpi .val { font-size: 1.35em; font-weight: 700; color: var(--success); font-family: 'Lexend', sans-serif; }
+.accueilMargeKpi .sub { font-size: 0.75em; color: var(--text-faded); }
+.accueilMargeKpi .sub.warn { color: var(--warning); font-style: italic; }
+
+/* ============================================================
+   Modale Fiche client (proposition de privatisation)
+   ============================================================ */
+.ficheClientEditor {
+  max-width: 880px !important; width: 96% !important;
+  max-height: 90vh; overflow-y: auto;
+}
+.fcEditorHeader { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.fcSection { margin: 18px 0; padding: 14px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.fcSection h3 { margin: 0 0 10px; color: var(--primary); font-size: 1em; }
+.fcSection > label { margin-top: 10px; }
+.fcGrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+@media (max-width: 720px) { .fcGrid2 { grid-template-columns: 1fr; } }
+.fcSubBlock { margin-top: 14px; padding: 12px; background: white; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+.fcRowHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.fcSmall { padding: 5px 11px; font-size: 0.8em; margin: 0; }
+.fcProgrammeTable, .fcBudgetTable { width: 100%; border-collapse: collapse; }
+.fcProgrammeTable th, .fcBudgetTable th { padding: 6px 8px; background: var(--primary); color: white; font-size: 0.78em; font-weight: 500; text-align: left; }
+.fcProgrammeTable td, .fcBudgetTable td { padding: 4px; border-bottom: 1px solid var(--border); }
+.fcProgrammeTable input, .fcProgrammeTable textarea,
+.fcBudgetTable input { width: 100%; padding: 6px 8px; border: 1px solid transparent; background: transparent; font-family: inherit; font-size: 0.92em; }
+.fcProgrammeTable input:hover, .fcProgrammeTable textarea:hover,
+.fcBudgetTable input:hover { border-color: var(--border); }
+.fcProgrammeTable input.fc-prog-heure { font-weight: 600; color: var(--accent); max-width: 110px; }
+.fcBudgetTable td:nth-child(2) input { text-align: right; font-weight: 600; }
+button.delete.fc-prog-del, button.delete.fc-bud-del { padding: 2px 8px; font-size: 1em; min-width: auto; }
+.fcBudgetTotal {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; background: var(--accent-soft); border-radius: var(--radius-sm);
+  margin-top: 8px; font-weight: 600; color: var(--primary);
+}
+.fcBudgetTotal strong { color: var(--accent); font-size: 1.2em; font-family: 'Lexend', sans-serif; }
+.fcSignaturePreview { background: linear-gradient(135deg, var(--accent-soft), white); }
+.fcSignaturePreview p { color: var(--primary); font-style: italic; }
+
+@media print {
+  #tabCrm, #crmModal, #tabAccueil, #ficheClientModal { display: none !important; }
+}
+
+/* ============================================================
+   À FAIRE CETTE SEMAINE — bloc relances auto + notes manuelles
+   ============================================================ */
+.crmSemaine { margin-bottom: 16px; }
+.crmTodoEmpty { color: var(--text-muted); font-style: italic; padding: 14px 0; text-align: center; font-size: 0.9em; }
+
+.crmTodoAutoList { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.crmTodoAutoItem {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--surface-2); cursor: pointer; transition: all 0.15s; font-size: 0.9em;
+}
+.crmTodoAutoItem:hover { background: var(--accent-soft); border-color: var(--accent); transform: translateX(2px); }
+.crmTodoDate { font-weight: 600; color: var(--accent); min-width: 64px; font-variant-numeric: tabular-nums; }
+.crmTodoSociete { font-weight: 600; color: var(--primary); flex: 1; min-width: 140px; }
+.crmTodoContact { color: var(--text-muted); font-size: 0.92em; }
+
+.crmTodoManualWrap { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; }
+.crmTodoManualWrap textarea { flex: 1; min-height: 44px; padding: 9px 12px; resize: vertical; }
+.crmTodoManualWrap button { margin-top: 0; flex-shrink: 0; }
+
+.crmTodoList { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 4px; }
+.crmTodoManualItem {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 12px; border-radius: var(--radius-sm); background: white;
+  border: 1px solid var(--border); transition: opacity 0.2s;
+}
+.crmTodoManualItem label { display: flex; align-items: flex-start; gap: 9px; flex: 1; margin: 0; cursor: pointer; font-weight: 400; font-size: 0.93em; line-height: 1.5; }
+.crmTodoManualItem.done span { text-decoration: line-through; color: var(--text-faded); }
+.crmTodoManualItem.done { opacity: 0.7; background: var(--surface-2); }
+.crmTodoDel {
+  background: transparent; border: none; color: var(--text-faded); font-size: 1.25em;
+  cursor: pointer; padding: 2px 8px; line-height: 1; transition: color 0.15s;
+}
+.crmTodoDel:hover { color: var(--danger); background: transparent; border: none; }
+
+/* ============================================================
+   ACCUEIL — dashboard mois/année
+   ============================================================ */
+.accueilHero { margin-bottom: 24px; }
+.accueilHero h1 { color: var(--primary); font-size: 1.7em; margin-bottom: 6px; }
+
+.accueilBlock {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-card);
+}
+.accueilBlockHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
+.accueilBlockHeader h2 { margin: 0; font-size: 1.35em; color: var(--primary); text-transform: capitalize; }
+.accueilBlockTag {
+  display: inline-block; padding: 4px 12px; background: var(--accent-soft);
+  color: var(--accent); border-radius: 100px; font-size: 0.75em;
+  font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase;
+}
+
+.accueilKpiGrid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  margin-bottom: 22px;
+}
+.accueilKpiGrid-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 900px) { .accueilKpiGrid, .accueilKpiGrid-3 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .accueilKpiGrid, .accueilKpiGrid-3 { grid-template-columns: 1fr; } }
+
+.accueilKpi {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 6px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.accueilKpi:hover { border-color: var(--accent); }
+.accueilKpi .lbl {
+  font-size: 0.72em; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600;
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+}
+.accueilKpi .val {
+  font-size: 1.55em; font-weight: 700; font-family: 'Lexend', sans-serif;
+  color: var(--primary); letter-spacing: -0.02em; line-height: 1.1;
+}
+.accueilKpi .sub { font-size: 0.75em; color: var(--text-faded); font-style: italic; }
+.accueilKpi.accueilObjectif { background: linear-gradient(135deg, var(--accent-soft), white); border-color: rgba(99,102,241,0.25); }
+.accueilKpi.accueilObjectif .val { color: var(--accent); }
+
+.objBtn {
+  background: transparent; border: none; padding: 2px 6px; cursor: pointer;
+  font-size: 0.85em; opacity: 0.7; transition: opacity 0.15s; min-width: auto;
+}
+.objBtn:hover { opacity: 1; background: transparent; }
+
+.accueilProgressWrap { margin-top: 4px; }
+.accueilProgressLabel {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 0.85em; color: var(--text-muted); margin-bottom: 7px;
+}
+.accueilProgressPct { font-weight: 700; font-size: 1.05em; font-family: 'Lexend', sans-serif; }
+.accueilProgressPct.good   { color: var(--success); }
+.accueilProgressPct.medium { color: var(--warning); }
+.accueilProgressPct.low    { color: var(--danger); }
+
+.accueilProgressBar {
+  width: 100%; height: 10px; background: #e5e7eb;
+  border-radius: 100px; overflow: hidden;
+}
+.accueilProgressFill {
+  height: 100%; border-radius: 100px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.accueilProgressFill.good   { background: linear-gradient(90deg, #16a34a, #22c55e); }
+.accueilProgressFill.medium { background: linear-gradient(90deg, #d97706, #f59e0b); }
+.accueilProgressFill.low    { background: linear-gradient(90deg, #dc2626, #ef4444); }

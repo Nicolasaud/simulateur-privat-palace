@@ -124,6 +124,24 @@ export function exportFicheEquipe() {
   <h2>Formule${blocs.length > 1 ? 's' : ''} de prestation</h2>
   ${blocsHTML}
 
+  ${(Array.isArray(data.programmeSoiree) && data.programmeSoiree.length > 0) ? `
+  <h2>Programme de la soirée</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:0.92em;margin-top:8px">
+    <thead>
+      <tr style="background:#1a1a1a;color:white">
+        <th style="text-align:left;padding:8px 10px;width:120px">Heure</th>
+        <th style="text-align:left;padding:8px 10px">Déroulé</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${data.programmeSoiree.map(p => `<tr style="border-bottom:1px solid #e0e0e0">
+        <td style="padding:8px 10px;font-weight:600">${escape(p.heure)}</td>
+        <td style="padding:8px 10px;white-space:pre-wrap">${escape(p.deroule)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+  ` : ''}
+
   ${data.notes ? `<h2>Notes</h2><div class="notes">${escape(data.notes)}</div>` : ''}
 
   <div class="footer">

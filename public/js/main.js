@@ -65,6 +65,13 @@ import { requireAuth, logout } from './auth.js';
 import { loadParamsFromCloud, registerParamsListeners } from './params-sync.js';
 import { maybeOfferMigration } from './migration.js';
 import { showToast } from './ui-feedback.js';
+import {
+  loadCrmFromCloud, loadCrmTodoManualFromCloud, registerCrmListeners, initCrmFilters,
+  openProspectEditor, closeProspectEditor, saveProspect, deleteProspect,
+  createDevisFromProspect, openFicheFromCrm
+} from './crm.js';
+import { renderAccueil } from './accueil.js';
+import { openFicheClientEditor, closeFicheClientEditor } from './fiche-client.js';
 
 // === Auth ===
 const nom = await requireAuth();
@@ -90,7 +97,9 @@ async function loadAllFromCloud() {
     loadFormulesV2FromCloud(),
     loadTypesInternesFromCloud(),
     loadPaliersFromCloud(),
-    loadParamsFromCloud()
+    loadParamsFromCloud(),
+    loadCrmFromCloud(),
+    loadCrmTodoManualFromCloud()
   ]);
 }
 await loadAllFromCloud();
@@ -195,6 +204,11 @@ Object.assign(window, {
   // Fiches
   newFiche, saveFiche, duplicateFiche, deleteFiche,
   exportAllJSON, importJSON, exportFicheEquipe,
+  // CRM
+  openProspectEditor, closeProspectEditor, saveProspect, deleteProspect,
+  createDevisFromProspect, openFicheFromCrm,
+  // Fiche client PDF
+  openFicheClientEditor, closeFicheClientEditor,
   // Auth
   logout,
   // Sync
@@ -209,6 +223,7 @@ registerBddListeners();
 registerPaliersListeners();
 registerFichesListeners();
 registerParamsListeners();
+registerCrmListeners();
 
 // === Listeners spécifiques à la section types-internes ===
 registerTypesInternesListeners();
@@ -239,3 +254,6 @@ refreshStatutBadge();
 refreshForfaitLibelleVisibility();
 renderItems();
 recalcul();
+
+// Render initial Accueil (onglet actif par défaut)
+renderAccueil();

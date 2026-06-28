@@ -25,6 +25,7 @@ import {
   putBddItems, putFormules
 } from './api.js';
 import { showToast } from './ui-feedback.js';
+import { linkPendingProspectFiche } from './crm.js';
 
 // --- Chargement cloud ---
 export async function loadFichesIndexFromCloud() {
@@ -107,11 +108,15 @@ export function readCurrentForm() {
     client: $('ficheClient').value.trim(),
     contactEmail: $('ficheEmail').value.trim(),
     contactTel: $('ficheTel').value.trim(),
+    adresseFacturation: $('ficheAdresseFacturation')?.value.trim() || '',
+    siret: $('ficheSiret')?.value.trim() || '',
     dateEvent: $('ficheDateEvent').value,
     heureArrivee: $('ficheHeureArrivee').value,
     heureSpectacle: $('ficheHeureSpectacle').value,
     statut: $('ficheStatut').value,
     notes: $('ficheNotes').value,
+    programmeSoiree: readProgrammeSoiree(),
+    ficheClient: window._currentFicheClient || null,
     config: {
       // Format pur post-cleanup commit 7 : plus de champs racine legacy.
       // Source de vérité : config.formules[*] (Migration cloud exécutée
@@ -132,11 +137,15 @@ export function writeFormFromFiche(f) {
   $('ficheClient').value = f.client || '';
   $('ficheEmail').value = f.contactEmail || '';
   $('ficheTel').value = f.contactTel || '';
+  if ($('ficheAdresseFacturation')) $('ficheAdresseFacturation').value = f.adresseFacturation || '';
+  if ($('ficheSiret')) $('ficheSiret').value = f.siret || '';
   $('ficheDateEvent').value = f.dateEvent || '';
   $('ficheHeureArrivee').value = f.heureArrivee || '';
   $('ficheHeureSpectacle').value = f.heureSpectacle || '';
   $('ficheStatut').value = f.statut || 'brouillon';
   $('ficheNotes').value = f.notes || '';
+  writeProgrammeSoiree(f.programmeSoiree || []);
+  window._currentFicheClient = f.ficheClient || null;
   if (f.config) {
     // Multi-formules pur (cleanup commit 7) : on attend config.formules[].
     // Le fallback legacy a été retiré — la migration cloud des fiches mono a
@@ -203,6 +212,10 @@ export function refreshStatutBadge() {
   const badge = $('ficheStatutBadge');
   badge.className = 'statutBadge ' + v;
   badge.textContent = labels[v] || v;
+  // Le select lui-même prend le code couleur (cf .statut-* dans main.css)
+  const sel = $('ficheStatut');
+  sel.classList.remove('statut-brouillon', 'statut-envoye', 'statut-accepte', 'statut-refuse');
+  sel.classList.add('statut-' + v);
 }
 
 // Format compact d'un ISO : "19/06 à 11h32"
@@ -316,7 +329,8 @@ export async function saveFiche() {
     totalHT: window._lastDevis.totalHT,
     totalTTC: window._lastDevis.totalTTC,
     prixPers: window._lastDevis.prixPers,
-    tauxMarge: window._lastDevis.tauxMarge
+    tauxMarge: window._lastDevis.tauxMarge,
+    margeBrute: window._lastDevis.margeBrute
   } : null;
   data.nomFiche = autoNomFiche(data);
   data.resultsSnapshot = snapshot;
@@ -329,6 +343,11 @@ export async function saveFiche() {
   try {
     const saved = await putFiche(id, data);
     state.currentFicheId = saved.id;
+    // Lien CRM → fiche : si un prospect a déclenché la création de cette fiche
+    // via "Créer fiche devis depuis CRM", on le lie maintenant (fire-and-forget).
+    if (window._pendingProspectLink) {
+      linkPendingProspectFiche(saved.id).catch(e => console.warn('linkPendingProspectFiche', e));
+    }
     // MAJ index local immédiatement (évite un round-trip listFiches)
     const entry = buildIndexEntry(saved);
     const i = state.fichesList.findIndex(f => f.id === saved.id);
@@ -594,5 +613,81 @@ export function registerFichesListeners() {
       e.preventDefault();
       e.returnValue = '';
     }
+  });
+}
+
+
+// ============================================================
+//  Programme de la soirée — tableau Heure | Déroulé
+//  Alimente Fiche client + Fiche équipe PDF
+// ============================================================
+export function readProgrammeSoiree() {
+  const rows = document.querySelectorAll('#tableProgramme tbody tr');
+  return Array.from(rows).map(tr => ({
+    heure: tr.querySelector('.prog-heure')?.value.trim() || '',
+    deroule: tr.querySelector('.prog-deroule')?.value.trim() || ''
+  })).filter(p => p.heure || p.deroule);
+}
+
+export function writeProgrammeSoiree(items) {
+  const tbody = document.querySelector('#tableProgramme tbody');
+  if (!tbody) return;
+  const data = Array.isArray(items) && items.length > 0 ? items : [{ heure: '', deroule: '' }];
+  tbody.innerHTML = data.map(p => programmeRowHTML(p.heure || '', p.deroule || '')).join('');
+  wireProgrammeRowEvents();
+}
+
+function programmeRowHTML(heure, deroule) {
+  return `<tr>
+    <td><input type="text" class="prog-heure" value="${escapeAttr(heure)}" placeholder="Ex : 19h30"></td>
+    <td><textarea class="prog-deroule" rows="1" placeholder="Description du moment...">${escapeHtml(deroule)}</textarea></td>
+    <td><button type="button" class="delete prog-del" title="Supprimer ce moment">×</button></td>
+  </tr>`;
+}
+
+function wireProgrammeRowEvents() {
+  document.querySelectorAll('#tableProgramme tbody tr').forEach(tr => {
+    tr.querySelectorAll('input, textarea').forEach(el => {
+      el.addEventListener('input', () => setDirty(true));
+    });
+    tr.querySelector('.prog-del')?.addEventListener('click', () => {
+      tr.remove();
+      // Toujours garder au moins 1 ligne vide
+      const tbody = document.querySelector('#tableProgramme tbody');
+      if (tbody && tbody.children.length === 0) {
+        tbody.innerHTML = programmeRowHTML('', '');
+        wireProgrammeRowEvents();
+      }
+      setDirty(true);
+    });
+  });
+}
+
+export function addProgrammeMoment() {
+  const tbody = document.querySelector('#tableProgramme tbody');
+  if (!tbody) return;
+  tbody.insertAdjacentHTML('beforeend', programmeRowHTML('', ''));
+  wireProgrammeRowEvents();
+  // focus le nouvel input heure
+  const last = tbody.lastElementChild;
+  last?.querySelector('.prog-heure')?.focus();
+  setDirty(true);
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+// Initialise le programme avec une ligne vide au boot
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const tbody = document.querySelector('#tableProgramme tbody');
+    if (tbody && tbody.children.length === 0) {
+      tbody.innerHTML = programmeRowHTML('', '');
+      wireProgrammeRowEvents();
+    }
+    document.getElementById('btnAddProgrammeMoment')?.addEventListener('click', addProgrammeMoment);
   });
 }

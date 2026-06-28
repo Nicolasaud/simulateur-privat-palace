@@ -43,7 +43,7 @@ export async function flushAllPending() {
 }
 
 // === Cœur du wrapper ===
-async function apiCall(method, path, body) {
+async function apiCall(method, path, body, extraHeaders) {
   pendingCount++;
   refreshSpinner();
   try {
@@ -55,6 +55,9 @@ async function apiCall(method, path, body) {
     if (body !== undefined) {
       opts.headers = { 'content-type': 'application/json' };
       opts.body = JSON.stringify(body);
+    }
+    if (extraHeaders) {
+      opts.headers = { ...(opts.headers || {}), ...extraHeaders };
     }
 
     let r;
@@ -133,3 +136,17 @@ export const listFiches     = ()        => apiCall('GET',    '/api/fiches');
 export const getFiche       = (id)      => apiCall('GET',    `/api/fiches/${encodeURIComponent(id)}`);
 export const putFiche       = (id, obj) => apiCall('PUT',    `/api/fiches/${encodeURIComponent(id)}`, obj);
 export const deleteFicheApi = (id)      => apiCall('DELETE', `/api/fiches/${encodeURIComponent(id)}`);
+
+// CRM — prospects de privatisation
+export const listCrm           = ()        => apiCall('GET',    '/api/crm');
+export const getProspect       = (id)      => apiCall('GET',    `/api/crm/${encodeURIComponent(id)}`);
+export const putProspect       = (id, obj) => apiCall('PUT',    `/api/crm/${encodeURIComponent(id)}`, obj);
+export const deleteProspectApi = (id)      => apiCall('DELETE', `/api/crm/${encodeURIComponent(id)}`);
+
+// CRM — TODO manuelles (notes & tâches semaine)
+export const getCrmTodo  = ()    => apiCall('GET', '/api/crm-todo');
+export const putCrmTodo  = (arr) => apiCall('PUT', '/api/crm-todo', arr);
+
+// Objectifs CA (édition protégée par mdp séparé envoyé en header)
+export const getObjectif = (key)            => apiCall('GET', `/api/objectifs/${encodeURIComponent(key)}`);
+export const putObjectif = (key, ca, mdp)   => apiCall('PUT', `/api/objectifs/${encodeURIComponent(key)}`, { ca }, { 'x-objectifs-password': mdp });

@@ -11,7 +11,9 @@
   body { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
 
   .loginCard { background: rgba(255,255,255,0.85); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 32px 36px; max-width: 420px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.06); }
-  h1 { font-family: 'Lexend', sans-serif; font-weight: 600; font-size: 1.3em; margin-bottom: 4px; }
+  .loginHeader { display: inline-flex; align-items: center; gap: 16px; text-decoration: none; padding: 4px 0; margin-bottom: 6px; }
+  .loginHeader img { height: 40px; width: auto; display: block; }
+  .loginHeader .tagline { font-family: 'Lexend', sans-serif; font-weight: 800; font-size: 22px; color: #1a1f3c; letter-spacing: -0.01em; border-left: 2px solid #e5e7eb; padding-left: 16px; line-height: 1; white-space: nowrap; }
   .subtitle { color: #666; font-size: 0.88em; margin-bottom: 24px; }
 
   label { display: block; font-size: 0.82em; color: #444; margin: 16px 0 6px; font-weight: 500; font-family: 'Lexend', sans-serif; }
@@ -36,7 +38,10 @@
 <body>
 
 <div class="loginCard">
-  <h1>Simulateur Palace Comedy</h1>
+  <div class="loginHeader">
+    <img src="/assets/logo-palace.svg" alt="Palace Comedy">
+    <span class="tagline">Privat &amp; Co</span>
+  </div>
   <p class="subtitle">Connexion équipe — code d'accès partagé</p>
 
   <form id="loginForm" autocomplete="off">

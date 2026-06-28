@@ -393,7 +393,7 @@ export function recalcul() {
   const source = override === 'auto' ? (dateEvent ? `auto via date ${dateEvent}` : 'auto sans date → P2 prudent') : 'forcée manuellement';
   $('periodeIndicator').textContent = `Période effective : ${periode} (${source})`;
 
-  window._lastDevis = { format, jour, nbPers, lignes, totalHT, totalTTC, tvaParTaux, prixPers, tauxMarge, periode };
+  window._lastDevis = { format, jour, nbPers, lignes, totalHT, totalTTC, tvaParTaux, prixPers, tauxMarge, margeBrute, periode };
 
   // Multi-formules : rafraîchir le récap global (sans toucher aux inputs des
   // cards pour ne pas perdre le focus pendant la saisie) + visibilité de
@@ -469,6 +469,34 @@ function renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux) {
       }
     }
   }
+
+  // === Fusion "Service en salle" dans la Vue client ===
+  // La ligne 'personnel' n'apparaît plus comme une ligne autonome côté client.
+  // Son montant est réparti AU PRORATA sur toutes les autres lignes (spectacle,
+  // resto, privatSalle, forfait, fraisResa résiduel...). Le total HT est inchangé.
+  // (La marge interne reste calculée sur les lignes brutes, donc non impactée.)
+  {
+    const persoLignes = lignesClient.filter(l => l.type === 'personnel');
+    if (persoLignes.length > 0) {
+      const totalPerso = persoLignes.reduce((s, l) => s + l.totalHT, 0);
+      lignesClient = lignesClient.filter(l => l.type !== 'personnel');
+      const totalAutres = lignesClient.reduce((s, l) => s + l.totalHT, 0);
+      if (totalAutres > 0) {
+        lignesClient.forEach(c => {
+          const ratio = c.totalHT / totalAutres;
+          c.totalHT += totalPerso * ratio;
+          if (c.qte > 0) c.puHT = c.totalHT / c.qte;
+        });
+      } else {
+        // Cas edge : aucune autre ligne — on remet le personnel pour ne pas perdre le total
+        lignesClient.push(...persoLignes);
+      }
+    }
+  }
+
+  // Expose les lignes vue-client (après fusion frais-resa + service-en-salle)
+  // pour réutilisation par fiche-client.js (génération PDF) sans dupliquer la logique.
+  window._lastLignesClient = lignesClient.map(l => ({ ...l }));
 
   if (vueMode === 'decomposee') {
     // Multi-formules : grouper par bloc si > 1 bloc, avec un sous-total par bloc.

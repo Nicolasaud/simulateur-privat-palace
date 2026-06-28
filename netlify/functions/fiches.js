@@ -24,14 +24,27 @@ const INDEX_KEY = 'fiches/_index';
 const ficheKey = id => `fiches/${id}`;
 
 // Champs de l'index — restent légers pour la liste/dashboard/calendrier.
+// On expose en plus margeBrute, tauxMarge et formulesTypes pour les KPIs
+// du dashboard mensuel sans avoir à recharger chaque fiche complète.
 function buildIndexEntry(fiche) {
+  const blocs = fiche.config?.formules;
+  let formulesTypes = null;
+  if (Array.isArray(blocs) && blocs.length > 0) {
+    formulesTypes = blocs.map(b => b.typeId || b.type || null).filter(Boolean);
+  } else if (fiche.config?.format) {
+    formulesTypes = [fiche.config.format];
+  }
+  const snap = fiche.resultsSnapshot || {};
   return {
     id: fiche.id,
     nomFiche: fiche.nomFiche || '',
     client: fiche.client || '',
     dateEvent: fiche.dateEvent || '',
     statut: fiche.statut || 'brouillon',
-    totalHT: fiche.resultsSnapshot?.totalHT ?? null,
+    totalHT: snap.totalHT ?? null,
+    margeBrute: snap.margeBrute ?? null,
+    tauxMarge: snap.tauxMarge ?? null,
+    formulesTypes,
     updated_at: fiche.updated_at,
     updated_by: fiche.updated_by
   };
