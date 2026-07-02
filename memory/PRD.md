@@ -35,7 +35,6 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
 ## À faire (backlog)
 - P1 : Tests sur Netlify Dev local (lance `netlify dev` côté user)
 - P1 : Commit + push sur le repo GitHub user → déploiement Netlify auto
-- P1 : Étape 4 refactor Items Libres — feature flag UI legacy ↔ libre + cross-validation A/B au runtime
 - P1 : Étape 5 refactor Items Libres — bascule prod + suppression du code legacy (`calcul.js`, endpoints/UI obsolètes)
 - P1 : Synchro GitHub `programmation` (fichiers `netlify/functions/programmation.js`, `public/js/programmation.js`) — repoussé à une session dédiée
 - P2 : Export CSV de la liste prospects
@@ -51,15 +50,24 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
   - Seed idempotent des 5 formules `fl_legacy_*` dans `formules-lib` au boot
   - UI biblio : formules legacy en lecture seule + badge 🔒 LEGACY
   - Script `scripts/test-libre-vs-legacy.js` : parité 100% confirmée sur les fiches valides (Nicolas 5775€, Cointreau CSE 3135.60€, AutoSync 4917.60€) — tolérance 0.01€
-- ⏳ Étape 4 — feature flag UI (À faire)
+- ✅ Étape 4 (2026-02) — Feature flag UI + cross-validation A/B live
+  - Nouveau fichier `engine-flag.js` : persistance localStorage (`palace_engine` legacy|libre + `palace_engine_ab` bool)
+  - Nouveau fichier `calcul-libre-bridge.js` : reconstitue `ctx` runtime pour le moteur libre (avec fallback seed local si `bibFormules` cloud pas encore chargée)
+  - Hook A/B dans `recalcul()` de `calcul.js` : les 2 moteurs tournent en parallèle, résultats comparés à 0.01€ près
+  - Bandeau visuel en tête de page avec 3 états : vert concordance, rouge divergence, badge "MOTEUR LIBRE ACTIF" si flag ON
+  - Section "⚙️ Moteur de calcul" dans Bibliothèque libre : radio legacy/libre + checkbox A/B
 - ⏳ Étape 5 — bascule prod + delete legacy (À faire)
 
-## Fichiers clés Étape 3 (2026-02)
-- `public/js/calcul-libre.js` — moteur pur (aucune lecture DOM/state) : `calculerFicheLibre(fiche, ctx)` → `{ lignes, totalHT, prixPers, ... }`
-- `public/js/items-systeme.js` — étendu avec `LEGACY_SYSTEM_ITEMS` (constantes internes, non-seedés dans le blob items-lib pour éviter la pollution)
+## Fichiers clés Étape 3-4 (2026-02)
+- `public/js/calcul-libre.js` — moteur pur (aucune lecture DOM/state)
+- `public/js/calcul-libre-bridge.js` — pont runtime state → ctx pur + `compareResults`
+- `public/js/engine-flag.js` — flag localStorage + listeners
+- `public/js/items-systeme.js` — `SYSTEM_ITEMS` publics + `LEGACY_SYSTEM_ITEMS` internes
 - `public/js/formules-lib-seed.js` — `LEGACY_FORMULES_LIB` + `seedLegacyFormulesLibIfMissing()`
-- `public/js/bibliotheque-libre.js` — hook du seed + rendu spécial cartes legacy
-- `public/styles/main.css` — styles `.bibFormuleLegacy` + `.bibLegacyBadge`
+- `public/js/bibliotheque-libre.js` — hook seed + rendu formules legacy + toggle moteur
+- `public/js/calcul.js` — hook A/B dans `recalcul()` + fonction `renderEngineBanner`
+- `public/js/main.js` — expose `window.recalculNow` pour le toggle
+- `public/styles/main.css` — styles `.engineBanner`, `.engineToggleBox`, `.bibFormuleLegacy`, `.bibLegacyBadge`
 - `scripts/test-libre-vs-legacy.js` — comparateur libre ↔ snapshot legacy sur toutes les fiches
 
 
