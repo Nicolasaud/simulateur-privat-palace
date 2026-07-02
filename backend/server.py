@@ -166,6 +166,11 @@ SIMPLE_BLOBS = {
     'formules-v2':     ('formules-v2',     []),
     'types-internes':  ('types-internes',  []),
     'paliers':         ('paliers',         []),
+    # Nouveau système de formules libres (refactor en cours) —
+    # coexiste avec les blobs ci-dessus, pas de migration à ce stade.
+    'items-lib':       ('items-lib',       []),
+    'categories':      ('categories',      []),
+    'formules-lib':    ('formules-lib',    []),
 }
 
 for url_key, (blob_key, default) in SIMPLE_BLOBS.items():
