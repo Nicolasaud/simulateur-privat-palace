@@ -35,10 +35,33 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
 ## À faire (backlog)
 - P1 : Tests sur Netlify Dev local (lance `netlify dev` côté user)
 - P1 : Commit + push sur le repo GitHub user → déploiement Netlify auto
+- P1 : Étape 4 refactor Items Libres — feature flag UI legacy ↔ libre + cross-validation A/B au runtime
+- P1 : Étape 5 refactor Items Libres — bascule prod + suppression du code legacy (`calcul.js`, endpoints/UI obsolètes)
+- P1 : Synchro GitHub `programmation` (fichiers `netlify/functions/programmation.js`, `public/js/programmation.js`) — repoussé à une session dédiée
 - P2 : Export CSV de la liste prospects
 - P2 : Statistiques CRM (taux de conversion par source/type évent)
 - P2 : Rappels automatiques (alerte si dateProchainContact < today)
 - P3 : Templates d'emails de qualification / relance
+
+## Refactor Items Libres — Progrès
+- ✅ Étape 1 (2026-01) — UI Bibliothèque libre + endpoints `categories` / `items-lib` / `formules-lib`
+- ✅ Étape 2 (2026-01) — Items système publics (`sys_personnel`, `sys_frais_resa`)
+- ✅ Étape 3 (2026-02) — Nouveau moteur `calcul-libre.js` reproduisant les 5 formules legacy
+  - 7 items système "legacy" internes (spectacle, salle-seule, atelier-inter, atelier-mat, impro-inter, impro-particip, groupe-billet, user-resto-items)
+  - Seed idempotent des 5 formules `fl_legacy_*` dans `formules-lib` au boot
+  - UI biblio : formules legacy en lecture seule + badge 🔒 LEGACY
+  - Script `scripts/test-libre-vs-legacy.js` : parité 100% confirmée sur les fiches valides (Nicolas 5775€, Cointreau CSE 3135.60€, AutoSync 4917.60€) — tolérance 0.01€
+- ⏳ Étape 4 — feature flag UI (À faire)
+- ⏳ Étape 5 — bascule prod + delete legacy (À faire)
+
+## Fichiers clés Étape 3 (2026-02)
+- `public/js/calcul-libre.js` — moteur pur (aucune lecture DOM/state) : `calculerFicheLibre(fiche, ctx)` → `{ lignes, totalHT, prixPers, ... }`
+- `public/js/items-systeme.js` — étendu avec `LEGACY_SYSTEM_ITEMS` (constantes internes, non-seedés dans le blob items-lib pour éviter la pollution)
+- `public/js/formules-lib-seed.js` — `LEGACY_FORMULES_LIB` + `seedLegacyFormulesLibIfMissing()`
+- `public/js/bibliotheque-libre.js` — hook du seed + rendu spécial cartes legacy
+- `public/styles/main.css` — styles `.bibFormuleLegacy` + `.bibLegacyBadge`
+- `scripts/test-libre-vs-legacy.js` — comparateur libre ↔ snapshot legacy sur toutes les fiches
+
 
 ## Notes techniques
 - Le module `crm.js` réutilise les patterns de `fiches.js` (index léger
