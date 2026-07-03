@@ -35,8 +35,8 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
 ## À faire (backlog)
 - P1 : Tests sur Netlify Dev local (lance `netlify dev` côté user)
 - P1 : Commit + push sur le repo GitHub user → déploiement Netlify auto
-- P1 : Étape 5 refactor Items Libres — bascule prod + suppression du code legacy (`calcul.js`, endpoints/UI obsolètes)
 - P1 : Synchro GitHub `programmation` (fichiers `netlify/functions/programmation.js`, `public/js/programmation.js`) — repoussé à une session dédiée
+- P2 : Étape 6 (idée) — permettre à l'utilisateur de créer ses propres formules "hybrides" via la Bibliothèque libre (ex : Privatisation full + Atelier cocktail dans la même fiche) — maintenant faisable grâce au moteur data-driven
 - P2 : Export CSV de la liste prospects
 - P2 : Statistiques CRM (taux de conversion par source/type évent)
 - P2 : Rappels automatiques (alerte si dateProchainContact < today)
@@ -51,24 +51,26 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
   - UI biblio : formules legacy en lecture seule + badge 🔒 LEGACY
   - Script `scripts/test-libre-vs-legacy.js` : parité 100% confirmée sur les fiches valides (Nicolas 5775€, Cointreau CSE 3135.60€, AutoSync 4917.60€) — tolérance 0.01€
 - ✅ Étape 4 (2026-02) — Feature flag UI + cross-validation A/B live
-  - Nouveau fichier `engine-flag.js` : persistance localStorage (`palace_engine` legacy|libre + `palace_engine_ab` bool)
-  - Nouveau fichier `calcul-libre-bridge.js` : reconstitue `ctx` runtime pour le moteur libre (avec fallback seed local si `bibFormules` cloud pas encore chargée)
-  - Hook A/B dans `recalcul()` de `calcul.js` : les 2 moteurs tournent en parallèle, résultats comparés à 0.01€ près
-  - Bandeau visuel en tête de page avec 3 états : vert concordance, rouge divergence, badge "MOTEUR LIBRE ACTIF" si flag ON
-  - Section "⚙️ Moteur de calcul" dans Bibliothèque libre : radio legacy/libre + checkbox A/B
-- ⏳ Étape 5 — bascule prod + delete legacy (À faire)
+- ✅ Étape 5 (2026-02) — Bascule prod + suppression du code legacy
+  - Fonction `calculerBloc()` legacy (~200 lignes de dispatch hardcodé) **supprimée** de `calcul.js`
+  - Remplacée par un shim qui délègue au moteur libre bloc par bloc
+  - Hook A/B + fonction `renderEngineBanner()` supprimés (plus utiles, tout est libre)
+  - Section "⚙️ Moteur de calcul" retirée de la Bibliothèque libre
+  - Fichier `public/js/engine-flag.js` supprimé complètement
+  - CSS `.engineBanner` + `.engineToggleBox` retirés
+  - `window.recalculNow` orphelin retiré de `main.js`
+  - Bilan : **-427 lignes** au total (dont 271 dans calcul.js, soit -35%)
+  - Le moteur est désormais 100% data-driven (items + formules libres)
+  - Benchmark Nicolas 5775€ toujours OK + toutes les fiches produisent des résultats identiques à l'ancien snapshot legacy
 
-## Fichiers clés Étape 3-4 (2026-02)
+## Fichiers clés Étapes 3-5 (2026-02)
 - `public/js/calcul-libre.js` — moteur pur (aucune lecture DOM/state)
-- `public/js/calcul-libre-bridge.js` — pont runtime state → ctx pur + `compareResults`
-- `public/js/engine-flag.js` — flag localStorage + listeners
+- `public/js/calcul-libre-bridge.js` — pont runtime state → ctx pur + shims `calculerCurrentFicheLibre` & `calculerBlocLibreForCurrentFiche`
 - `public/js/items-systeme.js` — `SYSTEM_ITEMS` publics + `LEGACY_SYSTEM_ITEMS` internes
 - `public/js/formules-lib-seed.js` — `LEGACY_FORMULES_LIB` + `seedLegacyFormulesLibIfMissing()`
-- `public/js/bibliotheque-libre.js` — hook seed + rendu formules legacy + toggle moteur
-- `public/js/calcul.js` — hook A/B dans `recalcul()` + fonction `renderEngineBanner`
-- `public/js/main.js` — expose `window.recalculNow` pour le toggle
-- `public/styles/main.css` — styles `.engineBanner`, `.engineToggleBox`, `.bibFormuleLegacy`, `.bibLegacyBadge`
-- `scripts/test-libre-vs-legacy.js` — comparateur libre ↔ snapshot legacy sur toutes les fiches
+- `public/js/bibliotheque-libre.js` — CRUD biblio + rendu formules legacy en lecture seule
+- `public/js/calcul.js` — rendu uniquement (KPIs, tableaux, alertes, couverture) + shim `calculerBloc()` de 3 lignes
+- `scripts/test-libre-vs-legacy.js` — comparateur libre ↔ snapshot legacy (utilisé pour non-régression future)
 
 
 ## Notes techniques
