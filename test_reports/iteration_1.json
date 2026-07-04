@@ -1,0 +1,29 @@
+{
+  "summary": "Full frontend testing of 'Items Libres' UI refactor for Palace Comedy Simulateur. All 11 requested test scenarios PASS. Login (PALACE2026 + Nicolas), 6 tabs verified in correct order, CRM has all 7 statuses (filter, kanban columns, edit modal), Bibliothèque de formules shows 0 legacy formulas, Bibliothèque d'items new tab has 4 sections populated (Catégories 5 rows, Items 2 rows, BDD resto 2 rows, Types internes 5 children), Simulateur no longer contains 'Base d'items restauration' nor 'Bibliothèque & paramètres de formules' sections, combobox formule shows only '📋 Formules' optgroup (no V2 'Formules classiques'), Nicolas benchmark preserved (5 775,00 € HT / 115,50 €/pers / 2 875,00 € marge / 49,8 % taux), new formula creation works and persists after Rafraîchir.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Formule combobox (blocs-ui.js)", "issue": "On first open via toggle button with empty input, dropdown shows 'Aucun résultat pour «  »' instead of listing all available formules. After any re-render (e.g., adding a formula), toggle correctly shows all options. Minor UX: users may not realize they need to type to see suggestions.", "selector": ".bloc-combobox-slot .combobox-dropdown", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "OPTIONAL/LOW: In combobox.js, when toggle button is clicked with empty input, show all options (not filter to empty results) — improves discoverability of formules."
+  ],
+  "critical_code_review_comments": [
+    "blocs-ui.js filter `!f._builtIn` correctly excludes all 5 legacy formulas from combobox — verified.",
+    "bibliotheque-libre.js:renderFormules() ligne 370 filter `!f._builtIn` correctly hides legacy in Biblio UI — 0 legacy cards visible.",
+    "crm.js CRM_STATUTS array contains 7 statuts and renderCrmKanban / filter / modal all iterate this array — verified end-to-end.",
+    "index.html correctly has new tab #tabBibitems after #tabBibliotheque, and removed 'Base d'items restauration' + 'Bibliothèque & paramètres de formules' sections from #tabSimulateur.",
+    "Nicolas benchmark fallback via calcul-libre-bridge.js works flawlessly: 5 775,00 € HT / 115,50 €/pers preserved despite legacy formulas removed from bibliothèque."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100% (11/11 scenarios pass, 1 minor UX observation)"},
+  "test_credentials": "code=PALACE2026, user=Nicolas",
+  "seed_data_creation": "Created 1 test formula ('Nouvelle formule' via + Formule vierge button) during persistence test — remains in bibliothèque state (3 formules total now instead of 2). Main agent may wish to clean up if strict initial state needed.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All UI acceptance criteria of the 'Items Libres' refactor validated. The benchmark 'Nicolas 5775€' is intact. If retesting after any code change, remember to fill code PALACE2026 + click Nicolas radio + 'Entrer' button. Skip onboarding via localStorage 'palace_biblib_onboarding_seen'='1'. Formule combobox uses input.combobox-input (not native select) — inspect .combobox-dropdown after clicking .combobox-toggle. Nicolas fiche uses legacy formuleId with retro-compat fallback."
+}
