@@ -36,7 +36,8 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
 - P1 : Tests sur Netlify Dev local (lance `netlify dev` côté user)
 - P1 : Commit + push sur le repo GitHub user → déploiement Netlify auto
 - P1 : Synchro GitHub `programmation` (fichiers `netlify/functions/programmation.js`, `public/js/programmation.js`) — repoussé à une session dédiée
-- P2 : Étape 6 (idée) — permettre à l'utilisateur de créer ses propres formules "hybrides" via la Bibliothèque libre (ex : Privatisation full + Atelier cocktail dans la même fiche) — maintenant faisable grâce au moteur data-driven
+- P2 : Onboarding équipe commerciale sur les formules composables (guide 5min + templates pré-configurés)
+- P2 : Persistance du typeId de rendu (`_typeIdRendu`) sur les formules libres personnalisées (actuellement fallback figé sur `privat-full`)
 - P2 : Export CSV de la liste prospects
 - P2 : Statistiques CRM (taux de conversion par source/type évent)
 - P2 : Rappels automatiques (alerte si dateProchainContact < today)
@@ -62,6 +63,13 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
   - Bilan : **-427 lignes** au total (dont 271 dans calcul.js, soit -35%)
   - Le moteur est désormais 100% data-driven (items + formules libres)
   - Benchmark Nicolas 5775€ toujours OK + toutes les fiches produisent des résultats identiques à l'ancien snapshot legacy
+- ✅ Étape 6 (2026-02) — Formules composables (hybrides) utilisateur
+  - Sélecteur "Formule" du bloc enrichi avec un optgroup "🧩 Formules composables (Bibliothèque libre)" listant les formules libres non-legacy
+  - Nouveau champ `bloc.formuleLibId` (persisté avec la fiche) pour référencer une formule libre
+  - Handler `updateBlocField('formuleId')` détecte via préfixe `fl_` si l'ID pointe vers une formule libre ou une V2 classique
+  - Le moteur libre utilise `formuleLibId` en priorité via `resolveFormuleLibForBloc`, fallback sur `_legacyTypeId`
+  - `onglets.js` re-render `renderBlocs()` au retour sur l'onglet Simulateur (synchronise les nouvelles formules créées dans la biblio)
+  - Test end-to-end : création "Combo Hybride" avec `sys_personnel` + `sys_frais_resa` → sélection dans un bloc → calcul correct (4917,60€ / 98,35€/p) — Nicolas 5775€ intact
 
 ## Fichiers clés Étapes 3-5 (2026-02)
 - `public/js/calcul-libre.js` — moteur pur (aucune lecture DOM/state)
