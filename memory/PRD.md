@@ -43,6 +43,21 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
 - P2 : Rappels automatiques (alerte si dateProchainContact < today)
 - P3 : Templates d'emails de qualification / relance
 
+## Refonte UI Post-Refactor (2026-02) — Bugs utilisateur ✅
+Correctifs suite aux retours de Nicolas (session actuelle) :
+- ✅ CRM statuts complets : 7 statuts au lieu de 5 (À contacter, En discussion, Devis envoyé, Gagné, **Acompte facturé**, **Facture soldée**, Perdu) — visibles dans le filtre toolbar, les colonnes Kanban et la modale d'édition prospect
+- ✅ Helpers `isStatutGagne` / `isStatutClos` : les 2 nouveaux statuts comptent comme "gagnés" pour les stats de conversion, et ne déclenchent pas de rappels
+- ✅ Suppression totale des 5 formules legacy `fl_legacy_*` de l'UI Bibliothèque : filtre `!_builtIn` dans `renderFormules()` + purge cloud one-shot au boot via `purgeLegacyFormulesLibFromCloud()` + `seedLegacyFormulesLibIfMissing()` devenu no-op
+- ✅ Rétro-compat invisible : le moteur libre garde `LEGACY_FORMULES_LIB` en fallback interne (constantes JS), Nicolas 5775€ intact
+- ✅ Onglet "Bibliothèque libre" renommé en "**Bibliothèque de formules**"
+- ✅ Nouvel onglet "**Bibliothèque d'items**" créé (position 5 dans la barre) contenant : Catégories + Items + Base d'items restauration (ancienne) + Types internes (paramètres système)
+- ✅ Suppression des 2 sections `<details>` du Simulateur : "Base d'items restauration — bibliothèque réutilisable" + "Bibliothèque & paramètres de formules"
+- ✅ Sélecteur formule du bloc simulateur épuré : uniquement `state.bibFormules.filter(!_builtIn)`, plus de groupe "Formules classiques" V2. Rétro-compat : si `bloc.formuleId` pointe vers un fp_xxx historique, une option "🔒 Formule héritée" est injectée en tête du dropdown
+- ✅ Bug UX combobox résolu : clic sur toggle ▾ force reset du filtre → toutes les options visibles
+
+Validation testing_agent (iteration_1.json) : **11/11 scénarios frontend PASS**.
+Benchmark Nicolas : **5 775,00 € HT / 115,50 €/pers / 2 875,00 € marge / 49,8% taux** — intact.
+
 ## Refactor Items Libres — Progrès
 - ✅ Étape 1 (2026-01) — UI Bibliothèque libre + endpoints `categories` / `items-lib` / `formules-lib`
 - ✅ Étape 2 (2026-01) — Items système publics (`sys_personnel`, `sys_frais_resa`)
