@@ -36,8 +36,8 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
 - P1 : Tests sur Netlify Dev local (lance `netlify dev` côté user)
 - P1 : Commit + push sur le repo GitHub user → déploiement Netlify auto
 - P1 : Synchro GitHub `programmation` (fichiers `netlify/functions/programmation.js`, `public/js/programmation.js`) — repoussé à une session dédiée
-- P2 : Onboarding équipe commerciale sur les formules composables (guide 5min visuel intégré à la biblio)
-- P2 : Étape 8 CRM — Export CSV prospects, statistiques (taux conversion par source/type), rappels auto (alerte dateProchainContact < today), templates emails de qualification/relance
+- P2 : Widget "Top formules vendues ce mois-ci" dans le dashboard accueil (agrégat `bloc.formuleLibId` sur les fiches acceptées/facturées)
+- P3 : Programmateur d'emails (envoi direct via Mailto ou intégration SMTP future)
 - P2 : Export CSV de la liste prospects
 - P2 : Statistiques CRM (taux de conversion par source/type évent)
 - P2 : Rappels automatiques (alerte si dateProchainContact < today)
@@ -79,6 +79,16 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
   - 4 templates pré-configurés dans la biblio : Séminaire corporate, Anniversaire cocktail, Team-building impro, Cocktail apéritif — 1 clic → formule créée avec items + tag + typeIdRendu pré-remplis
   - Message adaptatif dans les totaux : "Coûts calculés à la volée" si tous les items sont système, ou disclaimer "(hors items auto ⚡)" si mix
   - Test end-to-end : template "Team-building impro + apéro" → formule créée avec tag 🎬 + typeIdRendu `formation-impro` + 2 items → visible dans combobox du simulateur avec filtre "impro" fonctionnel
+- ✅ Étape 7bis (2026-02) — Guide onboarding Bibliothèque libre
+  - Nouveau module `onboarding.js` : modale 5 slides (Bienvenue → Items → Formules → Templates → Simulateur)
+  - Animation entrée/sortie, navigation clavier (← → Esc), progression via dots cliquables
+  - Auto-affichage au premier accès (localStorage `palace_biblib_onboarding_seen`)
+  - Bouton "❓ Guide" toujours accessible en haut de la biblio pour ré-ouvrir
+- ✅ Étape 8 (2026-02) — CRM : Export CSV + Stats + Rappels en retard + Templates emails
+  - **8a Export CSV** : bouton "📥 Export CSV" génère `crm-prospects-YYYY-MM-DD.csv` avec 14 colonnes (BOM UTF-8 pour Excel, séparateur `;`)
+  - **8b Stats CRM** : card dépliable "📊 Statistiques CRM" avec 2 KPIs (prospects total, taux global colorisé) + 2 blocs (taux par source, taux par type événement) avec barres de progression vertes/oranges/rouges
+  - **8c Rappels en retard** : `renderCrmTodoSemaine()` détecte les prospects avec `dateProchainContact < today` (hors gagnés/perdus) → bandeau rouge "⚠️ N relances en retard" + liste avec pastille 🔴 et libellé "il y a Xj"
+  - **8d Templates emails** : bouton "📧 Copier email…" dans l'éditeur prospect ouvre menu de 4 templates (🎯 Qualification, ⏰ Relance J+7, ✅ Confirmation post-signature, 💐 Remerciement post-événement) — placeholders `{societe}` `{contactPrenom_slot}` `{dateEvent}` `{nbPersonnes}` substitués — copie automatique dans le presse-papiers via `navigator.clipboard.writeText()`
 
 ## Fichiers clés Étapes 3-5 (2026-02)
 - `public/js/calcul-libre.js` — moteur pur (aucune lecture DOM/state)
