@@ -36,8 +36,8 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
 - P1 : Tests sur Netlify Dev local (lance `netlify dev` côté user)
 - P1 : Commit + push sur le repo GitHub user → déploiement Netlify auto
 - P1 : Synchro GitHub `programmation` (fichiers `netlify/functions/programmation.js`, `public/js/programmation.js`) — repoussé à une session dédiée
-- P2 : Onboarding équipe commerciale sur les formules composables (guide 5min + templates pré-configurés)
-- P2 : Persistance du typeId de rendu (`_typeIdRendu`) sur les formules libres personnalisées (actuellement fallback figé sur `privat-full`)
+- P2 : Onboarding équipe commerciale sur les formules composables (guide 5min visuel intégré à la biblio)
+- P2 : Étape 8 CRM — Export CSV prospects, statistiques (taux conversion par source/type), rappels auto (alerte dateProchainContact < today), templates emails de qualification/relance
 - P2 : Export CSV de la liste prospects
 - P2 : Statistiques CRM (taux de conversion par source/type évent)
 - P2 : Rappels automatiques (alerte si dateProchainContact < today)
@@ -70,6 +70,15 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
   - Le moteur libre utilise `formuleLibId` en priorité via `resolveFormuleLibForBloc`, fallback sur `_legacyTypeId`
   - `onglets.js` re-render `renderBlocs()` au retour sur l'onglet Simulateur (synchronise les nouvelles formules créées dans la biblio)
   - Test end-to-end : création "Combo Hybride" avec `sys_personnel` + `sys_frais_resa` → sélection dans un bloc → calcul correct (4917,60€ / 98,35€/p) — Nicolas 5775€ intact
+- ✅ Étape 7 (2026-02) — Combobox filtrable + tags visuels + templates + typeIdRendu
+  - Nouveau composant `combobox.js` (~200 lignes) : dropdown filtrable avec surlignage jaune des matches, navigation clavier (↑↓ Enter Esc), groupements + tags emoji par option
+  - Sélecteur formule du bloc migré de `<select>` vers `<combobox>` — recherche live "impro" filtre à 1 option en 200ms
+  - Tags visuels par formule : 💼 Corporate, 🎂 Anniversaire, 🍸 Team-building, 🎭 Show, 🏢 Séminaire, 🎬 Impro, 🥂 Cocktail, 🎉 Fête (mapping auto pour legacy via `TYPE_TAG_EMOJI`, éditable pour customs)
+  - Nouveau champ `_typeIdRendu` sur formules libres custom → contrôle le comportement de rendu (couverture, alertes, plafonds capacité)
+  - Section `bibFormuleConfig` (fond violet) dans chaque formule custom pour éditer tag + typeIdRendu
+  - 4 templates pré-configurés dans la biblio : Séminaire corporate, Anniversaire cocktail, Team-building impro, Cocktail apéritif — 1 clic → formule créée avec items + tag + typeIdRendu pré-remplis
+  - Message adaptatif dans les totaux : "Coûts calculés à la volée" si tous les items sont système, ou disclaimer "(hors items auto ⚡)" si mix
+  - Test end-to-end : template "Team-building impro + apéro" → formule créée avec tag 🎬 + typeIdRendu `formation-impro` + 2 items → visible dans combobox du simulateur avec filtre "impro" fonctionnel
 
 ## Fichiers clés Étapes 3-5 (2026-02)
 - `public/js/calcul-libre.js` — moteur pur (aucune lecture DOM/state)
