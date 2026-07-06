@@ -27,7 +27,13 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
 - ✅ Affichage des devis liés dans la fiche prospect (cliquables)
 - ✅ Traçabilité : created_by/at, updated_by/at (depuis cookie session)
 
-## Implémenté 2026-02 — Items par bloc : mode Fixe/Variable
+## Implémenté 2026-02 — Simulateur : nettoyage UX (fiche vierge + biblio)
+- ✅ **Nouvelle fiche = 0 €** : plus d'items par défaut (Apéritif/Plat/Dessert/Boissons), plus de fallback `typeId: 'privat-full'` qui ramenait les briques auto (Spectacle/Personnel/Frais résa)
+- ✅ Nouveau bloc "+ Ajouter une formule" : idem, part de zéro
+- ✅ Suppression du sélecteur **"Rendu comme"** dans la Bibliothèque de formules (héritage de typeId legacy, source de confusion). Les formules existantes conservent leur `_typeIdRendu`; les nouvelles n'en ont plus besoin.
+- ✅ Colonne **TVA élargie** dans la Bibliothèque d'items (110px → 150px)
+- ✅ Alertes de marge (< 50% plancher, < 60% objectif) silencieuses si `totalHT === 0` — évite le bruit sur une fiche vide
+- ✅ Benchmark Fiche Nicolas préservé (5 775,00 € HT / 115,50 €/pers)
 - ✅ Section « Items restauration » renommée en « Items » dans chaque bloc
 - ✅ Nouvelle colonne « Mode » sur chaque item du bloc : `× nb pers` (variable) ou `Fixe`
   - Défaut : `× nb pers` (préserve le benchmark Fiche Nicolas 5 775 € HT)
