@@ -27,6 +27,19 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
 - ✅ Affichage des devis liés dans la fiche prospect (cliquables)
 - ✅ Traçabilité : created_by/at, updated_by/at (depuis cookie session)
 
+## Implémenté 2026-02 — Items par bloc : mode Fixe/Variable
+- ✅ Section « Items restauration » renommée en « Items » dans chaque bloc
+- ✅ Nouvelle colonne « Mode » sur chaque item du bloc : `× nb pers` (variable) ou `Fixe`
+  - Défaut : `× nb pers` (préserve le benchmark Fiche Nicolas 5 775 € HT)
+  - En mode Fixe : coût/prix sont des totaux indépendants du nb pers
+- ✅ Layout item en carte 2 lignes (libellé + delete au-dessus, coût/prix/tva/mode en dessous) — libellé bien lisible même dans la sidebar
+- ✅ Encart « Autres lignes issues de la formule » listant les briques auto ⚡ (Spectacle, Personnel, Frais résa, items libres pré-remplis) — non-éditables, info transparence
+- ✅ Champ `mode: 'perPers'|'unit'` ajouté aux items nouveaux (bouton "+ Vide" et import BDD)
+- ✅ TVA select élargi aux 4 catégories (Resto 10%, Bar 20%, Presta 20%, Spec 5,5%)
+- ✅ Moteur `items-systeme.js#user_resto_items` respecte `it.mode`
+- ✅ Benchmark Fiche Nicolas 5 775,00 € HT / 115,50 €/pers préservé (test-fiche-nicolas.js vert)
+- ✅ Test toggle e2e : Apéritif → Fixe = 5 285 € (Δ -490 € = 10€ ×49 pers non facturés) → retour × nb pers = 5 775 € ✅
+
 ## Architecture nouvelles données
 - Blob `crm/_index` : liste légère des prospects (pour table/kanban)
 - Blob `crm/<id>` : prospect complet (avec notes, fichesIds…)
