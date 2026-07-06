@@ -33,12 +33,16 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
   - Défaut : `× nb pers` (préserve le benchmark Fiche Nicolas 5 775 € HT)
   - En mode Fixe : coût/prix sont des totaux indépendants du nb pers
 - ✅ Layout item en carte 2 lignes (libellé + delete au-dessus, coût/prix/tva/mode en dessous) — libellé bien lisible même dans la sidebar
-- ✅ Encart « Autres lignes issues de la formule » listant les briques auto ⚡ (Spectacle, Personnel, Frais résa, items libres pré-remplis) — non-éditables, info transparence
+- ✅ Encart « ⚡ Briques auto incluses dans la formule » listant les briques système (Spectacle, Personnel, Frais résa) — non-éditables, info transparence
 - ✅ Champ `mode: 'perPers'|'unit'` ajouté aux items nouveaux (bouton "+ Vide" et import BDD)
 - ✅ TVA select élargi aux 4 catégories (Resto 10%, Bar 20%, Presta 20%, Spec 5,5%)
 - ✅ Moteur `items-systeme.js#user_resto_items` respecte `it.mode`
+- ✅ **Bibliothèque d'items — colonne Mode** ajoutée (perPers/unit) : chaque item du catalogue peut être toggle Fixe / × nb pers dès sa création
+- ✅ **Matérialisation** : quand une formule libre est sélectionnée dans une fiche, ses items non-système (ex : « Accueil café ») sont copiés dans `bloc.items[]` avec leur `mode` — ils deviennent éditables et le toggle Fixe/Variable fonctionne directement dans le devis
+- ✅ Anti-double-comptage : le moteur `calcul-libre.js` skip les itemIds déjà matérialisés (via `bloc.materializedItemIds`) et ajoute virtuellement `sys_user_resto_items` si besoin
+- ✅ Recap « Autres lignes issues de la formule » filtre les items déjà matérialisés (ne montre que les briques ⚡ système)
 - ✅ Benchmark Fiche Nicolas 5 775,00 € HT / 115,50 €/pers préservé (test-fiche-nicolas.js vert)
-- ✅ Test toggle e2e : Apéritif → Fixe = 5 285 € (Δ -490 € = 10€ ×49 pers non facturés) → retour × nb pers = 5 775 € ✅
+- ✅ Test e2e complet : Accueil café (5 €/pers, TVA prestation, × nb pers, 30 pers) → 150 € HT correctement calculé
 
 ## Architecture nouvelles données
 - Blob `crm/_index` : liste légère des prospects (pour table/kanban)
