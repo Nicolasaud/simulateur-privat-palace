@@ -1,3 +1,9 @@
+## Implémenté 2026-02 — Simulateur : nettoyage UX (fiche vierge + biblio)
+- ✅ Nouvelle fiche = 0 €, "Rendu comme" supprimé, TVA élargie
+- ✅ Alertes marge silencieuses tant que totalHT === 0
+(Détails dans le commit précédent)
+
+
 # Simulateur Palace Comedy — Suivi développement
 
 ## Contexte
@@ -27,7 +33,23 @@ Outil interne de privatisation pour Palace Comedy : simulation de devis et factu
 - ✅ Affichage des devis liés dans la fiche prospect (cliquables)
 - ✅ Traçabilité : created_by/at, updated_by/at (depuis cookie session)
 
-## Implémenté 2026-02 — Simulateur : nettoyage UX (fiche vierge + biblio)
+## Implémenté 2026-02 — Restauration feature « Programmation artistique »
+- ✅ Copie verbatim depuis GitHub `main` :
+  - `netlify/functions/programmation.js` (CRUD mensuel)
+  - `netlify/functions/parse-programmation.js` + `netlify/lib/parse-programmation.js` (parser PDF Netlify)
+  - `public/js/programmation.js` (cache RAM par mois, helpers hasProgrammation/countArtistesForDate)
+  - `public/js/programmation-import.js` (modal import PDF, analyse + groupes)
+- ✅ Backend Python mirror (`server.py`) : 4 endpoints ajoutés
+  - `GET /api/programmation` — liste des mois
+  - `GET /api/programmation/{mois}` — programmation d'un mois
+  - `PUT /api/programmation/{mois}` — remplace un mois (avec validation format)
+  - `POST /api/parse-programmation` — mock (parser PDF côté prod uniquement)
+- ✅ UI intégrée : bouton **📥 Importer programmation PDF** en haut à droite du calendrier + checkbox **🎤 Afficher la programmation** + chips violets **🎤 N artistes** dans les cellules
+- ✅ Modal jour enrichi : mode lecture (artistes/créneaux/notes) + mode édition (add/remove créneaux, textarea notes, save/cancel)
+- ✅ Multi-mois prefetch : quand toggle activé, chargement de mois-1/mois/mois+1 en background
+- ✅ Merge chirurgical préservant : statuts `acompte_facture`+`facture_solde`, refactor items libres, colonne mode, bibliothèque, tous les changements récents
+- ✅ Benchmark Fiche Nicolas 5 775,00 € HT préservé après merge complet
+- ✅ Test e2e : PUT `2026-07-03` avec 2 artistes/2 créneaux → chip visible → modal ouvre en mode lecture avec bonnes données
 - ✅ **Nouvelle fiche = 0 €** : plus d'items par défaut (Apéritif/Plat/Dessert/Boissons), plus de fallback `typeId: 'privat-full'` qui ramenait les briques auto (Spectacle/Personnel/Frais résa)
 - ✅ Nouveau bloc "+ Ajouter une formule" : idem, part de zéro
 - ✅ Suppression du sélecteur **"Rendu comme"** dans la Bibliothèque de formules (héritage de typeId legacy, source de confusion). Les formules existantes conservent leur `_typeIdRendu`; les nouvelles n'en ont plus besoin.
