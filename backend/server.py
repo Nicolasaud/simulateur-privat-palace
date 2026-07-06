@@ -425,6 +425,96 @@ async def crm_todo_put(request: Request):
 
 
 # ============================================================
+#  Programmation artistique mensuelle
+#  Structure : { "YYYY-MM-DD": { artistes:[], creneaux:[], notes?, manuelle? } }
+#  Storage   : blob "programmation/YYYY-MM" + blob "programmation/_index" (liste triée)
+# ============================================================
+import re as _re
+_PROG_MOIS_RE = _re.compile(r'^\d{4}-(0[1-9]|1[0-2])$')
+_PROG_DATE_RE = _re.compile(r'^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$')
+
+
+def _validate_prog_body(body: dict, mois: str) -> Optional[str]:
+    if not isinstance(body, dict):
+        return 'expected_object'
+    for date_key, jour in body.items():
+        if not _PROG_DATE_RE.match(date_key):
+            return f'invalid_date_key:{date_key}'
+        if not date_key.startswith(mois + '-'):
+            return f'date_not_in_month:{date_key} hors {mois}'
+        if not isinstance(jour, dict):
+            return f'jour_must_be_object:{date_key}'
+        if not isinstance(jour.get('artistes'), list) or any(not isinstance(a, str) for a in jour['artistes']):
+            return f'artistes_must_be_string_array:{date_key}'
+        if not isinstance(jour.get('creneaux'), list) or any(not isinstance(h, str) for h in jour['creneaux']):
+            return f'creneaux_must_be_string_array:{date_key}'
+        if 'notes' in jour and not isinstance(jour['notes'], str):
+            return f'notes_must_be_string:{date_key}'
+        if 'manuelle' in jour and not isinstance(jour['manuelle'], bool):
+            return f'manuelle_must_be_boolean:{date_key}'
+    return None
+
+
+@api.get("/programmation")
+async def programmation_list(request: Request):
+    require_session(request)
+    idx = await blob_get('programmation/_index', []) or []
+    return idx if isinstance(idx, list) else []
+
+
+@api.get("/programmation/{mois}")
+async def programmation_get(request: Request, mois: str):
+    require_session(request)
+    if not _PROG_MOIS_RE.match(mois):
+        raise HTTPException(status_code=400, detail='invalid_month_format')
+    data = await blob_get(f'programmation/{mois}')
+    return data if isinstance(data, dict) else {}
+
+
+@api.put("/programmation/{mois}")
+async def programmation_put(request: Request, mois: str):
+    require_session(request)
+    if not _PROG_MOIS_RE.match(mois):
+        raise HTTPException(status_code=400, detail='invalid_month_format')
+    body = await request.json()
+    err = _validate_prog_body(body, mois)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+    await blob_set(f'programmation/{mois}', body)
+    idx = await blob_get('programmation/_index', []) or []
+    if not isinstance(idx, list):
+        idx = []
+    if mois not in idx:
+        idx.append(mois)
+        idx.sort()
+        await blob_set('programmation/_index', idx)
+    nb_dates = len(body)
+    nb_creneaux = sum(len(j.get('creneaux', [])) for j in body.values())
+    nb_artistes = sum(len(j.get('artistes', [])) for j in body.values())
+    return {'ok': True, 'mois': mois, 'nbDates': nb_dates, 'nbCreneaux': nb_creneaux, 'nbArtistes': nb_artistes}
+
+
+@api.post("/parse-programmation")
+async def programmation_parse_pdf(request: Request):
+    """Parse un PDF en base64 → tente d'extraire des dates + artistes.
+    Version mock locale : renvoie une structure vide + log explicite.
+    En prod (Netlify), la vraie logique est dans netlify/lib/parse-programmation.js.
+    """
+    require_session(request)
+    body = await request.json()
+    pdf_b64 = body.get('pdfBase64', '') if isinstance(body, dict) else ''
+    return {
+        'dates': {},
+        'chars': 0,
+        'log': [
+            '⚠️ Preview local (Python) — le parser PDF n\'est pas implémenté côté mirror.',
+            'En prod Netlify, la vraie logique node/pdfjs extrait dates + artistes automatiquement.',
+            f'PDF reçu : {len(pdf_b64)} chars base64'
+        ]
+    }
+
+
+# ============================================================
 #  Healthcheck
 # ============================================================
 @api.get("/")
