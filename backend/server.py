@@ -496,22 +496,30 @@ async def programmation_put(request: Request, mois: str):
 
 @api.post("/parse-programmation")
 async def programmation_parse_pdf(request: Request):
-    """Parse un PDF en base64 → tente d'extraire des dates + artistes.
-    Version mock locale : renvoie une structure vide + log explicite.
-    En prod (Netlify), la vraie logique est dans netlify/lib/parse-programmation.js.
+    """Parse un PDF en base64 → tente d'extraire des dates + artistes + créneaux.
+    Utilise `programmation_parser.py` (pdfplumber) — pendant Python du parser
+    Netlify JS. Retour au format { dates: {...}, chars: N, log: [...] }
+    attendu par `public/js/programmation-import.js`.
     """
     require_session(request)
     body = await request.json()
     pdf_b64 = body.get('pdfBase64', '') if isinstance(body, dict) else ''
-    return {
-        'dates': {},
-        'chars': 0,
-        'log': [
-            '⚠️ Preview local (Python) — le parser PDF n\'est pas implémenté côté mirror.',
-            'En prod Netlify, la vraie logique node/pdfjs extrait dates + artistes automatiquement.',
-            f'PDF reçu : {len(pdf_b64)} chars base64'
-        ]
-    }
+    if not pdf_b64:
+        raise HTTPException(status_code=400, detail='missing_pdfBase64')
+    try:
+        from programmation_parser import parse_from_base64
+        result, log = parse_from_base64(pdf_b64)
+        # chars ≈ taille du PDF décodé (compat sortie JS pdf-parse.text.length)
+        chars = sum(len(a) for j in result.values() for a in j.get('artistes', [])) + \
+                sum(len(c) for j in result.values() for c in j.get('creneaux', []))
+        return {'dates': result, 'chars': chars, 'log': log}
+    except Exception as e:
+        log.exception('parse-programmation failed')
+        return {
+            'dates': {},
+            'chars': 0,
+            'log': [f'❌ Erreur parsing PDF : {type(e).__name__} — {str(e)}']
+        }
 
 
 # ============================================================
