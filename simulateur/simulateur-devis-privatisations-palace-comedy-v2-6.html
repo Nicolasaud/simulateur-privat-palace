@@ -1,0 +1,2451 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulateur Devis Privatisations Palace Comedy - 11 juin - 18h55</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: transparent; color: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.5; font-size: 14px; }
+  body { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+  h1, h2, h3, h4 { font-family: 'Lexend', sans-serif; font-weight: 600; }
+  h1 { font-size: 1.5em; margin-bottom: 4px; }
+  h2 { font-size: 1.15em; margin: 24px 0 12px; }
+  h3 { font-size: 1em; margin: 16px 0 8px; }
+  h4 { font-size: 0.9em; margin: 12px 0 6px; color: #555; font-weight: 500; }
+  .meta { color: #666; font-size: 0.85em; margin-bottom: 24px; }
+
+  .layout { display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .card { background: rgba(255,255,255,0.65); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 20px; }
+
+  label { display: block; font-size: 0.82em; color: #444; margin: 12px 0 4px; font-weight: 500; }
+  label.inline { display: inline-flex; align-items: center; gap: 6px; margin: 6px 0; font-weight: 400; }
+  input[type="number"], input[type="text"], select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9em; font-family: inherit; background: white; }
+  input:focus, select:focus { outline: 2px solid #4a80d6; outline-offset: -1px; border-color: transparent; }
+  input[type="checkbox"], input[type="radio"] { margin-right: 4px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .kpi { background: #f8f8f8; padding: 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.05); }
+  .kpi .label { display: block; font-size: 0.7em; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .kpi .value { display: block; font-size: 1.25em; font-weight: 600; font-family: 'Lexend', sans-serif; }
+  .kpi.warn { background: #fff4e0; border-color: #f0a000; }
+  .kpi.warn .value { color: #7a4400; }
+  .kpi.error { background: #ffe6e6; border-color: #c00; }
+  .kpi.error .value { color: #800; }
+  .kpi.ok { background: #e6f7ec; border-color: #2a8; }
+  .kpi.ok .value { color: #0a5c2c; }
+
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 0.88em; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid rgba(0,0,0,0.08); }
+  th { font-family: 'Lexend', sans-serif; font-weight: 500; background: rgba(0,0,0,0.02); font-size: 0.82em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tfoot td { font-weight: 600; border-top: 2px solid rgba(0,0,0,0.15); background: rgba(0,0,0,0.02); }
+
+  .alerte { padding: 9px 13px; border-radius: 6px; margin: 6px 0; font-size: 0.87em; line-height: 1.45; }
+  .alerte.warn { background: #fff4e0; color: #7a4400; border-left: 3px solid #f0a000; }
+  .alerte.error { background: #ffe6e6; color: #800; border-left: 3px solid #c00; }
+  .alerte.ok { background: #e6f7ec; color: #0a5c2c; border-left: 3px solid #2a8; }
+  .alerte.info { background: #e8f0fe; color: #1a4a8a; border-left: 3px solid #4a80d6; }
+
+  details.advanced { margin-top: 24px; }
+  details.advanced > summary { cursor: pointer; font-family: 'Lexend', sans-serif; font-weight: 500; font-size: 1em; padding: 8px 0; }
+  details.advanced[open] > summary { margin-bottom: 12px; }
+  details.advanced .card { margin-top: 8px; }
+
+  button { padding: 8px 14px; border: 1px solid #888; background: white; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.88em; }
+  button:hover { background: #f0f0f0; }
+  button.primary { background: #1a1a1a; color: white; border-color: #1a1a1a; margin-top: 8px; }
+  button.primary:hover { background: #333; }
+  button.delete { color: #c44; border-color: #c44; padding: 4px 8px; font-size: 0.85em; min-width: auto; }
+
+  .item-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 6px; align-items: center; padding: 4px 0; }
+  .item-row input, .item-row select { padding: 6px 8px; font-size: 0.82em; }
+
+  .info-note { background: #f0f4ff; border-left: 3px solid #4a80d6; padding: 10px 14px; border-radius: 6px; margin: 10px 0; font-size: 0.83em; color: #1a4a8a; line-height: 1.5; }
+  .legend { font-size: 0.78em; color: #666; font-style: italic; margin: 4px 0 8px; }
+
+  .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+  /* ===== Onglets ===== */
+  .tabsBar { display: flex; gap: 2px; margin-bottom: 16px; border-bottom: 2px solid rgba(0,0,0,0.08); }
+  .tab { padding: 10px 18px; background: transparent; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; font-family: 'Lexend', sans-serif; font-weight: 500; font-size: 0.92em; color: #666; }
+  .tab:hover { color: #1a1a1a; background: rgba(0,0,0,0.02); }
+  .tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+
+  /* ===== Calendrier ===== */
+  .calendrierCard { background: rgba(255,255,255,0.65); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 20px; }
+  .calendrierHeader { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .calendrierHeader h2 { margin: 0; font-size: 1.2em; min-width: 180px; text-align: center; }
+  .calendrierHeader button { padding: 6px 12px; font-size: 0.88em; }
+  .calLegend { display: flex; gap: 14px; font-size: 0.78em; color: #666; margin-bottom: 12px; flex-wrap: wrap; }
+  .calLegend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: middle; margin-right: 4px; }
+  .calLegend .dot.brouillon { background: #d0d0d0; }
+  .calLegend .dot.envoye { background: #4a80d6; }
+  .calLegend .dot.accepte { background: #2a8a4a; }
+  .calLegend .dot.refuse { background: #c44; }
+  .calGrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .calCell { min-height: 80px; padding: 6px; border: 1px solid rgba(0,0,0,0.08); border-radius: 6px; background: rgba(255,255,255,0.55); display: flex; flex-direction: column; gap: 3px; }
+  .calCell.dayHeader { min-height: auto; padding: 6px; font-family: 'Lexend', sans-serif; font-weight: 500; text-align: center; font-size: 0.78em; color: #666; background: rgba(0,0,0,0.04); border: none; text-transform: uppercase; letter-spacing: 0.04em; }
+  .calCell.outsideMonth { opacity: 0.35; background: rgba(255,255,255,0.3); }
+  .calCell.today { background: rgba(74,128,214,0.08); border-color: #4a80d6; }
+  .calCell .dayNumber { font-size: 0.85em; font-weight: 500; color: #444; }
+  .calCell.today .dayNumber { color: #1a4a8a; font-weight: 600; }
+  .ficheChip { padding: 2px 6px; border-radius: 3px; font-size: 0.7em; cursor: pointer; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ficheChip:hover { filter: brightness(0.95); transform: translateX(1px); }
+  .ficheChip.brouillon { background: #f0f0f0; color: #555; border-left: 2px solid #d0d0d0; }
+  .ficheChip.envoye { background: #e0e8f5; color: #1a4a8a; border-left: 2px solid #4a80d6; }
+  .ficheChip.accepte { background: #d4f4dd; color: #0a5c2c; border-left: 2px solid #2a8a4a; }
+  .ficheChip.refuse { background: #f5d0d0; color: #8a1a1a; border-left: 2px solid #c44; }
+  .ficheChipMore { font-size: 0.68em; color: #888; cursor: pointer; padding: 1px 4px; }
+  .ficheChipMore:hover { color: #1a1a1a; text-decoration: underline; }
+
+  @media (max-width: 700px) {
+    .calCell { min-height: 60px; padding: 4px; }
+    .ficheChip { font-size: 0.62em; padding: 1px 4px; }
+  }
+
+  /* ===== Modal ===== */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: flex; align-items: flex-start; justify-content: center; padding: 60px 20px 20px; overflow-y: auto; }
+  .modal.hidden { display: none; }
+  .modalContent { background: white; max-width: 600px; width: 100%; padding: 28px 32px; border-radius: 12px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+  .modalClose { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(0,0,0,0.05); cursor: pointer; font-size: 1.2em; line-height: 1; color: #555; }
+  .modalClose:hover { background: rgba(0,0,0,0.1); }
+  .modalGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 18px; margin: 12px 0; font-size: 0.9em; }
+  .modalGrid > div { padding: 4px 0; }
+  .modalNotes { background: #f8f8f8; border-left: 3px solid #888; padding: 10px 14px; border-radius: 4px; white-space: pre-wrap; font-size: 0.88em; margin: 8px 0; }
+  .modalActions { display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end; flex-wrap: wrap; }
+
+  /* ===== Onglet contenu ===== */
+  .tab-content.hidden { display: none; }
+
+  @media print {
+    body { padding: 0; max-width: none; }
+    .sidebar, details.advanced, .actions, #alertesBox, .ficheBar, .dashboard, #ficheUnsavedDot, .tabsBar, .modal, #tabCalendrier { display: none; }
+    .layout { display: block; }
+    .card { border: none; padding: 0; background: transparent; }
+    h1 { font-size: 1.4em; }
+  }
+
+  /* ===== Gestion des fiches ===== */
+  .ficheBar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 12px 16px; background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; margin-bottom: 16px; }
+  .ficheBar select { width: auto; min-width: 240px; flex: 1; max-width: 360px; }
+  .ficheBar button { font-size: 0.85em; padding: 6px 12px; }
+  .ficheBar .sep { width: 1px; height: 20px; background: rgba(0,0,0,0.15); margin: 0 4px; }
+
+  #ficheUnsavedDot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f0a000; margin-left: 6px; vertical-align: middle; visibility: hidden; }
+  #ficheUnsavedDot.show { visibility: visible; }
+
+  .ficheCard { background: rgba(255,255,255,0.65); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+  .ficheCard h2 { margin-top: 0; }
+  .ficheGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .ficheGrid label { margin-top: 0; }
+  .ficheCard textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; font-size: 0.9em; resize: vertical; background: white; }
+
+  .statutBadge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: 500; vertical-align: middle; margin-left: 8px; }
+  .statutBadge.brouillon { background: #f0f0f0; color: #555; }
+  .statutBadge.envoye { background: #e0e8f5; color: #1a4a8a; }
+  .statutBadge.accepte { background: #d4f4dd; color: #0a5c2c; }
+  .statutBadge.refuse { background: #f5d0d0; color: #8a1a1a; }
+
+  .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 16px; }
+  .dashboard .miniKpi { background: rgba(255,255,255,0.55); border: 1px solid rgba(0,0,0,0.06); border-radius: 8px; padding: 8px 12px; }
+  .dashboard .miniKpi .l { font-size: 0.7em; color: #666; text-transform: uppercase; letter-spacing: 0.04em; display: block; }
+  .dashboard .miniKpi .v { font-size: 1.05em; font-weight: 600; font-family: 'Lexend', sans-serif; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<h1>Simulateur Devis Privatisations — Palace Comedy</h1>
+<p class="meta">Version 11 juin — 18h55. V2.6 — « Format » renommé « formule ». Paramètres des formules de prestation déplacés dans la bibliothèque.</p>
+
+<!-- ===== Bandeau gestion des fiches ===== -->
+<div class="ficheBar">
+  <strong style="font-family:'Lexend',sans-serif;font-weight:500;">Fiches devis :</strong>
+  <select id="selectFiche">
+    <option value="">— Nouvelle fiche (non sauvegardée) —</option>
+  </select>
+  <span id="ficheUnsavedDot" title="Modifications non sauvegardées"></span>
+  <span class="sep"></span>
+  <button onclick="newFiche()">+ Nouvelle</button>
+  <button onclick="saveFiche()" class="primary" style="margin-top:0">Enregistrer</button>
+  <button onclick="duplicateFiche()">Dupliquer</button>
+  <button onclick="deleteFiche()" class="delete" style="padding:6px 12px;font-size:0.85em">Supprimer</button>
+  <span class="sep"></span>
+  <button onclick="exportAllJSON()">Exporter JSON</button>
+  <button onclick="document.getElementById('importJsonInput').click()">Importer JSON</button>
+  <input type="file" id="importJsonInput" accept=".json,application/json" style="display:none" onchange="importJSON(event)">
+</div>
+
+<!-- ===== Mini-dashboard pipe commercial ===== -->
+<div class="dashboard" id="dashboard">
+  <div class="miniKpi"><span class="l">Total fiches</span><span class="v" id="dashTotal">0</span></div>
+  <div class="miniKpi"><span class="l">Brouillons</span><span class="v" id="dashBrouillon">0</span></div>
+  <div class="miniKpi"><span class="l">Envoyées</span><span class="v" id="dashEnvoye">0</span></div>
+  <div class="miniKpi"><span class="l">Acceptées</span><span class="v" id="dashAccepte">0</span></div>
+  <div class="miniKpi"><span class="l">Taux transfo</span><span class="v" id="dashTaux">—</span></div>
+  <div class="miniKpi"><span class="l">CA acceptées HT</span><span class="v" id="dashCA">—</span></div>
+</div>
+
+<!-- ===== Onglets ===== -->
+<div class="tabsBar">
+  <button class="tab active" data-tab="simulateur" onclick="switchTab('simulateur')">Simulateur</button>
+  <button class="tab" data-tab="calendrier" onclick="switchTab('calendrier')">📅 Calendrier</button>
+</div>
+
+<!-- ===== Onglet : Simulateur ===== -->
+<div id="tabSimulateur" class="tab-content">
+
+<!-- ===== Carte fiche en cours ===== -->
+<div class="ficheCard">
+  <h2>Fiche en cours <span id="ficheStatutBadge" class="statutBadge brouillon">brouillon</span></h2>
+  <div class="ficheGrid">
+    <div>
+      <label>Nom de la fiche</label>
+      <input type="text" id="ficheNom" placeholder="Ex : Devis CSE Cointreau 15-06">
+    </div>
+    <div>
+      <label>Client (société / CSE)</label>
+      <input type="text" id="ficheClient" placeholder="Ex : Cointreau">
+    </div>
+    <div>
+      <label>Contact email</label>
+      <input type="text" id="ficheEmail" placeholder="cse@..." inputmode="email">
+    </div>
+    <div>
+      <label>Contact téléphone</label>
+      <input type="text" id="ficheTel" placeholder="02 41..." inputmode="tel">
+    </div>
+    <div>
+      <label>Date de l'événement</label>
+      <input type="date" id="ficheDateEvent">
+    </div>
+    <div>
+      <label>Heure d'arrivée des invités</label>
+      <input type="time" id="ficheHeureArrivee">
+    </div>
+    <div id="ficheHeureSpectacleBlock">
+      <label>Heure du spectacle</label>
+      <input type="time" id="ficheHeureSpectacle">
+    </div>
+    <div>
+      <label>Statut</label>
+      <select id="ficheStatut">
+        <option value="brouillon">Brouillon</option>
+        <option value="envoye">Devis envoyé</option>
+        <option value="accepte">Accepté</option>
+        <option value="refuse">Refusé</option>
+      </select>
+    </div>
+  </div>
+  <label style="margin-top:14px">Notes</label>
+  <textarea id="ficheNotes" placeholder="Notes libres : préférences client, points négociés, allergies, contraintes techniques, historique d'échanges..."></textarea>
+</div>
+
+<div class="layout">
+  <aside class="card sidebar">
+    <h2>Configuration du devis</h2>
+
+    <label>Formule de prestation</label>
+    <select id="format">
+      <option value="privat-full">Privatisation full + show + repas</option>
+      <option value="privat-salle">Privatisation salle seule (sans show)</option>
+      <option value="atelier-cocktail">Atelier cocktail</option>
+      <option value="formation-impro">Formation impro / team building</option>
+      <option value="groupe-classique">Groupe sur soirée Palace classique</option>
+    </select>
+
+    <label>Jour de la semaine</label>
+    <select id="day">
+      <option value="lundi">Lundi (fermé)</option>
+      <option value="mardi">Mardi (fermé)</option>
+      <option value="mercredi">Mercredi</option>
+      <option value="jeudi">Jeudi</option>
+      <option value="vendredi" selected>Vendredi</option>
+      <option value="samedi">Samedi</option>
+      <option value="dimanche">Dimanche</option>
+    </select>
+
+    <label>Période <span style="font-weight:400;color:#666;font-size:0.9em">(auto = déduite de la date)</span></label>
+    <select id="periodeOverride">
+      <option value="auto" selected>Auto</option>
+      <option value="P1">Forcer P1 (mai-sept, basse saison)</option>
+      <option value="P2">Forcer P2 (oct-avr, haute saison)</option>
+    </select>
+    <p class="legend" id="periodeIndicator">Période effective : —</p>
+
+    <label>Nombre de personnes</label>
+    <input type="number" id="nbPers" value="50" min="1" max="120">
+
+    <h3>Restauration</h3>
+    <label>Mode</label>
+    <select id="formuleType">
+      <option value="none">Aucune (privat salle seule, formation, etc.)</option>
+      <option value="custom" selected>Sur mesure (composition libre)</option>
+    </select>
+    <div id="customFormuleBlock">
+      <p class="legend">Compose la formule. Coûts &amp; prix HT par personne. TVA Resto = 10%, Bar = 20%.</p>
+      <div class="item-row" style="font-family:'Lexend',sans-serif;font-size:0.7em;text-transform:uppercase;letter-spacing:0.04em;color:#666;font-weight:500;border-bottom:1px solid rgba(0,0,0,0.08);padding:0 0 6px 0;margin-bottom:4px">
+        <div style="padding-left:8px">Libellé</div>
+        <div style="padding-right:8px;justify-self:end">Coût €/p</div>
+        <div style="padding-right:8px;justify-self:end">Prix €/p</div>
+        <div style="padding-left:8px">TVA</div>
+        <div></div>
+      </div>
+      <div id="itemsList"></div>
+      <div id="formuleTotalBox" style="display:none;padding:8px 10px;margin-top:6px;border-top:1px dashed rgba(0,0,0,0.15);font-size:0.82em;color:#444">
+        <strong>Marge formule :</strong> <span id="formuleMargePers"></span> &middot; <span id="formuleMargeTaux"></span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+        <button onclick="addItem()">+ Vide</button>
+        <select id="bddImportSelect" style="flex:1;min-width:140px" onchange="importerDepuisBdd(this)">
+          <option value="">+ Importer depuis base...</option>
+        </select>
+      </div>
+      <div style="margin-top:6px">
+        <select id="formuleLoadSelect" style="width:100%" onchange="formuleCharger(this)">
+          <option value="">📚 Charger une formule complète...</option>
+        </select>
+      </div>
+    </div>
+
+    <h3>Affichage du devis client</h3>
+    <label class="inline"><input type="radio" name="vueClient" value="decomposee" checked> Décomposé (lignes séparées)</label><br>
+    <label class="inline"><input type="radio" name="vueClient" value="prixPers"> Prix tout inclus par personne</label>
+    <label class="inline" style="margin-top:10px"><input type="checkbox" id="fondreFraisResa"> Fondre les frais de réservation dans le prix/pers</label>
+
+    <div id="forfaitLibelleBlock" style="margin-top:10px">
+      <label>Libellé du forfait (mode prix tout inclus)</label>
+      <input type="text" id="forfaitLibelle" placeholder="Ex : Forfait soirée Palace Comedy" value="Forfait événementiel tout inclus">
+      <input type="text" id="forfaitSousLibelle" placeholder="Sous-titre (ex : privatisation + spectacle + restauration)" value="privatisation + spectacle + restauration" style="margin-top:6px">
+    </div>
+
+    <div class="actions">
+      <button onclick="window.print()">Imprimer / PDF (devis)</button>
+      <button onclick="exportFicheEquipe()">📋 Fiche équipe (PDF)</button>
+      <button class="primary" onclick="copyDevisText()">Copier devis texte</button>
+    </div>
+  </aside>
+
+  <main class="card">
+    <h2>Résultat</h2>
+
+    <div class="kpi-grid">
+      <div class="kpi" id="kpiBoxTotalHT"><span class="label">Total HT</span><span class="value" id="kpiTotalHT">—</span></div>
+      <div class="kpi" id="kpiBoxTotalTTC"><span class="label">Total TTC</span><span class="value" id="kpiTotalTTC">—</span></div>
+      <div class="kpi" id="kpiBoxPrixPers"><span class="label">Prix HT / pers</span><span class="value" id="kpiPrixPers">—</span></div>
+      <div class="kpi" id="kpiBoxMarge"><span class="label">Marge brute</span><span class="value" id="kpiMarge">—</span></div>
+      <div class="kpi" id="kpiBoxTaux"><span class="label">Taux de marge</span><span class="value" id="kpiTaux">—</span></div>
+    </div>
+
+    <div id="alertesBox"></div>
+
+    <div id="couvertureBox" class="card" style="background:rgba(74,128,214,0.06);border-color:rgba(74,128,214,0.2);padding:14px 18px;margin-bottom:16px;display:none">
+      <h3 style="margin-top:0">Couverture du jour</h3>
+      <div id="couvertureContent"></div>
+    </div>
+
+    <h3>Vue interne — décomposition coûts &amp; marges</h3>
+    <table id="tableInterne">
+      <thead>
+        <tr>
+          <th>Ligne</th>
+          <th class="num">Coût HT</th>
+          <th class="num">Prix HT</th>
+          <th class="num">Marge</th>
+          <th class="num">TVA</th>
+          <th class="num">TTC</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
+
+    <h3>Vue client — devis</h3>
+    <table id="tableClient">
+      <thead>
+        <tr>
+          <th>Désignation</th>
+          <th class="num">Qté</th>
+          <th class="num">P.U. HT</th>
+          <th class="num">Total HT</th>
+          <th class="num">TVA</th>
+          <th class="num">Total TTC</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
+
+    <div class="info-note">
+      <strong>Rappel TVA</strong> &middot; <strong>Privatisation incluant spectacle</strong> : 20% sur l'ensemble (prestation événementielle globale, non dissociable). <strong>Billets de spectacle vendus à la personne</strong> (formule Groupe sur Palace classique) : 5,5%. <strong>Restauration sur place</strong> : 10%. <strong>Boissons alcoolisées / Bar</strong> : 20%. <strong>Privatisation salle seule</strong> : 20%.
+    </div>
+  </main>
+</div>
+
+<details class="advanced">
+  <summary>Base d'items restauration &mdash; bibliothèque réutilisable</summary>
+  <div class="card">
+    <p class="legend">Items enregistrés ici → réutilisables dans toutes les fiches via la liste « Importer depuis base ». Stockés en local et inclus dans l'export JSON.</p>
+
+    <h3>Items enregistrés</h3>
+    <table id="bddItemsTable" style="font-size:0.88em">
+      <thead>
+        <tr>
+          <th>Libellé</th>
+          <th class="num">Coût €/p</th>
+          <th class="num">Prix €/p</th>
+          <th>TVA</th>
+          <th class="num">Marge brute</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h3>Ajouter un nouvel item</h3>
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:center">
+      <input type="text" id="bddNouveauLibelle" placeholder="Ex : Plateau apéro premium">
+      <input type="number" id="bddNouveauCout" placeholder="Coût €/p" step="0.1" style="text-align:right">
+      <input type="number" id="bddNouveauPrix" placeholder="Prix €/p" step="0.1" style="text-align:right">
+      <select id="bddNouveauTva">
+        <option value="restauration">Resto 10%</option>
+        <option value="bar">Bar 20%</option>
+      </select>
+      <button onclick="bddAjouter()" class="primary" style="margin-top:0">Ajouter</button>
+    </div>
+    <p class="legend" id="bddFeedback" style="min-height:1.2em">&nbsp;</p>
+  </div>
+</details>
+
+<details class="advanced">
+  <summary>Bibliothèque &amp; paramètres de formules</summary>
+  <div class="card">
+
+    <h3>Paramètres des formules de prestation</h3>
+    <p class="legend">Coûts, marges et prix spécifiques à chaque formule de prestation. Modifications appliquées à toutes les fiches futures (les fiches déjà sauvegardées conservent leur snapshot chiffré).</p>
+
+    <h4>Formule &middot; Privatisation salle seule</h4>
+    <div class="grid-2">
+      <div><label>Forfait HT (€)</label><input type="number" id="forfaitSalleSeule" value="1200"></div>
+      <div><label>Coût réel HT (€)</label><input type="number" id="coutSalleSeule" value="150"></div>
+    </div>
+
+    <h4>Formule &middot; Atelier cocktail</h4>
+    <p class="legend">Le prix client est calculé : <em>(coût intervenant + coût matières × nb pers) × (1 + marge atelier)</em>.</p>
+    <div class="grid-3">
+      <div><label>Coût intervenant (€)</label><input type="number" id="coutInterCocktail" value="300"></div>
+      <div><label>Coût matières / pers (€)</label><input type="number" id="coutMatCocktail" value="8" step="0.5"></div>
+      <div><label>Marge atelier (%)</label><input type="number" id="margeAtelier" value="50" step="1"></div>
+    </div>
+
+    <h4>Formule &middot; Formation impro / team building</h4>
+    <div class="grid-2">
+      <div><label>Coût intervenant (€)</label><input type="number" id="coutInterImpro" value="250"></div>
+      <div><label>Prix client HT / pers (€)</label><input type="number" id="prixPersImpro" value="110"></div>
+    </div>
+
+    <h4>Formule &middot; Groupe sur soirée Palace classique</h4>
+    <div class="grid-2">
+      <div><label>Coût HT / pers (€)</label><input type="number" id="coutGroupe" value="14.21" step="0.01"></div>
+      <div><label>Prix client HT / pers (€)</label><input type="number" id="prixGroupe" value="50"></div>
+    </div>
+
+    <hr style="margin:24px 0;border:none;border-top:1px solid rgba(0,0,0,0.08)">
+
+    <h3>Compositions restauration réutilisables</h3>
+    <p class="legend">Une composition = liste d'items pré-assemblés (ex : « Apéro dînatoire standard » = 4 items). Chargeable en un clic dans la formule sur mesure d'une fiche.</p>
+
+    <h4>Compositions enregistrées</h4>
+    <table id="formulesTable" style="font-size:0.88em">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Items</th>
+          <th class="num">Prix/pers HT</th>
+          <th class="num">Marge brute</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h4>Capturer la composition courante</h4>
+    <p class="legend">Enregistrer la composition actuellement saisie dans la formule sur mesure comme nouvelle composition réutilisable.</p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="text" id="formuleNouveauNom" placeholder="Nom de la composition (ex : Apéro dînatoire standard)" style="flex:1;min-width:200px">
+      <button onclick="formuleCapture()" class="primary" style="margin-top:0">Capturer composition courante</button>
+    </div>
+    <p class="legend" id="formuleFeedback" style="min-height:1.2em">&nbsp;</p>
+  </div>
+</details>
+
+<details class="advanced">
+  <summary>Paramètres avancés &mdash; coûts, marges, paliers, TVA, plafonds</summary>
+  <div class="card">
+
+    <h3>Spectacle (privat full + show)</h3>
+    <div class="grid-2">
+      <div><label>Prix client HT (€)</label><input type="number" id="paramSpecPrix" value="1500"></div>
+      <div><label>Coût réel HT (€)</label><input type="number" id="paramSpecCout" value="950"></div>
+    </div>
+
+    <h3>CA habituel HT par jour &amp; période</h3>
+    <p class="legend">Source : ton historique B2C 12 derniers mois. P1 = mai à septembre. P2 = octobre à avril. Le seuil de couverture appliqué au devis est <strong>CA habituel × (1 + buffer)</strong>.</p>
+    <div class="grid-2">
+      <div><label>Buffer de couverture (%)</label><input type="number" id="bufferCouverture" value="20" step="1"></div>
+      <div></div>
+    </div>
+    <table id="caHabituelTable" style="margin-top:10px">
+      <thead><tr><th>Jour</th><th class="num">P1 (mai-sept)</th><th class="num">P2 (oct-avr)</th></tr></thead>
+      <tbody>
+        <tr><td>Lundi</td><td class="num"><input type="number" id="caLunP1" value="0" style="text-align:right"></td><td class="num"><input type="number" id="caLunP2" value="0" style="text-align:right"></td></tr>
+        <tr><td>Mardi</td><td class="num"><input type="number" id="caMarP1" value="0" style="text-align:right"></td><td class="num"><input type="number" id="caMarP2" value="0" style="text-align:right"></td></tr>
+        <tr><td>Mercredi</td><td class="num"><input type="number" id="caMerP1" value="1327" style="text-align:right"></td><td class="num"><input type="number" id="caMerP2" value="2146" style="text-align:right"></td></tr>
+        <tr><td>Jeudi</td><td class="num"><input type="number" id="caJeuP1" value="2114" style="text-align:right"></td><td class="num"><input type="number" id="caJeuP2" value="2811" style="text-align:right"></td></tr>
+        <tr><td>Vendredi</td><td class="num"><input type="number" id="caVenP1" value="2613" style="text-align:right"></td><td class="num"><input type="number" id="caVenP2" value="4098" style="text-align:right"></td></tr>
+        <tr><td>Samedi</td><td class="num"><input type="number" id="caSamP1" value="3052" style="text-align:right"></td><td class="num"><input type="number" id="caSamP2" value="4906" style="text-align:right"></td></tr>
+        <tr><td>Dimanche</td><td class="num"><input type="number" id="caDimP1" value="2037" style="text-align:right"></td><td class="num"><input type="number" id="caDimP2" value="2679" style="text-align:right"></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Personnel restaurant</h3>
+    <p class="legend">Le technicien spectacle est inclus dans le coût spectacle ci-dessus.</p>
+    <div class="grid-2">
+      <div><label>Coût horaire global (€)</label><input type="number" id="paramCoutHoraire" value="25" step="0.5"></div>
+      <div><label>Durée moyenne service (h)</label><input type="number" id="paramDuree" value="9" step="0.5"></div>
+    </div>
+    <h4>Paliers de personnel mobilisé</h4>
+    <table id="paliersTable">
+      <thead><tr><th>Jusqu'à X convives</th><th class="num">Nb personnel</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><input type="number" value="30"></td><td><input type="number" value="4"></td><td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td></tr>
+        <tr><td><input type="number" value="50"></td><td><input type="number" value="5"></td><td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td></tr>
+        <tr><td><input type="number" value="80"></td><td><input type="number" value="6"></td><td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td></tr>
+        <tr><td><input type="number" value="120"></td><td><input type="number" value="7"></td><td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td></tr>
+      </tbody>
+    </table>
+    <button onclick="addPalier()" style="margin-top:8px">+ Ajouter un palier</button>
+
+    <h3>Marges cibles appliquées par défaut</h3>
+    <p class="legend">⚠ La marge ici est un <strong>markup sur coût</strong> : marge 40% → prix HT = coût × 1,40. Cela correspond à une <strong>marge brute de 28,6%</strong> sur le prix HT. Pour viser 40% de marge brute sur le prix, paramétrer 67%.</p>
+    <div class="grid-2">
+      <div><label>Personnel (%)</label><input type="number" id="margePersonnel" value="40"></div>
+      <div><label>Intervenants externes (%)</label><input type="number" id="margeIntervenants" value="40"></div>
+    </div>
+
+    <h3>Taux de TVA (%)</h3>
+    <div class="grid-4">
+      <div><label>Spectacle vivant</label><input type="number" id="tvaSpectacle" value="5.5" step="0.1"></div>
+      <div><label>Restauration sur place</label><input type="number" id="tvaResto" value="10" step="0.1"></div>
+      <div><label>Bar / Alcool</label><input type="number" id="tvaBar" value="20" step="0.1"></div>
+      <div><label>Prestation / Privatisation</label><input type="number" id="tvaPresta" value="20" step="0.1"></div>
+    </div>
+
+    <h3>Plafonds commerciaux indicatifs (€/pers HT)</h3>
+    <p class="legend">Au-dessus → alerte « invendable ». À ajuster selon ton positionnement.</p>
+    <div class="grid-3">
+      <div><label>Lun-Mar (fermé)</label><input type="number" id="plafondLunMar" value="120"></div>
+      <div><label>Mer-Jeu-Dim</label><input type="number" id="plafondMid" value="160"></div>
+      <div><label>Ven-Sam</label><input type="number" id="plafondVenSam" value="200"></div>
+    </div>
+
+  </div>
+</details>
+
+</div><!-- /tabSimulateur -->
+
+<!-- ===== Onglet : Calendrier ===== -->
+<div id="tabCalendrier" class="tab-content hidden">
+  <div class="calendrierCard">
+    <div class="calendrierHeader">
+      <button onclick="calNav(-1)">← Mois précédent</button>
+      <h2 id="calTitle">—</h2>
+      <button onclick="calNav(+1)">Mois suivant →</button>
+      <button onclick="calToday()" class="primary" style="margin-top:0">Aujourd'hui</button>
+    </div>
+    <div class="calLegend">
+      <span><span class="dot brouillon"></span>Brouillon</span>
+      <span><span class="dot envoye"></span>Devis envoyé</span>
+      <span><span class="dot accepte"></span>Accepté</span>
+      <span><span class="dot refuse"></span>Refusé</span>
+    </div>
+    <div class="calGrid" id="calGrid"></div>
+    <p class="legend" style="margin-top:14px">Astuce : clique sur une fiche pour voir son aperçu, puis « Ouvrir dans le simulateur » pour la charger.</p>
+  </div>
+</div>
+
+<!-- ===== Modal aperçu fiche ===== -->
+<div id="ficheModal" class="modal hidden" onclick="if(event.target===this)closeFicheModal()">
+  <div class="modalContent">
+    <button class="modalClose" onclick="closeFicheModal()" title="Fermer">×</button>
+    <div id="ficheModalBody"></div>
+  </div>
+</div>
+
+<script>
+  // === ÉTAT FORMULE SUR MESURE ===
+  let items = [
+    { libelle: 'Apéritif &amp; mises en bouche', coutHT: 3, prixHT: 10, tvaCat: 'restauration' },
+    { libelle: 'Plat principal', coutHT: 7, prixHT: 22, tvaCat: 'restauration' },
+    { libelle: 'Dessert', coutHT: 2.5, prixHT: 8, tvaCat: 'restauration' },
+    { libelle: 'Boissons (vin / soft)', coutHT: 4, prixHT: 14, tvaCat: 'bar' }
+  ];
+
+  // === HELPERS ===
+  const $ = id => document.getElementById(id);
+  const val = id => parseFloat($(id).value) || 0;
+  const fmt = n => (Math.round(n * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  const fmtPct = n => (Math.round(n * 10) / 10).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' %';
+
+  function getTva(cat) {
+    const map = { spectacle: 'tvaSpectacle', restauration: 'tvaResto', bar: 'tvaBar', prestation: 'tvaPresta' };
+    return val(map[cat] || 'tvaPresta');
+  }
+
+  function getCaJour(jour, periode) {
+    const map = {
+      lundi: 'caLun', mardi: 'caMar', mercredi: 'caMer', jeudi: 'caJeu',
+      vendredi: 'caVen', samedi: 'caSam', dimanche: 'caDim'
+    };
+    const id = map[jour] + (periode === 'P1' ? 'P1' : 'P2');
+    return val(id);
+  }
+
+  function detectPeriode(dateEvent) {
+    if (!dateEvent) return 'P2'; // fallback prudent
+    const m = parseInt(dateEvent.substring(5, 7), 10);
+    return (m >= 5 && m <= 9) ? 'P1' : 'P2';
+  }
+
+  function getPeriodeEffective() {
+    const override = $('periodeOverride').value;
+    if (override === 'P1' || override === 'P2') return override;
+    const dateEvent = $('ficheDateEvent') ? $('ficheDateEvent').value : '';
+    return detectPeriode(dateEvent);
+  }
+
+  function jourEstFerme(jour) {
+    return jour === 'lundi' || jour === 'mardi';
+  }
+
+  function getPlafond(jour) {
+    if (['lundi','mardi'].includes(jour)) return val('plafondLunMar');
+    if (['vendredi','samedi'].includes(jour)) return val('plafondVenSam');
+    return val('plafondMid');
+  }
+
+  function getPersonnel(nbPers) {
+    const rows = document.querySelectorAll('#paliersTable tbody tr');
+    let nbStaff = 0;
+    let trouve = false;
+    rows.forEach(r => {
+      if (trouve) return;
+      const inputs = r.querySelectorAll('input');
+      const seuil = parseFloat(inputs[0].value) || 0;
+      const staff = parseFloat(inputs[1].value) || 0;
+      if (nbPers <= seuil) { nbStaff = staff; trouve = true; }
+      else nbStaff = staff;
+    });
+    return {
+      nbStaff,
+      duree: val('paramDuree'),
+      cout: nbStaff * val('paramDuree') * val('paramCoutHoraire')
+    };
+  }
+
+  // === RENDU ITEMS RESTAURATION ===
+  function renderItems() {
+    const list = $('itemsList');
+    list.innerHTML = '';
+    items.forEach((item, i) => {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML = `
+        <input type="text" value="${item.libelle.replace(/"/g, '&quot;')}" placeholder="Libellé" data-key="libelle" data-i="${i}">
+        <input type="number" value="${item.coutHT}" step="0.1" placeholder="Coût €/p" data-key="coutHT" data-i="${i}" style="text-align:right">
+        <input type="number" value="${item.prixHT}" step="0.1" placeholder="Prix €/p" data-key="prixHT" data-i="${i}" style="text-align:right">
+        <select data-key="tvaCat" data-i="${i}">
+          <option value="restauration"${item.tvaCat==='restauration'?' selected':''}>Resto 10%</option>
+          <option value="bar"${item.tvaCat==='bar'?' selected':''}>Bar 20%</option>
+        </select>
+        <button class="delete" data-action="delete-item" data-i="${i}" title="Supprimer">×</button>
+      `;
+      list.appendChild(row);
+
+      // Ligne de marge sous l'item (MAJ live via data-marge-i)
+      const margeRow = document.createElement('div');
+      margeRow.dataset.margeI = i;
+      margeRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;font-size:0.72em;color:#666;padding:0 4px 6px 8px;border-bottom:1px dotted rgba(0,0,0,0.06);margin-bottom:4px;gap:8px';
+      list.appendChild(margeRow);
+    });
+    refreshAllMarges();
+  }
+
+  function refreshAllMarges() {
+    items.forEach((item, i) => {
+      const row = document.querySelector(`#itemsList [data-marge-i="${i}"]`);
+      if (!row) return;
+      const margePers = item.prixHT - item.coutHT;
+      const tauxMargeBrute = item.prixHT > 0 ? (margePers / item.prixHT) * 100 : 0;
+      const couleur = tauxMargeBrute >= 60 ? '#0a5c2c' : tauxMargeBrute >= 40 ? '#7a4400' : '#8a1a1a';
+      row.innerHTML = `
+        <span>marge / pers : <strong>${fmt(margePers)}</strong></span>
+        <span style="color:${couleur}">marge brute : <strong>${fmtPct(tauxMargeBrute)}</strong></span>
+        <button data-action="save-to-bdd" data-i="${i}" title="Enregistrer dans la base d'items" style="padding:1px 6px;font-size:0.95em;background:transparent;border:1px solid rgba(0,0,0,0.15);border-radius:4px;cursor:pointer;color:#666;flex-shrink:0">+ base</button>
+      `;
+    });
+    refreshFormuleTotal();
+  }
+
+  function refreshFormuleTotal() {
+    const totalCoutPers = items.reduce((s, i) => s + i.coutHT, 0);
+    const totalPrixPers = items.reduce((s, i) => s + i.prixHT, 0);
+    const totalMargePers = totalPrixPers - totalCoutPers;
+    const totalTauxMarge = totalPrixPers > 0 ? (totalMargePers / totalPrixPers) * 100 : 0;
+    const box = $('formuleTotalBox');
+    if (!box) return;
+    if (items.length > 0) {
+      box.style.display = 'block';
+      $('formuleMargePers').textContent = `${fmt(totalMargePers)} / pers (${fmt(totalCoutPers)} coût → ${fmt(totalPrixPers)} prix)`;
+      const c = totalTauxMarge >= 60 ? '#0a5c2c' : totalTauxMarge >= 40 ? '#7a4400' : '#8a1a1a';
+      $('formuleMargeTaux').innerHTML = `<span style="color:${c};font-weight:600">${fmtPct(totalTauxMarge)} brute</span>`;
+    } else {
+      box.style.display = 'none';
+    }
+  }
+
+  function addItem() {
+    items.push({ libelle: 'Nouvel item', coutHT: 0, prixHT: 0, tvaCat: 'restauration' });
+    renderItems();
+    recalcul();
+  }
+
+  // Délégation événements (items)
+  document.addEventListener('input', e => {
+    const t = e.target;
+    if (t.dataset && t.dataset.i !== undefined && t.closest('#itemsList')) {
+      const i = parseInt(t.dataset.i);
+      const key = t.dataset.key;
+      if (key === 'coutHT' || key === 'prixHT') items[i][key] = parseFloat(t.value) || 0;
+      else items[i][key] = t.value;
+      refreshAllMarges();
+      recalcul();
+    } else {
+      recalcul();
+    }
+  });
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.dataset && t.dataset.i !== undefined && t.closest('#itemsList')) {
+      const i = parseInt(t.dataset.i);
+      const key = t.dataset.key;
+      items[i][key] = t.value;
+      refreshAllMarges();
+      recalcul();
+    } else {
+      recalcul();
+    }
+  });
+  document.addEventListener('click', e => {
+    if (e.target.dataset && e.target.dataset.action === 'delete-item') {
+      const i = parseInt(e.target.dataset.i);
+      items.splice(i, 1);
+      renderItems();
+      recalcul();
+    }
+    if (e.target.dataset && e.target.dataset.action === 'save-to-bdd' && e.target.closest('#itemsList')) {
+      const i = parseInt(e.target.dataset.i);
+      saveItemToBdd(items[i], e.target);
+    }
+  });
+
+  // === LOGIQUE DE CALCUL ===
+  function calculer() {
+    const format = $('format').value;
+    const jour = $('day').value;
+    const nbPers = Math.max(1, parseInt($('nbPers').value) || 1);
+    const formuleType = $('formuleType').value;
+    const margeInter = val('margeIntervenants') / 100;
+
+    const lignes = [];
+
+    if (format === 'privat-full') {
+      // 1. Spectacle - TVA 20% : prestation événementielle globale, non dissociable de la privatisation
+      lignes.push({
+        libelle: 'Spectacle (plateau humour)',
+        qte: 1,
+        puHT: val('paramSpecPrix'),
+        totalHT: val('paramSpecPrix'),
+        coutHT: val('paramSpecCout'),
+        tvaCat: 'prestation',
+        type: 'spectacle'
+      });
+
+      // 2. Personnel restaurant
+      const perso = getPersonnel(nbPers);
+      const margePerso = val('margePersonnel') / 100;
+      const prixPersoHT = perso.cout * (1 + margePerso);
+      lignes.push({
+        libelle: `Service en salle (${perso.nbStaff} personnes &times; ${perso.duree}h)`,
+        qte: 1,
+        puHT: prixPersoHT,
+        totalHT: prixPersoHT,
+        coutHT: perso.cout,
+        tvaCat: 'prestation',
+        type: 'personnel'
+      });
+
+      // 3. Restauration (formule sur mesure)
+      if (formuleType === 'custom') {
+        items.forEach(item => {
+          lignes.push({
+            libelle: item.libelle,
+            qte: nbPers,
+            puHT: item.prixHT,
+            totalHT: item.prixHT * nbPers,
+            coutHT: item.coutHT * nbPers,
+            tvaCat: item.tvaCat,
+            type: 'resto'
+          });
+        });
+      }
+
+      // 4. Frais de réservation = régulation pour atteindre le seuil de couverture du jour
+      // Uniquement sur jours d'ouverture (mer-dim)
+      if (!jourEstFerme(jour)) {
+        const periode = getPeriodeEffective();
+        const caJour = getCaJour(jour, periode);
+        const buffer = val('bufferCouverture') / 100;
+        const seuil = caJour * (1 + buffer);
+        const caHorsResa = lignes.reduce((s, l) => s + l.totalHT, 0);
+        const fraisResa = Math.max(0, seuil - caHorsResa);
+        if (fraisResa > 0) {
+          lignes.push({
+            libelle: `Frais de réservation (couverture ${jour} ${periode})`,
+            qte: 1,
+            puHT: fraisResa,
+            totalHT: fraisResa,
+            coutHT: 0,
+            tvaCat: 'prestation',
+            type: 'fraisResa'
+          });
+        }
+      }
+    }
+    else if (format === 'privat-salle') {
+      lignes.push({
+        libelle: 'Privatisation salle seule (sans spectacle)',
+        qte: 1,
+        puHT: val('forfaitSalleSeule'),
+        totalHT: val('forfaitSalleSeule'),
+        coutHT: val('coutSalleSeule'),
+        tvaCat: 'prestation',
+        type: 'privatSalle'
+      });
+      // Personnel + restauration optionnels
+      if (formuleType === 'custom') {
+        const perso = getPersonnel(nbPers);
+        const margePerso = val('margePersonnel') / 100;
+        if (perso.cout > 0) {
+          lignes.push({
+            libelle: `Service en salle (${perso.nbStaff} personnes &times; ${perso.duree}h)`,
+            qte: 1,
+            puHT: perso.cout * (1 + margePerso),
+            totalHT: perso.cout * (1 + margePerso),
+            coutHT: perso.cout,
+            tvaCat: 'prestation',
+            type: 'personnel'
+          });
+        }
+        items.forEach(item => {
+          lignes.push({
+            libelle: item.libelle,
+            qte: nbPers,
+            puHT: item.prixHT,
+            totalHT: item.prixHT * nbPers,
+            coutHT: item.coutHT * nbPers,
+            tvaCat: item.tvaCat,
+            type: 'resto'
+          });
+        });
+      }
+      // Frais de réservation = régulation pour atteindre le seuil de couverture du jour (jours d'ouverture)
+      if (!jourEstFerme(jour)) {
+        const periode = getPeriodeEffective();
+        const caJour = getCaJour(jour, periode);
+        const buffer = val('bufferCouverture') / 100;
+        const seuil = caJour * (1 + buffer);
+        const caHorsResa = lignes.reduce((s, l) => s + l.totalHT, 0);
+        const fraisResa = Math.max(0, seuil - caHorsResa);
+        if (fraisResa > 0) {
+          lignes.push({
+            libelle: `Frais de réservation (couverture ${jour} ${periode})`,
+            qte: 1,
+            puHT: fraisResa,
+            totalHT: fraisResa,
+            coutHT: 0,
+            tvaCat: 'prestation',
+            type: 'fraisResa'
+          });
+        }
+      }
+    }
+    else if (format === 'atelier-cocktail') {
+      const coutInter = val('coutInterCocktail');
+      const coutMat = val('coutMatCocktail');
+      const margeAtelier = val('margeAtelier') / 100;
+      // Intervenant : coût × (1 + marge atelier)
+      lignes.push({
+        libelle: 'Animation atelier cocktail (intervenant)',
+        qte: 1,
+        puHT: coutInter * (1 + margeAtelier),
+        totalHT: coutInter * (1 + margeAtelier),
+        coutHT: coutInter,
+        tvaCat: 'prestation',
+        type: 'inter'
+      });
+      // Matières : coût/pers × nbPers × (1 + marge atelier)
+      const prixMatPers = coutMat * (1 + margeAtelier);
+      lignes.push({
+        libelle: 'Atelier cocktail — matières & boissons (par participant)',
+        qte: nbPers,
+        puHT: prixMatPers,
+        totalHT: prixMatPers * nbPers,
+        coutHT: coutMat * nbPers,
+        tvaCat: 'bar',
+        type: 'matieres'
+      });
+    }
+    else if (format === 'formation-impro') {
+      const coutInter = val('coutInterImpro');
+      const prixInter = coutInter * (1 + margeInter);
+      lignes.push({
+        libelle: 'Animation formation impro (intervenant)',
+        qte: 1,
+        puHT: prixInter,
+        totalHT: prixInter,
+        coutHT: coutInter,
+        tvaCat: 'prestation',
+        type: 'inter'
+      });
+      const prixParticip = val('prixPersImpro');
+      const prixParticipNet = Math.max(0, prixParticip - prixInter / nbPers);
+      lignes.push({
+        libelle: 'Formation impro — par participant',
+        qte: nbPers,
+        puHT: prixParticipNet,
+        totalHT: prixParticipNet * nbPers,
+        coutHT: 0,
+        tvaCat: 'prestation',
+        type: 'pers'
+      });
+    }
+    else if (format === 'groupe-classique') {
+      lignes.push({
+        libelle: 'Soirée Palace Comedy — billet groupe',
+        qte: nbPers,
+        puHT: val('prixGroupe'),
+        totalHT: val('prixGroupe') * nbPers,
+        coutHT: val('coutGroupe') * nbPers,
+        tvaCat: 'spectacle',
+        type: 'billet'
+      });
+      // Restauration optionnelle
+      if (formuleType === 'custom') {
+        items.forEach(item => {
+          lignes.push({
+            libelle: item.libelle,
+            qte: nbPers,
+            puHT: item.prixHT,
+            totalHT: item.prixHT * nbPers,
+            coutHT: item.coutHT * nbPers,
+            tvaCat: item.tvaCat,
+            type: 'resto'
+          });
+        });
+      }
+    }
+
+    return { format, jour, nbPers, lignes };
+  }
+
+  // === RENDU PRINCIPAL ===
+  function recalcul() {
+    const { format, jour, nbPers, lignes } = calculer();
+
+    // Agrégats
+    let totalHT = 0, totalCout = 0, totalTTC = 0;
+    const tvaParTaux = {};
+    lignes.forEach(l => {
+      const tva = getTva(l.tvaCat);
+      const tvaMontant = l.totalHT * tva / 100;
+      totalHT += l.totalHT;
+      totalCout += l.coutHT;
+      totalTTC += l.totalHT + tvaMontant;
+      tvaParTaux[tva] = (tvaParTaux[tva] || 0) + tvaMontant;
+    });
+
+    const margeBrute = totalHT - totalCout;
+    const tauxMarge = totalHT > 0 ? (margeBrute / totalHT) * 100 : 0;
+    const prixPers = totalHT / nbPers;
+
+    // KPIs
+    $('kpiTotalHT').textContent = fmt(totalHT);
+    $('kpiTotalTTC').textContent = fmt(totalTTC);
+    $('kpiPrixPers').textContent = fmt(prixPers);
+    $('kpiMarge').textContent = fmt(margeBrute);
+    $('kpiTaux').textContent = fmtPct(tauxMarge);
+
+    // Coloration KPIs
+    const plafond = getPlafond(jour);
+    $('kpiBoxPrixPers').className = 'kpi' + (prixPers > plafond ? ' error' : (prixPers > plafond * 0.85 ? ' warn' : ' ok'));
+    const margeBoxClass = tauxMarge < 50 ? ' error' : (tauxMarge < 60 ? ' warn' : ' ok');
+    $('kpiBoxMarge').className = 'kpi' + margeBoxClass;
+    $('kpiBoxTaux').className = 'kpi' + margeBoxClass;
+
+    // Vue interne
+    const tbody = document.querySelector('#tableInterne tbody');
+    tbody.innerHTML = '';
+    lignes.forEach(l => {
+      const tva = getTva(l.tvaCat);
+      const ttc = l.totalHT * (1 + tva/100);
+      const margeL = l.totalHT - l.coutHT;
+      tbody.innerHTML += `<tr>
+        <td>${l.libelle}</td>
+        <td class="num">${fmt(l.coutHT)}</td>
+        <td class="num">${fmt(l.totalHT)}</td>
+        <td class="num">${fmt(margeL)}</td>
+        <td class="num">${tva}%</td>
+        <td class="num">${fmt(ttc)}</td>
+      </tr>`;
+    });
+    document.querySelector('#tableInterne tfoot').innerHTML = `<tr>
+      <td>Total</td>
+      <td class="num">${fmt(totalCout)}</td>
+      <td class="num">${fmt(totalHT)}</td>
+      <td class="num">${fmt(margeBrute)}</td>
+      <td></td>
+      <td class="num">${fmt(totalTTC)}</td>
+    </tr>`;
+
+    // Vue client
+    renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux);
+
+    // Couverture du jour (si applicable)
+    renderCouverture(format, jour, lignes);
+
+    // Alertes
+    const alertes = computeAlertes(format, jour, nbPers, lignes, prixPers, tauxMarge, plafond);
+    $('alertesBox').innerHTML = alertes.map(a => `<div class="alerte ${a.type}">${a.text}</div>`).join('');
+
+    // MAJ indicateur de période
+    const periode = getPeriodeEffective();
+    const override = $('periodeOverride').value;
+    const dateEvent = $('ficheDateEvent') ? $('ficheDateEvent').value : '';
+    const source = override === 'auto' ? (dateEvent ? `auto via date ${dateEvent}` : 'auto sans date → P2 prudent') : 'forcée manuellement';
+    $('periodeIndicator').textContent = `Période effective : ${periode} (${source})`;
+
+    // Stocker pour l'export texte
+    window._lastDevis = { format, jour, nbPers, lignes, totalHT, totalTTC, tvaParTaux, prixPers, tauxMarge, periode };
+  }
+
+  function renderCouverture(format, jour, lignes) {
+    const box = $('couvertureBox');
+    const content = $('couvertureContent');
+    // Encart visible uniquement pour formats avec frais de résa potentiels et jour ouvert
+    if (!['privat-full','privat-salle'].includes(format) || jourEstFerme(jour)) {
+      box.style.display = 'none';
+      return;
+    }
+    const periode = getPeriodeEffective();
+    const caJour = getCaJour(jour, periode);
+    const buffer = val('bufferCouverture');
+    const seuil = caJour * (1 + buffer / 100);
+    const fraisResaLigne = lignes.find(l => l.type === 'fraisResa');
+    const fraisResa = fraisResaLigne ? fraisResaLigne.totalHT : 0;
+    const caHorsResa = lignes.filter(l => l.type !== 'fraisResa').reduce((s, l) => s + l.totalHT, 0);
+    const couverturePct = caJour > 0 ? Math.round(caHorsResa / caJour * 100) : 0;
+    const couvertureSeuilPct = seuil > 0 ? Math.round(caHorsResa / seuil * 100) : 0;
+
+    const couleur = fraisResa === 0 ? '#0a5c2c' : (couvertureSeuilPct < 50 ? '#8a1a1a' : '#7a4400');
+    const message = fraisResa === 0
+      ? `<strong style="color:${couleur}">✓ Le devis couvre le CA habituel + buffer. Aucun frais de réservation appliqué.</strong>`
+      : `<strong style="color:${couleur}">Frais de réservation appliqués pour atteindre le seuil : ${fmt(fraisResa)}</strong>`;
+
+    content.innerHTML = `
+      <table style="width:100%;font-size:0.88em;margin:0">
+        <tr><td>Période effective</td><td class="num"><strong>${periode}</strong> ${periode === 'P1' ? '(mai-sept, basse saison)' : '(oct-avr, haute saison)'}</td></tr>
+        <tr><td>CA habituel B2C ${jour} ${periode}</td><td class="num">${fmt(caJour)}</td></tr>
+        <tr><td>Seuil de couverture (CA &times; ${(1 + buffer/100).toFixed(2)})</td><td class="num"><strong>${fmt(seuil)}</strong></td></tr>
+        <tr><td>CA HT du devis hors frais de résa</td><td class="num">${fmt(caHorsResa)}</td></tr>
+        <tr><td>Couverture du CA habituel</td><td class="num">${couverturePct}%</td></tr>
+        <tr><td>Couverture du seuil</td><td class="num"><strong style="color:${couleur}">${couvertureSeuilPct}%</strong></td></tr>
+      </table>
+      <p style="margin-top:10px;font-size:0.88em">${message}</p>
+    `;
+    box.style.display = 'block';
+  }
+
+  function renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux) {
+    const vueMode = document.querySelector('input[name="vueClient"]:checked').value;
+    const fondreFraisResa = $('fondreFraisResa').checked;
+    const tbodyC = document.querySelector('#tableClient tbody');
+    const tfootC = document.querySelector('#tableClient tfoot');
+    tbodyC.innerHTML = '';
+
+    // Copie profonde des lignes
+    let lignesClient = lignes.map(l => ({ ...l }));
+
+    // Si "fondre frais résa" → on retire la ligne et on ventile au prorata sur personnel + restauration
+    if (fondreFraisResa) {
+      const fraisResa = lignesClient.find(l => l.type === 'fraisResa');
+      if (fraisResa) {
+        lignesClient = lignesClient.filter(l => l.type !== 'fraisResa');
+        const cibles = lignesClient.filter(l => ['personnel','resto'].includes(l.type));
+        const totalCibles = cibles.reduce((s, l) => s + l.totalHT, 0);
+        if (totalCibles > 0) {
+          cibles.forEach(c => {
+            const ratio = c.totalHT / totalCibles;
+            const aRepartir = fraisResa.totalHT * ratio;
+            c.totalHT += aRepartir;
+            c.puHT = c.totalHT / c.qte;
+          });
+        } else {
+          // Si pas de cible, on remet la ligne (sécurité)
+          lignesClient.push(fraisResa);
+        }
+      }
+    }
+
+    if (vueMode === 'decomposee') {
+      // Regrouper la restauration par taux de TVA pour lisibilité
+      const lignesGrp = [];
+      const restoBuckets = {}; // { tva: {totalHT, coutHT, libelle, tvaCat} }
+      lignesClient.forEach(l => {
+        if (l.type === 'resto') {
+          const tva = getTva(l.tvaCat);
+          const k = `${tva}`;
+          if (!restoBuckets[k]) restoBuckets[k] = { totalHT: 0, qte: nbPers, tvaCat: l.tvaCat, tva };
+          restoBuckets[k].totalHT += l.totalHT;
+        } else {
+          lignesGrp.push(l);
+        }
+      });
+      Object.values(restoBuckets).forEach(b => {
+        lignesGrp.push({
+          libelle: b.tva === 10 ? 'Prestation restauration' : (b.tva === 20 ? 'Boissons (bar)' : `Restauration (TVA ${b.tva}%)`),
+          qte: b.qte,
+          puHT: b.totalHT / b.qte,
+          totalHT: b.totalHT,
+          tvaCat: b.tvaCat
+        });
+      });
+
+      lignesGrp.forEach(l => {
+        const tva = getTva(l.tvaCat);
+        const ttc = l.totalHT * (1 + tva/100);
+        tbodyC.innerHTML += `<tr>
+          <td>${l.libelle}</td>
+          <td class="num">${l.qte}</td>
+          <td class="num">${fmt(l.puHT)}</td>
+          <td class="num">${fmt(l.totalHT)}</td>
+          <td class="num">${tva}%</td>
+          <td class="num">${fmt(ttc)}</td>
+        </tr>`;
+      });
+    } else {
+      // Mode prix par personne tout inclus
+      const prixPers = totalHT / nbPers;
+      const libellePrincipal = ($('forfaitLibelle').value || 'Forfait événementiel tout inclus').replace(/</g, '&lt;');
+      const sousLibelle = ($('forfaitSousLibelle').value || '').replace(/</g, '&lt;');
+      tbodyC.innerHTML += `<tr>
+        <td>${libellePrincipal}${sousLibelle ? `<br><span style="font-size:0.85em;color:#666">${sousLibelle}</span>` : ''}</td>
+        <td class="num">${nbPers}</td>
+        <td class="num">${fmt(prixPers)}</td>
+        <td class="num">${fmt(totalHT)}</td>
+        <td class="num">— mixte</td>
+        <td class="num">${fmt(totalTTC)}</td>
+      </tr>`;
+    }
+
+    // Footer : total HT + détail TVA + total TTC
+    let tfootHTML = `<tr><td colspan="3">Total HT</td><td class="num">${fmt(totalHT)}</td><td></td><td></td></tr>`;
+    Object.entries(tvaParTaux).sort((a,b) => parseFloat(a[0]) - parseFloat(b[0])).forEach(([taux, montant]) => {
+      tfootHTML += `<tr><td colspan="4" style="text-align:right">TVA ${taux}%</td><td></td><td class="num">${fmt(montant)}</td></tr>`;
+    });
+    tfootHTML += `<tr><td colspan="5">Total TTC</td><td class="num">${fmt(totalTTC)}</td></tr>`;
+    tfootC.innerHTML = tfootHTML;
+  }
+
+  function computeAlertes(format, jour, nbPers, lignes, prixPers, tauxMarge, plafond) {
+    const alertes = [];
+
+    // Plafond commercial
+    if (prixPers > plafond) {
+      alertes.push({
+        type: 'error',
+        text: `Prix par personne (${fmt(prixPers)}) au-dessus du plafond commercial recommandé (${fmt(plafond)}/pers le ${jour}). Risque de devis « invendable ». Solutions : augmenter le nombre de pers, basculer sur un jour fermé (lun-mar), ou réduire la formule resto.`
+      });
+    } else if (prixPers > plafond * 0.85) {
+      alertes.push({
+        type: 'warn',
+        text: `Prix par personne (${fmt(prixPers)}) proche du plafond ${fmt(plafond)}. À justifier commercialement.`
+      });
+    }
+
+    // Marge
+    if (tauxMarge < 50) {
+      alertes.push({
+        type: 'error',
+        text: `Taux de marge brute (${fmtPct(tauxMarge)}) sous le plancher 50% du cadrage stratégique. Augmenter le prix client ou réduire les coûts.`
+      });
+    } else if (tauxMarge < 60) {
+      alertes.push({
+        type: 'warn',
+        text: `Taux de marge (${fmtPct(tauxMarge)}) sous l'objectif 60% du cadrage. À surveiller.`
+      });
+    }
+
+    // Capacité Palace
+    if (nbPers > 70 && (format === 'privat-full' || format === 'privat-salle')) {
+      alertes.push({
+        type: 'info',
+        text: `Capacité Palace = 70 pers assis. Au-delà : configuration cocktail debout uniquement.`
+      });
+    }
+
+    // Privat salle seule sur jour d'ouverture sans frais résa
+    if (format === 'privat-salle' && !['lundi','mardi'].includes(jour)) {
+      const hasFraisResa = lignes.some(l => l.type === 'fraisResa');
+      if (!hasFraisResa) {
+        alertes.push({
+          type: 'info',
+          text: `Pas de frais de réservation appliqués : la prestation couvre déjà le CA habituel + buffer du jour. Vérifie cohérence commerciale.`
+        });
+      }
+    }
+
+    // Cible commerciale prioritaire (lun-mar)
+    if (format === 'privat-full' && (jour === 'lundi' || jour === 'mardi')) {
+      alertes.push({
+        type: 'info',
+        text: `Lun-Mar = cible commerciale prioritaire (cadrage stratégique). Aucun manque à gagner, journées normalement non-génératrices de revenus.`
+      });
+    }
+
+    if (alertes.length === 0) {
+      alertes.push({ type: 'ok', text: `Devis dans les rails commerciaux et de marge.` });
+    }
+
+    return alertes;
+  }
+
+  // === EXPORT TEXTE ===
+  function copyDevisText() {
+    const d = window._lastDevis;
+    if (!d) return;
+    let txt = `DEVIS PRIVATISATION PALACE COMEDY\n`;
+    txt += `Format : ${d.format}\n`;
+    txt += `Jour : ${d.jour} — ${d.nbPers} personnes\n\n`;
+    txt += `--- Détail ---\n`;
+    d.lignes.forEach(l => {
+      txt += `${l.libelle} | qté ${l.qte} | ${fmt(l.puHT)}/u | total ${fmt(l.totalHT)} HT\n`;
+    });
+    txt += `\nTotal HT : ${fmt(d.totalHT)}\n`;
+    Object.entries(d.tvaParTaux).sort((a,b) => parseFloat(a[0]) - parseFloat(b[0])).forEach(([taux, m]) => {
+      txt += `TVA ${taux}% : ${fmt(m)}\n`;
+    });
+    txt += `Total TTC : ${fmt(d.totalTTC)}\n`;
+    txt += `Prix HT/pers : ${fmt(d.prixPers)}\n`;
+    txt += `Marge brute : ${fmt(d.totalHT - d.lignes.reduce((s,l) => s + l.coutHT, 0))} (${fmtPct(d.tauxMarge)})\n`;
+    navigator.clipboard.writeText(txt).then(() => {
+      alert('Devis copié dans le presse-papiers.');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      alert('Devis copié.');
+    });
+  }
+
+  // Toggle bloc formule
+  $('formuleType').addEventListener('change', e => {
+    $('customFormuleBlock').style.display = e.target.value === 'custom' ? 'block' : 'none';
+  });
+
+  // Toggle bloc libellé forfait selon mode d'affichage du devis client
+  function refreshForfaitLibelleVisibility() {
+    const vue = document.querySelector('input[name="vueClient"]:checked').value;
+    $('forfaitLibelleBlock').style.display = vue === 'prixPers' ? 'block' : 'none';
+  }
+  document.querySelectorAll('input[name="vueClient"]').forEach(r => {
+    r.addEventListener('change', refreshForfaitLibelleVisibility);
+  });
+
+  // ============================================================
+  // === ONGLETS / NAVIGATION ====================================
+  // ============================================================
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === name);
+    });
+    document.querySelectorAll('.tab-content').forEach(c => {
+      c.classList.toggle('hidden', c.id !== 'tab' + name.charAt(0).toUpperCase() + name.slice(1));
+    });
+    if (name === 'calendrier') renderCalendrier();
+  }
+
+  // ============================================================
+  // === CALENDRIER ==============================================
+  // ============================================================
+  let calCurrentMonth = new Date().getMonth();
+  let calCurrentYear = new Date().getFullYear();
+
+  function calNav(delta) {
+    calCurrentMonth += delta;
+    if (calCurrentMonth < 0) { calCurrentMonth = 11; calCurrentYear--; }
+    if (calCurrentMonth > 11) { calCurrentMonth = 0; calCurrentYear++; }
+    renderCalendrier();
+  }
+
+  function calToday() {
+    const now = new Date();
+    calCurrentMonth = now.getMonth();
+    calCurrentYear = now.getFullYear();
+    renderCalendrier();
+  }
+
+  function renderCalendrier() {
+    const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    const titleEl = $('calTitle');
+    if (titleEl) titleEl.textContent = `${monthNames[calCurrentMonth]} ${calCurrentYear}`;
+
+    const grid = $('calGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    // Day headers (Lun → Dim)
+    ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(d => {
+      const h = document.createElement('div');
+      h.className = 'calCell dayHeader';
+      h.textContent = d;
+      grid.appendChild(h);
+    });
+
+    // First day of month, in Lun=0..Dim=6
+    const firstDay = new Date(calCurrentYear, calCurrentMonth, 1);
+    let startDayOfWeek = firstDay.getDay(); // 0=Sun ... 6=Sat
+    startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1; // 0=Mon ... 6=Sun
+
+    const daysInMonth = new Date(calCurrentYear, calCurrentMonth + 1, 0).getDate();
+    const prevMonthDays = new Date(calCurrentYear, calCurrentMonth, 0).getDate();
+
+    // Previous month tail
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const d = prevMonthDays - i;
+      const cell = document.createElement('div');
+      cell.className = 'calCell outsideMonth';
+      cell.innerHTML = `<div class="dayNumber">${d}</div>`;
+      grid.appendChild(cell);
+    }
+
+    // Current month days
+    const today = new Date();
+    const isCurrentMonth = (calCurrentMonth === today.getMonth() && calCurrentYear === today.getFullYear());
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'calCell';
+      if (isCurrentMonth && d === today.getDate()) cell.classList.add('today');
+
+      const dateStr = `${calCurrentYear}-${String(calCurrentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const fichesJour = fichesList.filter(f => f.dateEvent === dateStr);
+
+      let chipsHTML = `<div class="dayNumber">${d}</div>`;
+      const maxVisible = 3;
+      fichesJour.slice(0, maxVisible).forEach(f => {
+        const statut = f.statut || 'brouillon';
+        const label = (f.client || f.nomFiche || '?').replace(/"/g, '&quot;');
+        const shortLabel = label.length > 14 ? label.slice(0, 13) + '…' : label;
+        chipsHTML += `<div class="ficheChip ${statut}" onclick="event.stopPropagation();openFicheModal('${f.id}')" title="${label} — ${statut}">${shortLabel}</div>`;
+      });
+      if (fichesJour.length > maxVisible) {
+        const reste = fichesJour.length - maxVisible;
+        chipsHTML += `<div class="ficheChipMore" onclick="openDayModal('${dateStr}')">+ ${reste} autre${reste>1?'s':''}</div>`;
+      }
+      cell.innerHTML = chipsHTML;
+      grid.appendChild(cell);
+    }
+
+    // Next month head (compléter à 35 ou 42 cellules)
+    const totalCells = startDayOfWeek + daysInMonth;
+    const targetTotal = totalCells <= 35 ? 35 : 42;
+    const remainingCells = targetTotal - totalCells;
+    for (let d = 1; d <= remainingCells; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'calCell outsideMonth';
+      cell.innerHTML = `<div class="dayNumber">${d}</div>`;
+      grid.appendChild(cell);
+    }
+  }
+
+  // ============================================================
+  // === MODAL APERÇU FICHE ======================================
+  // ============================================================
+  function formatLabel(format) {
+    const labels = {
+      'privat-full': 'Privatisation full + spectacle + repas',
+      'privat-salle': 'Privatisation salle seule',
+      'atelier-cocktail': 'Atelier cocktail',
+      'formation-impro': 'Formation impro / team building',
+      'groupe-classique': 'Groupe sur Palace classique'
+    };
+    return labels[format] || format;
+  }
+
+  function openFicheModal(id) {
+    const f = fichesList.find(x => x.id === id);
+    if (!f) return;
+    const statutLabels = { brouillon: 'Brouillon', envoye: 'Devis envoyé', accepte: 'Accepté', refuse: 'Refusé' };
+    const dateStr = f.dateEvent ? new Date(f.dateEvent).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+    const snap = f.resultsSnapshot;
+    const escape = s => String(s || '').replace(/</g, '&lt;');
+    const hasSpec = formatHasSpectacle(f.config.format);
+
+    $('ficheModalBody').innerHTML = `
+      <h2 style="margin-top:0;margin-bottom:6px">${escape(f.nomFiche || '(sans nom)')}</h2>
+      <p style="margin-bottom:14px"><span class="statutBadge ${f.statut || 'brouillon'}" style="margin-left:0">${escape(statutLabels[f.statut] || f.statut || 'brouillon')}</span></p>
+
+      <div class="modalGrid">
+        <div><strong>Client</strong><br>${escape(f.client || '—')}</div>
+        <div><strong>Date</strong><br>${dateStr}</div>
+        <div><strong>Formule</strong><br>${escape(formatLabel(f.config.format))}</div>
+        <div><strong>Nombre de personnes</strong><br>${f.config.nbPers}</div>
+        ${f.heureArrivee ? `<div><strong>Arrivée invités</strong><br>${escape(f.heureArrivee)}</div>` : ''}
+        ${hasSpec && f.heureSpectacle ? `<div><strong>Heure spectacle</strong><br>${escape(f.heureSpectacle)}</div>` : ''}
+        ${f.contactEmail ? `<div><strong>Email</strong><br>${escape(f.contactEmail)}</div>` : ''}
+        ${f.contactTel ? `<div><strong>Téléphone</strong><br>${escape(f.contactTel)}</div>` : ''}
+      </div>
+
+      ${snap ? `
+        <h3 style="margin-top:18px;font-size:0.95em">Chiffres (snapshot enregistré)</h3>
+        <div class="modalGrid">
+          <div><strong>Total HT</strong><br>${fmt(snap.totalHT)}</div>
+          <div><strong>Total TTC</strong><br>${fmt(snap.totalTTC)}</div>
+          <div><strong>Prix HT/pers</strong><br>${fmt(snap.prixPers)}</div>
+          <div><strong>Marge brute</strong><br>${fmtPct(snap.tauxMarge)}</div>
+        </div>
+      ` : ''}
+
+      ${f.notes ? `<h3 style="margin-top:18px;font-size:0.95em">Notes</h3><div class="modalNotes">${escape(f.notes)}</div>` : ''}
+
+      <div class="modalActions">
+        <button onclick="closeFicheModal()">Fermer</button>
+        <button class="primary" onclick="loadFicheFromModal('${f.id}')" style="margin-top:0">Ouvrir dans le simulateur →</button>
+      </div>
+    `;
+    $('ficheModal').classList.remove('hidden');
+  }
+
+  function openDayModal(dateStr) {
+    const fichesJour = fichesList.filter(f => f.dateEvent === dateStr);
+    if (fichesJour.length === 0) return;
+    const dateLabel = new Date(dateStr).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const statutLabels = { brouillon: 'Brouillon', envoye: 'Envoyé', accepte: 'Accepté', refuse: 'Refusé' };
+    const escape = s => String(s || '').replace(/</g, '&lt;');
+
+    let listHTML = '';
+    fichesJour.forEach(f => {
+      listHTML += `
+        <div style="padding:10px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <div>
+            <strong>${escape(f.client || f.nomFiche || '?')}</strong>
+            <span class="statutBadge ${f.statut || 'brouillon'}" style="margin-left:0">${escape(statutLabels[f.statut] || f.statut)}</span>
+            <br><span style="font-size:0.85em;color:#666">${escape(formatLabel(f.config.format))} — ${f.config.nbPers} pers</span>
+          </div>
+          <button onclick="closeFicheModal();openFicheModal('${f.id}')">Voir</button>
+        </div>
+      `;
+    });
+
+    $('ficheModalBody').innerHTML = `
+      <h2 style="margin-top:0">${dateLabel}</h2>
+      <p style="color:#666;margin-bottom:14px">${fichesJour.length} fiche${fichesJour.length>1?'s':''} ce jour</p>
+      ${listHTML}
+      <div class="modalActions">
+        <button onclick="closeFicheModal()">Fermer</button>
+      </div>
+    `;
+    $('ficheModal').classList.remove('hidden');
+  }
+
+  function closeFicheModal() {
+    $('ficheModal').classList.add('hidden');
+  }
+
+  function loadFicheFromModal(id) {
+    closeFicheModal();
+    switchTab('simulateur');
+    loadFiche(id);
+  }
+
+  // Fermeture par touche Esc
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !$('ficheModal').classList.contains('hidden')) closeFicheModal();
+  });
+
+  // ============================================================
+  // === MODULE BASE D'ITEMS RESTAURATION =======================
+  // ============================================================
+  const BDD_KEY = 'palace-items-bdd-v1';
+  let bddItems = [];
+
+  function loadBddFromStorage() {
+    try {
+      const raw = localStorage.getItem(BDD_KEY);
+      bddItems = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      console.error('Lecture BDD localStorage échouée', e);
+      bddItems = [];
+    }
+  }
+
+  function persistBdd() {
+    try {
+      localStorage.setItem(BDD_KEY, JSON.stringify(bddItems));
+    } catch (e) {
+      alert('Échec sauvegarde locale de la base d\'items.');
+    }
+  }
+
+  function bddFeedback(msg, type = 'ok') {
+    const el = $('bddFeedback');
+    if (!el) return;
+    const colors = { ok: '#0a5c2c', warn: '#7a4400', err: '#8a1a1a' };
+    el.textContent = msg;
+    el.style.color = colors[type] || '#666';
+    setTimeout(() => { if (el.textContent === msg) { el.innerHTML = '&nbsp;'; el.style.color = '#666'; } }, 3000);
+  }
+
+  function refreshBddTable() {
+    const tbody = document.querySelector('#bddItemsTable tbody');
+    if (!tbody) return;
+    if (bddItems.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#888;padding:18px">Aucun item enregistré pour le moment.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = '';
+    bddItems.forEach(item => {
+      const tr = document.createElement('tr');
+      tr.dataset.bddId = item.id;
+      tr.innerHTML = `
+        <td style="padding:4px 6px"><input type="text" value="${item.libelle.replace(/"/g, '&quot;')}" data-bdd-key="libelle" style="width:100%;padding:5px 7px;font-size:0.88em"></td>
+        <td class="num" style="padding:4px 6px"><input type="number" value="${item.coutHT}" step="0.1" data-bdd-key="coutHT" style="width:100%;padding:5px 7px;font-size:0.88em;text-align:right"></td>
+        <td class="num" style="padding:4px 6px"><input type="number" value="${item.prixHT}" step="0.1" data-bdd-key="prixHT" style="width:100%;padding:5px 7px;font-size:0.88em;text-align:right"></td>
+        <td style="padding:4px 6px">
+          <select data-bdd-key="tvaCat" style="width:100%;padding:5px 7px;font-size:0.88em">
+            <option value="restauration"${item.tvaCat==='restauration'?' selected':''}>Resto 10%</option>
+            <option value="bar"${item.tvaCat==='bar'?' selected':''}>Bar 20%</option>
+          </select>
+        </td>
+        <td class="num" data-bdd-marge style="padding:4px 6px"></td>
+        <td class="num" style="padding:4px 6px"><button class="delete" data-bdd-action="delete" style="padding:3px 7px">×</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+    refreshAllBddMarges();
+  }
+
+  function refreshAllBddMarges() {
+    bddItems.forEach(item => {
+      const tr = document.querySelector(`#bddItemsTable tr[data-bdd-id="${item.id}"]`);
+      if (!tr) return;
+      const cell = tr.querySelector('[data-bdd-marge]');
+      if (!cell) return;
+      const margePers = item.prixHT - item.coutHT;
+      const taux = item.prixHT > 0 ? (margePers / item.prixHT) * 100 : 0;
+      const couleur = taux >= 60 ? '#0a5c2c' : taux >= 40 ? '#7a4400' : '#8a1a1a';
+      cell.innerHTML = `<span style="color:${couleur};font-weight:500">${fmtPct(taux)}</span>`;
+    });
+  }
+
+  // Listener pour édition inline de la BDD
+  document.addEventListener('input', e => {
+    const tr = e.target.closest('#bddItemsTable tr[data-bdd-id]');
+    if (!tr) return;
+    const key = e.target.dataset.bddKey;
+    if (!key) return;
+    const id = tr.dataset.bddId;
+    const item = bddItems.find(b => b.id === id);
+    if (!item) return;
+    if (key === 'coutHT' || key === 'prixHT') item[key] = parseFloat(e.target.value) || 0;
+    else item[key] = e.target.value;
+    refreshAllBddMarges();
+    refreshBddSelect();
+    persistBdd();
+  });
+
+  document.addEventListener('change', e => {
+    const tr = e.target.closest('#bddItemsTable tr[data-bdd-id]');
+    if (!tr) return;
+    const key = e.target.dataset.bddKey;
+    if (!key) return;
+    const id = tr.dataset.bddId;
+    const item = bddItems.find(b => b.id === id);
+    if (!item) return;
+    item[key] = e.target.value;
+    refreshAllBddMarges();
+    refreshBddSelect();
+    persistBdd();
+  });
+
+  document.addEventListener('click', e => {
+    if (e.target.dataset && e.target.dataset.bddAction === 'delete') {
+      const tr = e.target.closest('tr[data-bdd-id]');
+      if (!tr) return;
+      const id = tr.dataset.bddId;
+      const item = bddItems.find(b => b.id === id);
+      if (!item) return;
+      if (!confirm(`Supprimer « ${item.libelle} » de la base ?`)) return;
+      bddItems = bddItems.filter(b => b.id !== id);
+      persistBdd();
+      refreshBddTable();
+      refreshBddSelect();
+    }
+  });
+
+  function refreshBddSelect() {
+    const sel = $('bddImportSelect');
+    if (!sel) return;
+    const previous = sel.value;
+    sel.innerHTML = '<option value="">+ Importer depuis base...</option>';
+    bddItems.forEach(item => {
+      const o = document.createElement('option');
+      o.value = item.id;
+      o.textContent = `${item.libelle} (${fmt(item.coutHT)} → ${fmt(item.prixHT)})`;
+      sel.appendChild(o);
+    });
+    sel.value = previous && bddItems.some(b => b.id === previous) ? previous : '';
+  }
+
+  function bddAjouter() {
+    const libelle = $('bddNouveauLibelle').value.trim();
+    const coutHT = parseFloat($('bddNouveauCout').value) || 0;
+    const prixHT = parseFloat($('bddNouveauPrix').value) || 0;
+    const tvaCat = $('bddNouveauTva').value;
+    if (!libelle) { bddFeedback('Libellé requis.', 'err'); return; }
+    if (prixHT <= 0) { bddFeedback('Prix HT doit être > 0.', 'err'); return; }
+    if (bddItems.some(i => i.libelle.toLowerCase() === libelle.toLowerCase())) {
+      if (!confirm(`Un item "${libelle}" existe déjà dans la base. Ajouter quand même ?`)) return;
+    }
+    bddItems.push({
+      id: 'b_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+      libelle, coutHT, prixHT, tvaCat
+    });
+    persistBdd();
+    refreshBddTable();
+    refreshBddSelect();
+    $('bddNouveauLibelle').value = '';
+    $('bddNouveauCout').value = '';
+    $('bddNouveauPrix').value = '';
+    $('bddNouveauTva').value = 'restauration';
+    bddFeedback(`✓ « ${libelle} » ajouté à la base.`);
+  }
+
+  function bddSupprimer(id) {
+    // Conservée pour rétro-compatibilité, déléguée au handler global
+    const item = bddItems.find(b => b.id === id);
+    if (!item) return;
+    if (!confirm(`Supprimer « ${item.libelle} » de la base ?`)) return;
+    bddItems = bddItems.filter(b => b.id !== id);
+    persistBdd();
+    refreshBddTable();
+    refreshBddSelect();
+  }
+
+  function importerDepuisBdd(selectEl) {
+    const id = selectEl.value;
+    if (!id) return;
+    const src = bddItems.find(b => b.id === id);
+    if (!src) return;
+    items.push({
+      libelle: src.libelle, coutHT: src.coutHT, prixHT: src.prixHT, tvaCat: src.tvaCat
+    });
+    selectEl.value = '';
+    renderItems();
+    recalcul();
+  }
+
+  function saveItemToBdd(item, btnEl) {
+    if (!item.libelle.trim()) { bddFeedback('Libellé vide, impossible d\'enregistrer.', 'err'); return; }
+    if (item.prixHT <= 0) { bddFeedback('Prix HT doit être > 0.', 'err'); return; }
+    const dup = bddItems.find(b => b.libelle.toLowerCase() === item.libelle.toLowerCase());
+    if (dup) {
+      if (!confirm(`« ${item.libelle} » existe déjà dans la base. Mettre à jour avec les valeurs actuelles (${fmt(item.coutHT)} → ${fmt(item.prixHT)}) ?`)) return;
+      dup.coutHT = item.coutHT;
+      dup.prixHT = item.prixHT;
+      dup.tvaCat = item.tvaCat;
+    } else {
+      bddItems.push({
+        id: 'b_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+        libelle: item.libelle, coutHT: item.coutHT, prixHT: item.prixHT, tvaCat: item.tvaCat
+      });
+    }
+    persistBdd();
+    refreshBddTable();
+    refreshBddSelect();
+    if (btnEl) {
+      const old = btnEl.textContent;
+      btnEl.textContent = '✓ enregistré';
+      btnEl.style.color = '#0a5c2c';
+      btnEl.style.borderColor = '#0a5c2c';
+      setTimeout(() => { btnEl.textContent = old; btnEl.style.color = '#666'; btnEl.style.borderColor = 'rgba(0,0,0,0.15)'; }, 1500);
+    }
+  }
+
+  // ============================================================
+  // === PALIERS PERSONNEL (extensibles + persistés) ============
+  // ============================================================
+  const PALIERS_KEY = 'palace-paliers-v1';
+
+  function getPaliersFromDOM() {
+    const rows = document.querySelectorAll('#paliersTable tbody tr');
+    const out = [];
+    rows.forEach(r => {
+      const inputs = r.querySelectorAll('input');
+      out.push({
+        seuil: parseFloat(inputs[0].value) || 0,
+        staff: parseFloat(inputs[1].value) || 0
+      });
+    });
+    return out;
+  }
+
+  function persistPaliers() {
+    try { localStorage.setItem(PALIERS_KEY, JSON.stringify(getPaliersFromDOM())); }
+    catch (e) {}
+  }
+
+  function loadPaliersFromStorage() {
+    try {
+      const raw = localStorage.getItem(PALIERS_KEY);
+      if (!raw) return;
+      const paliers = JSON.parse(raw);
+      if (!Array.isArray(paliers) || paliers.length === 0) return;
+      const tbody = document.querySelector('#paliersTable tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      paliers.forEach(p => {
+        tbody.appendChild(makePalierRow(p.seuil, p.staff));
+      });
+    } catch (e) {}
+  }
+
+  function makePalierRow(seuil, staff) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="number" value="${seuil}"></td>
+      <td><input type="number" value="${staff}"></td>
+      <td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td>
+    `;
+    return tr;
+  }
+
+  function addPalier() {
+    const tbody = document.querySelector('#paliersTable tbody');
+    if (!tbody) return;
+    // Suggère seuil = dernier seuil + 30, staff = dernier staff + 1
+    const rows = tbody.querySelectorAll('tr');
+    let seuilSuggere = 30, staffSuggere = 4;
+    if (rows.length > 0) {
+      const last = rows[rows.length - 1].querySelectorAll('input');
+      seuilSuggere = (parseFloat(last[0].value) || 0) + 30;
+      staffSuggere = (parseFloat(last[1].value) || 0) + 1;
+    }
+    tbody.appendChild(makePalierRow(seuilSuggere, staffSuggere));
+    persistPaliers();
+    recalcul();
+  }
+
+  function deletePalier(btn) {
+    const tr = btn.closest('tr');
+    if (!tr) return;
+    const tbody = tr.parentElement;
+    if (tbody.querySelectorAll('tr').length <= 1) {
+      alert('Tu dois conserver au moins un palier.');
+      return;
+    }
+    tr.remove();
+    persistPaliers();
+    recalcul();
+  }
+
+  // Persistance auto à chaque modif des paliers
+  document.addEventListener('input', e => {
+    if (e.target.closest('#paliersTable')) persistPaliers();
+  });
+
+  // ============================================================
+  // === MODULE BIBLIOTHÈQUE DE FORMULES =========================
+  // ============================================================
+  const FORMULES_KEY = 'palace-formules-bdd-v1';
+  let formulesList = [];
+
+  function loadFormulesFromStorage() {
+    try {
+      const raw = localStorage.getItem(FORMULES_KEY);
+      formulesList = raw ? JSON.parse(raw) : [];
+    } catch (e) { formulesList = []; }
+  }
+  function persistFormules() {
+    try { localStorage.setItem(FORMULES_KEY, JSON.stringify(formulesList)); }
+    catch (e) { alert('Échec sauvegarde locale des formules.'); }
+  }
+
+  function formuleFeedback(msg, type = 'ok') {
+    const el = $('formuleFeedback');
+    if (!el) return;
+    const colors = { ok: '#0a5c2c', warn: '#7a4400', err: '#8a1a1a' };
+    el.textContent = msg;
+    el.style.color = colors[type] || '#666';
+    setTimeout(() => { if (el.textContent === msg) { el.innerHTML = '&nbsp;'; el.style.color = '#666'; } }, 3000);
+  }
+
+  function calcFormuleStats(formuleItems) {
+    const totalCout = formuleItems.reduce((s, i) => s + (i.coutHT || 0), 0);
+    const totalPrix = formuleItems.reduce((s, i) => s + (i.prixHT || 0), 0);
+    const margePers = totalPrix - totalCout;
+    const taux = totalPrix > 0 ? (margePers / totalPrix) * 100 : 0;
+    return { totalCout, totalPrix, margePers, taux };
+  }
+
+  function refreshFormulesTable() {
+    const tbody = document.querySelector('#formulesTable tbody');
+    if (!tbody) return;
+    if (formulesList.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#888;padding:18px">Aucune formule enregistrée pour le moment. Compose une formule dans la sidebar puis « Capturer formule courante » ci-dessous.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = '';
+    formulesList.forEach(formule => {
+      const stats = calcFormuleStats(formule.items);
+      const couleur = stats.taux >= 60 ? '#0a5c2c' : stats.taux >= 40 ? '#7a4400' : '#8a1a1a';
+      const itemsLabel = formule.items.map(i => i.libelle).join(' · ');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="padding:6px"><strong>${formule.nom.replace(/</g, '&lt;')}</strong></td>
+        <td style="padding:6px;font-size:0.85em;color:#666">${itemsLabel.replace(/</g, '&lt;')}</td>
+        <td class="num" style="padding:6px">${fmt(stats.totalPrix)}</td>
+        <td class="num" style="padding:6px;color:${couleur};font-weight:500">${fmtPct(stats.taux)}</td>
+        <td class="num" style="padding:6px;white-space:nowrap">
+          <button onclick="formuleCharger({value:'${formule.id}'})" style="padding:3px 8px;font-size:0.85em">Charger</button>
+          <button class="delete" onclick="formuleSupprimer('${formule.id}')" style="padding:3px 7px">×</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function refreshFormulesSelect() {
+    const sel = $('formuleLoadSelect');
+    if (!sel) return;
+    const previous = sel.value;
+    sel.innerHTML = '<option value="">📚 Charger une formule complète...</option>';
+    formulesList.forEach(f => {
+      const o = document.createElement('option');
+      o.value = f.id;
+      o.textContent = `${f.nom} (${f.items.length} items)`;
+      sel.appendChild(o);
+    });
+    sel.value = '';
+  }
+
+  function formuleCapture() {
+    const nom = $('formuleNouveauNom').value.trim();
+    if (!nom) { formuleFeedback('Nom de formule requis.', 'err'); return; }
+    if (items.length === 0) { formuleFeedback('La formule courante est vide.', 'err'); return; }
+    const dup = formulesList.find(f => f.nom.toLowerCase() === nom.toLowerCase());
+    if (dup) {
+      if (!confirm(`Une formule "${nom}" existe déjà. La remplacer par la composition actuelle ?`)) return;
+      dup.items = JSON.parse(JSON.stringify(items));
+      dup.dateModification = nowIso();
+    } else {
+      formulesList.push({
+        id: 'fm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+        nom,
+        items: JSON.parse(JSON.stringify(items)),
+        dateCreation: nowIso(),
+        dateModification: nowIso()
+      });
+    }
+    persistFormules();
+    refreshFormulesTable();
+    refreshFormulesSelect();
+    $('formuleNouveauNom').value = '';
+    formuleFeedback(`✓ Formule « ${nom} » enregistrée (${items.length} items).`);
+  }
+
+  function formuleCharger(selectOrObj) {
+    const id = selectOrObj.value;
+    if (!id) return;
+    const f = formulesList.find(x => x.id === id);
+    if (!f) return;
+    if (items.length > 0 && !confirm(`Remplacer la composition actuelle (${items.length} items) par la formule « ${f.nom} » (${f.items.length} items) ?`)) {
+      if (selectOrObj.value !== undefined) selectOrObj.value = '';
+      return;
+    }
+    items = JSON.parse(JSON.stringify(f.items));
+    if (selectOrObj.value !== undefined && selectOrObj.tagName === 'SELECT') selectOrObj.value = '';
+    renderItems();
+    recalcul();
+    setDirty(true);
+  }
+
+  function formuleSupprimer(id) {
+    const f = formulesList.find(x => x.id === id);
+    if (!f) return;
+    if (!confirm(`Supprimer la formule « ${f.nom} » de la bibliothèque ?`)) return;
+    formulesList = formulesList.filter(x => x.id !== id);
+    persistFormules();
+    refreshFormulesTable();
+    refreshFormulesSelect();
+  }
+
+  // ============================================================
+  // === EXPORT FICHE ÉQUIPE (sans prix) =========================
+  // ============================================================
+  function exportFicheEquipe() {
+    const data = readCurrentForm();
+    const d = window._lastDevis || {};
+    const formatLabels = {
+      'privat-full': 'Privatisation full + spectacle + repas',
+      'privat-salle': 'Privatisation salle seule',
+      'atelier-cocktail': 'Atelier cocktail',
+      'formation-impro': 'Formation impro / team building',
+      'groupe-classique': 'Groupe sur soirée Palace classique'
+    };
+    const statutLabels = {
+      'brouillon': 'Brouillon', 'envoye': 'Devis envoyé',
+      'accepte': 'Accepté ✓', 'refuse': 'Refusé'
+    };
+    const dateEvent = data.dateEvent ? new Date(data.dateEvent).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : '— non renseignée —';
+    const formatHasSpec = formatHasSpectacle(data.config.format);
+
+    // Composition formule (sans prix)
+    let compositionHTML = '';
+    if (data.config.formuleType === 'custom' && data.config.items.length > 0) {
+      compositionHTML = `
+        <h2>Composition de la formule</h2>
+        <ul class="composition">
+          ${data.config.items.map(item => `<li>${item.libelle.replace(/</g, '&lt;')}</li>`).join('')}
+        </ul>
+      `;
+    }
+
+    const escape = s => String(s || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
+    const now = new Date();
+    const horodatage = now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) + ' à ' + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+    const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche équipe — ${escape(data.client || 'Sans client')} — ${dateEvent}</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 32px 40px; color: #1a1a1a; line-height: 1.5; max-width: 800px; margin: 0 auto; }
+  h1, h2, h3 { font-family: 'Lexend', sans-serif; font-weight: 600; }
+  h1 { font-size: 1.6em; margin-bottom: 4px; }
+  h2 { font-size: 1.05em; margin: 24px 0 10px; padding-bottom: 4px; border-bottom: 1px solid #ccc; }
+  .header { border-bottom: 2px solid #1a1a1a; padding-bottom: 16px; margin-bottom: 20px; }
+  .meta { color: #666; font-size: 0.85em; margin-top: 6px; }
+  .infoGrid { display: grid; grid-template-columns: 180px 1fr; gap: 6px 16px; margin-bottom: 8px; }
+  .infoGrid .l { color: #666; font-size: 0.88em; }
+  .infoGrid .v { font-weight: 500; }
+  .composition { padding-left: 22px; }
+  .composition li { margin: 4px 0; }
+  .notes { background: #f8f8f8; border-left: 3px solid #888; padding: 10px 14px; border-radius: 4px; white-space: pre-wrap; font-size: 0.92em; }
+  .footer { margin-top: 32px; padding-top: 14px; border-top: 1px solid #ccc; font-size: 0.78em; color: #888; display: flex; justify-content: space-between; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: 500; background: #f0f0f0; color: #555; }
+  @media print {
+    body { padding: 0; }
+    button { display: none; }
+  }
+  .printBtn { position: fixed; top: 16px; right: 16px; padding: 8px 14px; background: #1a1a1a; color: white; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.88em; }
+</style>
+</head>
+<body>
+  <button class="printBtn" onclick="window.print()">Imprimer / PDF</button>
+
+  <div class="header">
+    <h1>Fiche opérationnelle — Palace Comedy</h1>
+    <p class="meta">${escape(data.nomFiche || '(fiche sans nom)')} · <span class="badge">${escape(statutLabels[data.statut] || data.statut)}</span></p>
+  </div>
+
+  <h2>Client &amp; événement</h2>
+  <div class="infoGrid">
+    <div class="l">Client</div><div class="v">${escape(data.client || '—')}</div>
+    <div class="l">Contact email</div><div class="v">${escape(data.contactEmail || '—')}</div>
+    <div class="l">Contact téléphone</div><div class="v">${escape(data.contactTel || '—')}</div>
+    <div class="l">Date</div><div class="v">${dateEvent}</div>
+    <div class="l">Heure d'arrivée invités</div><div class="v">${escape(data.heureArrivee || '—')}</div>
+    ${formatHasSpec ? `<div class="l">Heure du spectacle</div><div class="v">${escape(data.heureSpectacle || '—')}</div>` : ''}
+    <div class="l">Formule</div><div class="v">${escape(formatLabels[data.config.format] || data.config.format)}</div>
+    <div class="l">Nombre de personnes</div><div class="v">${data.config.nbPers}</div>
+  </div>
+
+  ${compositionHTML}
+
+  ${data.notes ? `<h2>Notes</h2><div class="notes">${escape(data.notes)}</div>` : ''}
+
+  <div class="footer">
+    <span>Document interne — sans informations tarifaires</span>
+    <span>Édité le ${horodatage}</span>
+  </div>
+
+  <script>
+    setTimeout(() => window.print(), 600);
+  </\u0073cript>
+</body>
+</html>`;
+
+    const w = window.open('', '_blank', 'width=850,height=1100');
+    if (!w) {
+      alert('Le navigateur a bloqué la fenêtre pop-up. Autorise-la pour cette page et réessaie.');
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
+  // ============================================================
+  // === MODULE FICHES DEVIS ====================================
+  // ============================================================
+  const STORAGE_KEY = 'palace-fiches-v1';
+  let fichesList = [];          // toutes les fiches sauvegardées
+  let currentFicheId = null;    // id de la fiche actuellement chargée (null = nouvelle)
+  let isDirty = false;          // état modifié non sauvegardé
+
+  // --- Storage ---
+  function loadFichesFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      fichesList = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      console.error('Lecture localStorage échouée', e);
+      fichesList = [];
+    }
+  }
+  function persistFiches() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(fichesList));
+    } catch (e) {
+      alert('Échec de sauvegarde locale (quota dépassé ou navigateur restreint). Pense à exporter en JSON pour ne rien perdre.');
+    }
+  }
+
+  // --- Helpers ---
+  function genId() {
+    return 'f_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  }
+  function nowIso() { return new Date().toISOString(); }
+
+  function setDirty(val = true) {
+    isDirty = val;
+    $('ficheUnsavedDot').classList.toggle('show', val);
+  }
+
+  // Format inclut un spectacle ? -> heure spectacle pertinente
+  function formatHasSpectacle(format) {
+    return format === 'privat-full' || format === 'groupe-classique';
+  }
+
+  // --- Sérialisation : on capture l'état du formulaire dans un objet ---
+  function readCurrentForm() {
+    return {
+      // métadonnées
+      nomFiche: $('ficheNom').value.trim(),
+      client: $('ficheClient').value.trim(),
+      contactEmail: $('ficheEmail').value.trim(),
+      contactTel: $('ficheTel').value.trim(),
+      dateEvent: $('ficheDateEvent').value,
+      heureArrivee: $('ficheHeureArrivee').value,
+      heureSpectacle: $('ficheHeureSpectacle').value,
+      statut: $('ficheStatut').value,
+      notes: $('ficheNotes').value,
+      // configuration simulateur
+      config: {
+        format: $('format').value,
+        day: $('day').value,
+        periodeOverride: $('periodeOverride').value,
+        nbPers: parseInt($('nbPers').value) || 1,
+        formuleType: $('formuleType').value,
+        items: JSON.parse(JSON.stringify(items)),
+        vueClient: document.querySelector('input[name="vueClient"]:checked').value,
+        fondreFraisResa: $('fondreFraisResa').checked,
+        forfaitLibelle: $('forfaitLibelle').value,
+        forfaitSousLibelle: $('forfaitSousLibelle').value
+      }
+    };
+  }
+
+  function writeFormFromFiche(f) {
+    $('ficheNom').value = f.nomFiche || '';
+    $('ficheClient').value = f.client || '';
+    $('ficheEmail').value = f.contactEmail || '';
+    $('ficheTel').value = f.contactTel || '';
+    $('ficheDateEvent').value = f.dateEvent || '';
+    $('ficheHeureArrivee').value = f.heureArrivee || '';
+    $('ficheHeureSpectacle').value = f.heureSpectacle || '';
+    $('ficheStatut').value = f.statut || 'brouillon';
+    $('ficheNotes').value = f.notes || '';
+    if (f.config) {
+      $('format').value = f.config.format || 'privat-full';
+      $('day').value = f.config.day || 'vendredi';
+      $('periodeOverride').value = f.config.periodeOverride || 'auto';
+      $('nbPers').value = f.config.nbPers || 50;
+      $('formuleType').value = f.config.formuleType || 'custom';
+      $('customFormuleBlock').style.display = (f.config.formuleType || 'custom') === 'custom' ? 'block' : 'none';
+      if (Array.isArray(f.config.items)) items = JSON.parse(JSON.stringify(f.config.items));
+      const vueRadio = document.querySelector(`input[name="vueClient"][value="${f.config.vueClient || 'decomposee'}"]`);
+      if (vueRadio) vueRadio.checked = true;
+      $('fondreFraisResa').checked = !!f.config.fondreFraisResa;
+      $('forfaitLibelle').value = f.config.forfaitLibelle || 'Forfait événementiel tout inclus';
+      $('forfaitSousLibelle').value = f.config.forfaitSousLibelle || 'privatisation + spectacle + restauration';
+    }
+    renderItems();
+    refreshHeureSpectacleVisibility();
+    refreshStatutBadge();
+    refreshForfaitLibelleVisibility();
+    recalcul();
+  }
+
+  function refreshHeureSpectacleVisibility() {
+    const show = formatHasSpectacle($('format').value);
+    $('ficheHeureSpectacleBlock').classList.toggle('hidden', !show);
+  }
+
+  function refreshStatutBadge() {
+    const v = $('ficheStatut').value;
+    const labels = { brouillon: 'brouillon', envoye: 'devis envoyé', accepte: 'accepté', refuse: 'refusé' };
+    const badge = $('ficheStatutBadge');
+    badge.className = 'statutBadge ' + v;
+    badge.textContent = labels[v] || v;
+  }
+
+  // --- Sélecteur de fiches ---
+  function refreshFichesSelect() {
+    const sel = $('selectFiche');
+    const previous = sel.value;
+    sel.innerHTML = '<option value="">— Nouvelle fiche (non sauvegardée) —</option>';
+    // tri : date événement la plus proche d'abord, puis date modif décroissante
+    const sorted = [...fichesList].sort((a, b) => {
+      if (a.dateEvent && b.dateEvent && a.dateEvent !== b.dateEvent) return a.dateEvent.localeCompare(b.dateEvent);
+      return (b.dateModification || '').localeCompare(a.dateModification || '');
+    });
+    sorted.forEach(f => {
+      const o = document.createElement('option');
+      o.value = f.id;
+      const dateStr = f.dateEvent ? new Date(f.dateEvent).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+      const statut = f.statut === 'accepte' ? '✓' : f.statut === 'refuse' ? '✗' : f.statut === 'envoye' ? '→' : '·';
+      o.textContent = `${statut} ${f.nomFiche || '(sans nom)'} — ${f.client || '?'} — ${dateStr}`;
+      sel.appendChild(o);
+    });
+    if (currentFicheId && fichesList.some(f => f.id === currentFicheId)) sel.value = currentFicheId;
+    else sel.value = '';
+  }
+
+  $('selectFiche').addEventListener('change', e => {
+    const id = e.target.value;
+    if (!id) { newFiche(false); return; }
+    if (isDirty && !confirm('Tu as des modifications non sauvegardées. Les abandonner ?')) {
+      $('selectFiche').value = currentFicheId || '';
+      return;
+    }
+    loadFiche(id);
+  });
+
+  // --- Actions ---
+  function newFiche(askConfirm = true) {
+    if (askConfirm && isDirty && !confirm('Tu as des modifications non sauvegardées. Créer une nouvelle fiche quand même ?')) return;
+    currentFicheId = null;
+    writeFormFromFiche({
+      nomFiche: '', client: '', contactEmail: '', contactTel: '',
+      dateEvent: '', heureArrivee: '', heureSpectacle: '',
+      statut: 'brouillon', notes: '',
+      config: {
+        format: 'privat-full', day: 'vendredi', periodeOverride: 'auto', nbPers: 50,
+        formuleType: 'custom',
+        items: [
+          { libelle: 'Apéritif & mises en bouche', coutHT: 3, prixHT: 10, tvaCat: 'restauration' },
+          { libelle: 'Plat principal', coutHT: 7, prixHT: 22, tvaCat: 'restauration' },
+          { libelle: 'Dessert', coutHT: 2.5, prixHT: 8, tvaCat: 'restauration' },
+          { libelle: 'Boissons (vin / soft)', coutHT: 4, prixHT: 14, tvaCat: 'bar' }
+        ],
+        vueClient: 'decomposee', fondreFraisResa: false,
+        forfaitLibelle: 'Forfait événementiel tout inclus',
+        forfaitSousLibelle: 'privatisation + spectacle + restauration'
+      }
+    });
+    setDirty(false);
+    refreshFichesSelect();
+  }
+
+  function autoNomFiche(formData) {
+    if (formData.nomFiche) return formData.nomFiche;
+    const c = formData.client || 'Client';
+    const d = formData.dateEvent ? new Date(formData.dateEvent).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}) : '';
+    return `Devis ${c}${d ? ' ' + d : ''}`;
+  }
+
+  function saveFiche() {
+    const data = readCurrentForm();
+    const snapshot = window._lastDevis ? {
+      totalHT: window._lastDevis.totalHT,
+      totalTTC: window._lastDevis.totalTTC,
+      prixPers: window._lastDevis.prixPers,
+      tauxMarge: window._lastDevis.tauxMarge
+    } : null;
+    data.nomFiche = autoNomFiche(data);
+
+    if (currentFicheId) {
+      const idx = fichesList.findIndex(f => f.id === currentFicheId);
+      if (idx >= 0) {
+        const existing = fichesList[idx];
+        fichesList[idx] = { ...existing, ...data, resultsSnapshot: snapshot, dateModification: nowIso() };
+      }
+    } else {
+      const newF = { id: genId(), ...data, resultsSnapshot: snapshot, dateCreation: nowIso(), dateModification: nowIso() };
+      fichesList.push(newF);
+      currentFicheId = newF.id;
+    }
+    persistFiches();
+    refreshFichesSelect();
+    refreshDashboard();
+    if (!$('tabCalendrier').classList.contains('hidden')) renderCalendrier();
+    setDirty(false);
+    $('ficheNom').value = data.nomFiche; // au cas où auto-généré
+  }
+
+  function loadFiche(id) {
+    const f = fichesList.find(x => x.id === id);
+    if (!f) return;
+    currentFicheId = f.id;
+    writeFormFromFiche(f);
+    setDirty(false);
+    refreshFichesSelect();
+    // Alerte si snapshot ≠ recalcul actuel (paramètres globaux ont peut-être changé)
+    setTimeout(() => {
+      if (f.resultsSnapshot && window._lastDevis) {
+        const dHT = Math.abs(f.resultsSnapshot.totalHT - window._lastDevis.totalHT);
+        if (dHT > 1) {
+          const note = document.createElement('div');
+          note.className = 'alerte info';
+          note.innerHTML = `<strong>Recalcul :</strong> les chiffres actuels (${fmt(window._lastDevis.totalHT)} HT) diffèrent du snapshot enregistré (${fmt(f.resultsSnapshot.totalHT)} HT). Les paramètres avancés (paliers, marges, plafonds…) ont été modifiés depuis l'enregistrement de cette fiche.`;
+          $('alertesBox').prepend(note);
+        }
+      }
+    }, 50);
+  }
+
+  function duplicateFiche() {
+    if (!currentFicheId) {
+      alert('Pour dupliquer, charge d\'abord une fiche existante.');
+      return;
+    }
+    const data = readCurrentForm();
+    const snapshot = window._lastDevis ? {
+      totalHT: window._lastDevis.totalHT, totalTTC: window._lastDevis.totalTTC,
+      prixPers: window._lastDevis.prixPers, tauxMarge: window._lastDevis.tauxMarge
+    } : null;
+    data.nomFiche = (data.nomFiche || 'Devis') + ' (copie)';
+    data.statut = 'brouillon';
+    const newF = { id: genId(), ...data, resultsSnapshot: snapshot, dateCreation: nowIso(), dateModification: nowIso() };
+    fichesList.push(newF);
+    currentFicheId = newF.id;
+    persistFiches();
+    writeFormFromFiche(newF);
+    refreshFichesSelect();
+    refreshDashboard();
+    if (!$('tabCalendrier').classList.contains('hidden')) renderCalendrier();
+    setDirty(false);
+  }
+
+  function deleteFiche() {
+    if (!currentFicheId) {
+      alert('Aucune fiche chargée à supprimer.');
+      return;
+    }
+    const f = fichesList.find(x => x.id === currentFicheId);
+    if (!f) return;
+    if (!confirm(`Supprimer définitivement la fiche « ${f.nomFiche || '(sans nom)'} » ?\n\nCette action est irréversible (sauf si tu as un export JSON).`)) return;
+    fichesList = fichesList.filter(x => x.id !== currentFicheId);
+    currentFicheId = null;
+    persistFiches();
+    refreshFichesSelect();
+    refreshDashboard();
+    if (!$('tabCalendrier').classList.contains('hidden')) renderCalendrier();
+    newFiche(false);
+  }
+
+  // --- Export / Import JSON ---
+  function exportAllJSON() {
+    const payload = {
+      _meta: {
+        app: 'Palace Comedy — Simulateur devis',
+        version: 'V2.5',
+        exportDate: nowIso(),
+        nbFiches: fichesList.length,
+        nbBddItems: bddItems.length,
+        nbFormules: formulesList.length
+      },
+      fiches: fichesList,
+      bddItems: bddItems,
+      formules: formulesList
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `palace-fiches-${dateStr}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function importJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        const incoming = Array.isArray(data) ? data : (data.fiches || []);
+        const incomingBdd = data.bddItems || [];
+        const incomingFormules = data.formules || [];
+        if (!Array.isArray(incoming) || incoming.length === 0) {
+          alert('Aucune fiche trouvée dans ce fichier.');
+          return;
+        }
+        const choix = confirm(`${incoming.length} fiche(s)${incomingBdd.length ? ' + ' + incomingBdd.length + ' item(s) BDD' : ''}${incomingFormules.length ? ' + ' + incomingFormules.length + ' formule(s)' : ''}.\n\nOK = FUSIONNER avec l'existant.\nAnnuler = REMPLACER tout.`);
+        if (choix) {
+          incoming.forEach(f => {
+            if (!f.id) f.id = genId();
+            const idx = fichesList.findIndex(x => x.id === f.id);
+            if (idx >= 0) fichesList[idx] = f; else fichesList.push(f);
+          });
+          incomingBdd.forEach(b => {
+            if (!b.id) b.id = 'b_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+            const idx = bddItems.findIndex(x => x.id === b.id);
+            if (idx >= 0) bddItems[idx] = b; else bddItems.push(b);
+          });
+          incomingFormules.forEach(fm => {
+            if (!fm.id) fm.id = 'fm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+            const idx = formulesList.findIndex(x => x.id === fm.id);
+            if (idx >= 0) formulesList[idx] = fm; else formulesList.push(fm);
+          });
+        } else {
+          if (!confirm(`Confirmer le REMPLACEMENT total ?`)) {
+            event.target.value = '';
+            return;
+          }
+          fichesList = incoming;
+          if (incomingBdd.length > 0) bddItems = incomingBdd;
+          if (incomingFormules.length > 0) formulesList = incomingFormules;
+        }
+        persistFiches();
+        persistBdd();
+        persistFormules();
+        refreshFichesSelect();
+        refreshDashboard();
+        refreshBddTable();
+        refreshBddSelect();
+        refreshFormulesTable();
+        refreshFormulesSelect();
+        if (!$('tabCalendrier').classList.contains('hidden')) renderCalendrier();
+        alert(`Import terminé. ${fichesList.length} fiches, ${bddItems.length} items BDD, ${formulesList.length} formules.`);
+      } catch (err) {
+        alert('Fichier JSON invalide : ' + err.message);
+      }
+      event.target.value = '';
+    };
+    reader.readAsText(file);
+  }
+
+  // --- Dashboard pipe commercial ---
+  function refreshDashboard() {
+    const total = fichesList.length;
+    const counts = { brouillon: 0, envoye: 0, accepte: 0, refuse: 0 };
+    let caAccepte = 0;
+    fichesList.forEach(f => {
+      counts[f.statut || 'brouillon'] = (counts[f.statut || 'brouillon'] || 0) + 1;
+      if (f.statut === 'accepte' && f.resultsSnapshot && f.resultsSnapshot.totalHT) {
+        caAccepte += f.resultsSnapshot.totalHT;
+      }
+    });
+    $('dashTotal').textContent = total;
+    $('dashBrouillon').textContent = counts.brouillon;
+    $('dashEnvoye').textContent = counts.envoye;
+    $('dashAccepte').textContent = counts.accepte;
+    const enJeu = counts.envoye + counts.accepte + counts.refuse;
+    $('dashTaux').textContent = enJeu > 0 ? Math.round(counts.accepte / enJeu * 100) + '%' : '—';
+    $('dashCA').textContent = caAccepte > 0 ? fmt(caAccepte) : '—';
+  }
+
+  // --- Hooks pour marquer "modifié" ---
+  // Tout changement dans les champs fiche ou config → setDirty(true)
+  ['ficheNom','ficheClient','ficheEmail','ficheTel','ficheDateEvent','ficheHeureArrivee','ficheHeureSpectacle','ficheNotes'].forEach(id => {
+    $(id).addEventListener('input', () => setDirty(true));
+  });
+  $('ficheStatut').addEventListener('change', () => { setDirty(true); refreshStatutBadge(); });
+  // Sur les inputs de config existants, on intercepte aussi
+  document.querySelectorAll('.sidebar input, .sidebar select, .sidebar textarea').forEach(el => {
+    el.addEventListener('input', () => setDirty(true));
+    el.addEventListener('change', () => setDirty(true));
+  });
+  // Et sur les items resto (déjà gérés par recalcul, on rajoute juste setDirty)
+  document.addEventListener('input', e => {
+    if (e.target.dataset && e.target.dataset.i !== undefined) setDirty(true);
+  }, true);
+
+  // Quand format change → maj visibilité heure spectacle
+  $('format').addEventListener('change', refreshHeureSpectacleVisibility);
+
+  // Avertissement avant de quitter avec modifs non sauvegardées
+  window.addEventListener('beforeunload', e => {
+    if (isDirty) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+
+  // === INIT ===
+  loadFichesFromStorage();
+  loadBddFromStorage();
+  loadFormulesFromStorage();
+  loadPaliersFromStorage();
+  refreshFichesSelect();
+  refreshDashboard();
+  refreshBddTable();
+  refreshBddSelect();
+  refreshFormulesTable();
+  refreshFormulesSelect();
+  refreshHeureSpectacleVisibility();
+  refreshStatutBadge();
+  refreshForfaitLibelleVisibility();
+  renderItems();
+  recalcul();
+</script>
+
+</body>
+</html>

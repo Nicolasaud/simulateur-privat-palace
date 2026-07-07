@@ -1,0 +1,36 @@
+# Dépendances npm
+node_modules/
+
+# Variables d'environnement (secrets — ne JAMAIS commit)
+.env
+.env.local
+.env.*.local
+
+# Données locales Netlify CLI (cache, lien projet, etc.)
+.netlify/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude Code — settings utilisateur-locaux (peuvent contenir des historiques sensibles)
+.claude/settings.local.json
+
+# Binaires lourds posés à la racine (installeurs, archives, etc.)
+*.dmg
+*.pkg
+*.iso
+*.zip
+

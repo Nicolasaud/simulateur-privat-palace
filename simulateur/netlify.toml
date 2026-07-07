@@ -1,0 +1,47 @@
+# ============================================================
+# Configuration Netlify — Simulateur devis Palace Comedy
+# ============================================================
+# Documentation : https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  # Dossier dont le contenu est publié sur le CDN Netlify.
+  # Pour l'instant, public/index.html = copie intacte du fichier monolithique d'origine.
+  publish = "public"
+
+  # Dossier où Netlify cherche les serverless functions (vide pour l'instant ;
+  # rempli à l'étape 4 — auth — puis à l'étape 5 — endpoints CRUD).
+  functions = "netlify/functions"
+
+# ============================================================
+# Configuration de `netlify dev` (serveur local de développement)
+# ============================================================
+[dev]
+  # On sert le dossier public/ tel quel : pas de framework, pas de build.
+  publish = "public"
+  framework = "#static"
+  # Port d'écoute local (par défaut : 8888). Modifiable au besoin.
+  port = 8888
+  # Port que Netlify utilise pour proxyfier vers le serveur statique.
+  # Laissé auto pour que `netlify dev` choisisse un port libre.
+  targetPort = 0
+
+# ============================================================
+# Redirections : /api/* → fonctions Netlify
+# ============================================================
+# Permet d'appeler les futures fonctions via /api/auth, /api/fiches, etc.
+# au lieu de l'URL native /.netlify/functions/auth. Plus court côté client.
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# ============================================================
+# Headers de sécurité (baseline)
+# ============================================================
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
