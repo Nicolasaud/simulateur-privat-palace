@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulateur Devis Privatisations Palace Comedy - 11 juin - 18h55</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+
+<h1 class="appHeader">
+  <a href="/" class="appHeaderLogo" aria-label="Palace Comedy — Privat & Co">
+    <img src="/assets/logo-palace.svg" alt="Palace Comedy">
+    <span class="appHeaderTagline">Privat &amp; Co</span>
+  </a>
+</h1>
+<p class="meta">Version 11 juin — 18h55. V2.6 — « Format » renommé « formule ». Paramètres des formules de prestation déplacés dans la bibliothèque.</p>
+
+<!-- ===== Bandeau gestion des fiches ===== -->
+<div class="ficheBar">
+  <span class="ficheBarSimu hidden">
+    <strong style="font-family:'Lexend',sans-serif;font-weight:500;">Fiches devis :</strong>
+    <select id="selectFiche">
+      <option value="">— Nouvelle fiche (non sauvegardée) —</option>
+    </select>
+    <span id="ficheUnsavedDot" title="Modifications non sauvegardées"></span>
+    <span class="sep"></span>
+    <button onclick="newFiche()">+ Nouvelle</button>
+    <button onclick="saveFiche()" class="primary" style="margin-top:0">Enregistrer</button>
+    <button onclick="duplicateFiche()">Dupliquer</button>
+    <button onclick="deleteFiche()" class="delete" style="padding:6px 12px;font-size:0.85em">Supprimer</button>
+    <span class="sep"></span>
+  </span>
+  <button onclick="exportAllJSON()">Exporter JSON</button>
+  <button onclick="document.getElementById('importJsonInput').click()">Importer JSON</button>
+  <input type="file" id="importJsonInput" accept=".json,application/json" style="display:none" onchange="importJSON(event)">
+  <span class="sep"></span>
+  <button onclick="refreshAll()" title="Resynchroniser depuis le cloud">↻ Rafraîchir</button>
+  <span class="sep"></span>
+  <span id="userInfo" style="font-size:0.85em;color:#666;font-family:'Lexend',sans-serif"></span>
+  <button onclick="logout()" class="delete" style="padding:6px 12px;font-size:0.85em">Déconnexion</button>
+</div>
+
+<!-- ===== Indicateurs de sync ===== -->
+<div id="apiSpinner" class="apiSpinner">↻ Sync…</div>
+<div id="toast" class="toast"></div>
+
+<!-- ===== Popup migration localStorage → cloud ===== -->
+<div id="migrationModal" class="modal hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modalContent" id="migrationModalBody"></div>
+</div>
+
+<!-- ===== Modal éditeur de formule de prestation ===== -->
+<div id="formulePrestaModal" class="modal hidden" onclick="if(event.target===this)closeFormulePrestaEditor()">
+  <div class="modalContent" id="formulePrestaModalBody" style="max-width:760px;width:96%"></div>
+</div>
+
+<!-- ===== Mini-dashboard pipe commercial ===== -->
+<div class="dashboard" id="dashboard">
+  <div class="miniKpi"><span class="l">Total fiches</span><span class="v" id="dashTotal">0</span></div>
+  <div class="miniKpi"><span class="l">Brouillons</span><span class="v" id="dashBrouillon">0</span></div>
+  <div class="miniKpi"><span class="l">Envoyées</span><span class="v" id="dashEnvoye">0</span></div>
+  <div class="miniKpi"><span class="l">Acceptées</span><span class="v" id="dashAccepte">0</span></div>
+  <div class="miniKpi"><span class="l">Taux transfo</span><span class="v" id="dashTaux">—</span></div>
+  <div class="miniKpi"><span class="l">CA acceptées HT</span><span class="v" id="dashCA">—</span></div>
+</div>
+
+<!-- ===== Onglets ===== -->
+<div class="tabsBar">
+  <button class="tab active" data-tab="accueil" onclick="switchTab('accueil')">🏠 Accueil</button>
+  <button class="tab" data-tab="crm" onclick="switchTab('crm')">📊 CRM</button>
+  <button class="tab" data-tab="calendrier" onclick="switchTab('calendrier')">📅 Calendrier</button>
+  <button class="tab" data-tab="simulateur" onclick="switchTab('simulateur')">🧮 Simulateur</button>
+  <button class="tab" data-tab="bibliotheque" onclick="switchTab('bibliotheque')">📋 Bibliothèque de formules</button>
+  <button class="tab" data-tab="bibitems" onclick="switchTab('bibitems')">🍽️ Bibliothèque d'items</button>
+</div>
+
+<!-- ===== Onglet : Accueil ===== -->
+<div id="tabAccueil" class="tab-content">
+  <div id="accueilContent"></div>
+</div>
+
+<!-- ===== Onglet : Bibliothèque de formules ===== -->
+<div id="tabBibliotheque" class="tab-content hidden">
+  <div id="bibliothequeContent"></div>
+</div>
+
+<!-- ===== Onglet : Bibliothèque d'items ===== -->
+<div id="tabBibitems" class="tab-content hidden">
+  <div class="bibHero">
+    <h1 style="margin-bottom:6px">🍽️ Bibliothèque d'items</h1>
+    <p class="meta" style="margin-bottom:0">Toutes tes <strong>briques</strong> de facturation : catégories, items (plats/boissons/prestations), base restauration et types internes (paramètres système). Ces items sont réutilisés dans les <a href="#" data-goto-formules style="color:var(--accent);text-decoration:underline">formules</a>.</p>
+  </div>
+  <div id="bibitemsContent"></div>
+</div>
+
+<!-- ===== Onglet : Simulateur ===== -->
+<div id="tabSimulateur" class="tab-content hidden">
+
+<!-- ===== Carte fiche en cours ===== -->
+<div class="ficheCard">
+  <h2>Fiche en cours <span id="ficheStatutBadge" class="statutBadge brouillon">brouillon</span></h2>
+  <p id="ficheTrace" class="ficheTrace hidden"></p>
+  <div class="ficheGrid">
+    <div class="ficheRow ficheRow-4">
+      <div>
+        <label>Nom de la fiche</label>
+        <input type="text" id="ficheNom" placeholder="Ex : Devis CSE Cointreau 15-06">
+      </div>
+      <div>
+        <label>Client (société / CSE)</label>
+        <input type="text" id="ficheClient" placeholder="Raison sociale">
+      </div>
+      <div>
+        <label>Adresse de facturation</label>
+        <input type="text" id="ficheAdresseFacturation" placeholder="Adresse complète, CP, ville">
+      </div>
+      <div>
+        <label>SIRET</label>
+        <input type="text" id="ficheSiret" placeholder="14 chiffres" maxlength="14" inputmode="numeric">
+      </div>
+    </div>
+    <div class="ficheRow ficheRow-6">
+      <div>
+        <label>Contact email</label>
+        <input type="text" id="ficheEmail" placeholder="cse@..." inputmode="email">
+      </div>
+      <div>
+        <label>Contact téléphone</label>
+        <input type="text" id="ficheTel" placeholder="02 41..." inputmode="tel">
+      </div>
+      <div>
+        <label>Date de l'événement</label>
+        <input type="date" id="ficheDateEvent">
+      </div>
+      <div>
+        <label>Heure d'arrivée des invités</label>
+        <input type="time" id="ficheHeureArrivee">
+      </div>
+      <div id="ficheHeureSpectacleBlock">
+        <label>Heure du spectacle</label>
+        <input type="time" id="ficheHeureSpectacle">
+      </div>
+      <div>
+        <label>Statut</label>
+        <select id="ficheStatut">
+          <option value="brouillon">Brouillon</option>
+          <option value="envoye">Devis envoyé</option>
+          <option value="accepte">Accepté</option>
+          <option value="acompte_facture">Acompte facturé</option>
+          <option value="facture_solde">Facture du solde</option>
+          <option value="refuse">Refusé</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <label style="margin-top:14px">Notes</label>
+  <textarea id="ficheNotes" placeholder="Notes libres : préférences client, points négociés, allergies, contraintes techniques, historique d'échanges..."></textarea>
+
+  <!-- Programme de la soirée — alimente Fiche client + Fiche équipe -->
+  <div class="programmeWrap">
+    <div class="programmeHeader">
+      <h3 style="margin:0">📅 Programme de la soirée</h3>
+      <button type="button" id="btnAddProgrammeMoment">+ Ajouter un moment</button>
+    </div>
+    <table id="tableProgramme" class="programmeTable">
+      <thead>
+        <tr>
+          <th style="width: 130px">Heure</th>
+          <th>Déroulé</th>
+          <th style="width: 50px"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p class="programmeHint">Ce programme sera repris automatiquement dans la <strong>fiche client</strong> et la <strong>fiche équipe</strong> PDF.</p>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="card sidebar">
+    <h2>Configuration du devis</h2>
+
+    <label>Jour de la semaine</label>
+    <select id="day">
+      <option value="lundi">Lundi (fermé)</option>
+      <option value="mardi">Mardi (fermé)</option>
+      <option value="mercredi">Mercredi</option>
+      <option value="jeudi">Jeudi</option>
+      <option value="vendredi" selected>Vendredi</option>
+      <option value="samedi">Samedi</option>
+      <option value="dimanche">Dimanche</option>
+    </select>
+
+    <label>Période <span style="font-weight:400;color:#666;font-size:0.9em">(auto = déduite de la date)</span></label>
+    <select id="periodeOverride">
+      <option value="auto" selected>Auto</option>
+      <option value="P1">Forcer P1 (mai-sept, basse saison)</option>
+      <option value="P2">Forcer P2 (oct-avr, haute saison)</option>
+    </select>
+    <p class="legend" id="periodeIndicator">Période effective : —</p>
+
+    <!-- Multi-formules : UI multi-blocs (la seule UI désormais) -->
+    <h3>Formules de prestation</h3>
+    <div id="blocsContainer"></div>
+    <div style="margin:8px 0 14px">
+      <button onclick="addBloc()" class="primary" style="margin-top:0">+ Ajouter une formule</button>
+    </div>
+    <div id="blocsRecapGlobal"></div>
+
+    <h3>Affichage du devis client</h3>
+    <label class="inline"><input type="radio" name="vueClient" value="decomposee" checked> Décomposé (lignes séparées)</label><br>
+    <label class="inline"><input type="radio" name="vueClient" value="prixPers"> Prix tout inclus par personne</label>
+    <label class="inline" style="margin-top:10px"><input type="checkbox" id="fondreFraisResa"> Fondre les frais de réservation dans le prix/pers</label>
+
+    <div id="forfaitLibelleBlock" style="margin-top:10px">
+      <label>Libellé du forfait (mode prix tout inclus)</label>
+      <input type="text" id="forfaitLibelle" placeholder="Ex : Forfait soirée Palace Comedy" value="Forfait événementiel tout inclus">
+      <input type="text" id="forfaitSousLibelle" placeholder="Sous-titre (ex : privatisation + spectacle + restauration)" value="privatisation + spectacle + restauration" style="margin-top:6px">
+    </div>
+
+    <div class="actions">
+      <button onclick="window.print()">Imprimer / PDF (devis)</button>
+      <button onclick="exportFicheEquipe()">📋 Fiche équipe (PDF)</button>
+      <button onclick="openFicheClientEditor()" class="primary">📋 Fiche client (PDF)</button>
+      <button class="primary" onclick="copyDevisText()">Copier devis texte</button>
+    </div>
+  </aside>
+
+  <main class="card">
+    <h2>Résultat</h2>
+
+    <div class="kpi-grid">
+      <div class="kpi" id="kpiBoxTotalHT"><span class="label">Total HT</span><span class="value" id="kpiTotalHT">—</span></div>
+      <div class="kpi" id="kpiBoxTotalTTC"><span class="label">Total TTC</span><span class="value" id="kpiTotalTTC">—</span></div>
+      <div class="kpi" id="kpiBoxPrixPers"><span class="label">Prix HT / pers</span><span class="value" id="kpiPrixPers">—</span></div>
+      <div class="kpi" id="kpiBoxMarge"><span class="label">Marge brute</span><span class="value" id="kpiMarge">—</span></div>
+      <div class="kpi" id="kpiBoxTaux"><span class="label">Taux de marge</span><span class="value" id="kpiTaux">—</span></div>
+    </div>
+
+    <div id="alertesBox"></div>
+
+    <div id="couvertureBox" class="card" style="background:rgba(74,128,214,0.06);border-color:rgba(74,128,214,0.2);padding:14px 18px;margin-bottom:16px;display:none">
+      <h3 style="margin-top:0">Couverture du jour</h3>
+      <div id="couvertureContent"></div>
+    </div>
+
+    <h3>Vue interne — décomposition coûts &amp; marges</h3>
+    <table id="tableInterne">
+      <thead>
+        <tr>
+          <th>Ligne</th>
+          <th class="num">Coût HT</th>
+          <th class="num">Prix HT</th>
+          <th class="num">Marge</th>
+          <th class="num">TVA</th>
+          <th class="num">TTC</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
+
+    <h3>Vue client — devis</h3>
+    <table id="tableClient">
+      <thead>
+        <tr>
+          <th>Désignation</th>
+          <th class="num">Qté</th>
+          <th class="num">P.U. HT</th>
+          <th class="num">Total HT</th>
+          <th class="num">TVA</th>
+          <th class="num">Total TTC</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
+
+    <div class="info-note">
+      <strong>Rappel TVA</strong> &middot; <strong>Privatisation incluant spectacle</strong> : 20% sur l'ensemble (prestation événementielle globale, non dissociable). <strong>Billets de spectacle vendus à la personne</strong> (formule Groupe sur Palace classique) : 5,5%. <strong>Restauration sur place</strong> : 10%. <strong>Boissons alcoolisées / Bar</strong> : 20%. <strong>Privatisation salle seule</strong> : 20%.
+    </div>
+  </main>
+</div>
+
+<details class="advanced">
+  <summary>Paramètres avancés &mdash; coûts, marges, paliers, TVA, plafonds</summary>
+  <div class="card">
+
+    <h3>CA habituel HT par jour &amp; période</h3>
+    <p class="legend">Source : ton historique B2C 12 derniers mois. P1 = mai à septembre. P2 = octobre à avril. Le seuil de couverture appliqué au devis est <strong>CA habituel × (1 + buffer)</strong>.</p>
+    <div class="grid-2">
+      <div><label>Buffer de couverture (%)</label><input type="number" id="bufferCouverture" value="20" step="1"></div>
+      <div></div>
+    </div>
+    <table id="caHabituelTable" style="margin-top:10px">
+      <thead><tr><th>Jour</th><th class="num">P1 (mai-sept)</th><th class="num">P2 (oct-avr)</th></tr></thead>
+      <tbody>
+        <tr><td>Lundi</td><td class="num"><input type="number" id="caLunP1" value="0" style="text-align:right"></td><td class="num"><input type="number" id="caLunP2" value="0" style="text-align:right"></td></tr>
+        <tr><td>Mardi</td><td class="num"><input type="number" id="caMarP1" value="0" style="text-align:right"></td><td class="num"><input type="number" id="caMarP2" value="0" style="text-align:right"></td></tr>
+        <tr><td>Mercredi</td><td class="num"><input type="number" id="caMerP1" value="1327" style="text-align:right"></td><td class="num"><input type="number" id="caMerP2" value="2146" style="text-align:right"></td></tr>
+        <tr><td>Jeudi</td><td class="num"><input type="number" id="caJeuP1" value="2114" style="text-align:right"></td><td class="num"><input type="number" id="caJeuP2" value="2811" style="text-align:right"></td></tr>
+        <tr><td>Vendredi</td><td class="num"><input type="number" id="caVenP1" value="2613" style="text-align:right"></td><td class="num"><input type="number" id="caVenP2" value="4098" style="text-align:right"></td></tr>
+        <tr><td>Samedi</td><td class="num"><input type="number" id="caSamP1" value="3052" style="text-align:right"></td><td class="num"><input type="number" id="caSamP2" value="4906" style="text-align:right"></td></tr>
+        <tr><td>Dimanche</td><td class="num"><input type="number" id="caDimP1" value="2037" style="text-align:right"></td><td class="num"><input type="number" id="caDimP2" value="2679" style="text-align:right"></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Personnel restaurant</h3>
+    <p class="legend">Le technicien spectacle est inclus dans le coût spectacle ci-dessus.</p>
+    <div class="grid-2">
+      <div><label>Coût horaire global (€)</label><input type="number" id="paramCoutHoraire" value="25" step="0.5"></div>
+      <div><label>Durée moyenne service (h)</label><input type="number" id="paramDuree" value="9" step="0.5"></div>
+    </div>
+    <h4>Paliers de personnel mobilisé</h4>
+    <table id="paliersTable">
+      <thead><tr><th>Jusqu'à X convives</th><th class="num">Nb personnel</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><input type="number" value="30"></td><td><input type="number" value="4"></td><td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td></tr>
+        <tr><td><input type="number" value="50"></td><td><input type="number" value="5"></td><td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td></tr>
+        <tr><td><input type="number" value="80"></td><td><input type="number" value="6"></td><td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td></tr>
+        <tr><td><input type="number" value="120"></td><td><input type="number" value="7"></td><td class="num"><button class="delete" onclick="deletePalier(this)" style="padding:3px 7px">×</button></td></tr>
+      </tbody>
+    </table>
+    <button onclick="addPalier()" style="margin-top:8px">+ Ajouter un palier</button>
+
+    <h3>Marges cibles appliquées par défaut</h3>
+    <p class="legend">⚠ La marge ici est un <strong>markup sur coût</strong> : marge 40% → prix HT = coût × 1,40. Cela correspond à une <strong>marge brute de 28,6%</strong> sur le prix HT. Pour viser 40% de marge brute sur le prix, paramétrer 67%.</p>
+    <div class="grid-2">
+      <div><label>Personnel (%)</label><input type="number" id="margePersonnel" value="40"></div>
+      <div><label>Intervenants externes (%)</label><input type="number" id="margeIntervenants" value="40"></div>
+    </div>
+
+    <h3>Taux de TVA (%)</h3>
+    <div class="grid-4">
+      <div><label>Spectacle vivant</label><input type="number" id="tvaSpectacle" value="5.5" step="0.1"></div>
+      <div><label>Restauration sur place</label><input type="number" id="tvaResto" value="10" step="0.1"></div>
+      <div><label>Bar / Alcool</label><input type="number" id="tvaBar" value="20" step="0.1"></div>
+      <div><label>Prestation / Privatisation</label><input type="number" id="tvaPresta" value="20" step="0.1"></div>
+    </div>
+
+    <h3>Plafonds commerciaux indicatifs (€/pers HT)</h3>
+    <p class="legend">Au-dessus → alerte « invendable ». À ajuster selon ton positionnement.</p>
+    <div class="grid-3">
+      <div><label>Lun-Mar (fermé)</label><input type="number" id="plafondLunMar" value="120"></div>
+      <div><label>Mer-Jeu-Dim</label><input type="number" id="plafondMid" value="160"></div>
+      <div><label>Ven-Sam</label><input type="number" id="plafondVenSam" value="200"></div>
+    </div>
+
+  </div>
+</details>
+
+</div><!-- /tabSimulateur -->
+
+<!-- ===== Onglet : Calendrier ===== -->
+<div id="tabCalendrier" class="tab-content hidden">
+  <div class="calendrierCard">
+    <div class="calendrierHeader">
+      <button onclick="calNav(-1)">← Mois précédent</button>
+      <h2 id="calTitle">—</h2>
+      <button onclick="calNav(+1)">Mois suivant →</button>
+      <button onclick="calToday()" class="primary" style="margin-top:0">Aujourd'hui</button>
+      <button onclick="openImportProgrammation()" style="margin-left:auto" title="Importer un PDF mensuel de programmation">📥 Importer programmation PDF</button>
+    </div>
+    <div class="calLegend">
+      <span><span class="dot brouillon"></span>Brouillon</span>
+      <span><span class="dot envoye"></span>Devis envoyé</span>
+      <span><span class="dot accepte"></span>Accepté</span>
+      <span><span class="dot refuse"></span>Refusé</span>
+      <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:0.9em">
+        <input type="checkbox" id="toggleProgrammation" style="cursor:pointer">
+        <label for="toggleProgrammation" style="cursor:pointer;user-select:none">🎤 Afficher la programmation</label>
+      </span>
+    </div>
+    <div class="calGrid" id="calGrid"></div>
+    <p class="legend" style="margin-top:14px">Astuce : clique sur une fiche pour voir son aperçu, puis « Ouvrir dans le simulateur » pour la charger.</p>
+  </div>
+</div>
+
+<!-- ===== Modal import programmation PDF ===== -->
+<div id="importProgModal" class="modal hidden" onclick="if(event.target===this)closeImportProgrammation()">
+  <div class="modalContent" style="max-width:760px;width:96%">
+    <button class="modalClose" onclick="closeImportProgrammation()" title="Fermer">×</button>
+    <div id="importProgModalBody"></div>
+  </div>
+</div>
+
+<!-- ===== Modal aperçu fiche ===== -->
+<div id="ficheModal" class="modal hidden" onclick="if(event.target===this)closeFicheModal()">
+  <div class="modalContent">
+    <button class="modalClose" onclick="closeFicheModal()" title="Fermer">×</button>
+    <div id="ficheModalBody"></div>
+  </div>
+</div>
+
+<!-- ===== Onglet : CRM ===== -->
+<div id="tabCrm" class="tab-content hidden">
+  <div class="crmIntro card">
+    <h2 style="margin-top:0">CRM — Pipeline de privatisation</h2>
+    <p style="margin:0 0 10px 0;color:#444">Centralise tous les contacts entrants &amp; en discussion. Convertis-les en fiche devis en un clic.</p>
+    <details class="crmConsignes">
+      <summary><strong>📋 Process commercial — à respecter</strong></summary>
+      <ol>
+        <li><strong>Qualifier sous 48h.</strong> Tout contact entrant est saisi ici dans la journée. Premier appel/email de qualif sous 48h ouvrées max.</li>
+        <li><strong>Cadrer le besoin avant de chiffrer.</strong> Type d'événement, date envisagée, nb de personnes, budget annoncé, attentes resto/spectacle. Tant que ces 5 infos ne sont pas dans la fiche, on reste en « En discussion ».</li>
+        <li><strong>Créer la fiche devis depuis le prospect</strong> (bouton « 📄 Créer fiche devis »). Les coordonnées sont auto-recopiées + lien CRM↔Devis créé automatiquement.</li>
+        <li><strong>Statut « Devis envoyé »</strong> dès l'envoi au client. Note systématique : date d'envoi + version du devis.</li>
+        <li><strong>Relance J+7</strong> si pas de retour client. Renseigne la « Prochaine relance » pour que le prospect remonte en tête de liste.</li>
+        <li><strong>Statut final « Gagné » ou « Perdu »</strong> dans les 30 jours. Si perdu, indique la raison en note (prix, date, concurrent, no-go…).</li>
+        <li><strong>Notes datées</strong> : préfixe toujours par JJ/MM (ex : <code>19/06 - relance email, attend retour budget CSE</code>). Permet à toute l'équipe de reprendre le dossier.</li>
+      </ol>
+    </details>
+  </div>
+
+  <!-- À faire cette semaine -->
+  <div class="card crmSemaine">
+    <h2 style="margin-top:0">📋 À faire cette semaine</h2>
+    <div id="crmTodoAuto" class="crmTodoAuto"></div>
+
+    <h3 style="margin-top:20px">📝 Notes &amp; tâches manuelles</h3>
+    <div class="crmTodoManualWrap">
+      <textarea id="crmTodoInput" placeholder="Ex : appeler Cointreau jeudi pour bouclage devis, envoyer mock-up scénographie à Pernod…" rows="2"></textarea>
+      <button id="btnCrmTodoAdd" class="primary">+ Ajouter</button>
+    </div>
+    <ul id="crmTodoList" class="crmTodoList"></ul>
+  </div>
+
+  <!-- Stats CRM (Étape 8b) -->
+  <div class="card crmStatsCard" id="crmStatsCard" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="margin:0">📊 Statistiques CRM</h2>
+      <button id="btnCrmStatsToggle" class="secondary" style="font-size:0.85em">Masquer</button>
+    </div>
+    <div class="crmStatsGrid" id="crmStatsGrid"></div>
+  </div>
+
+  <div class="crmToolbar">
+    <button class="primary" id="btnNewProspect" style="margin-top:0">+ Nouveau prospect</button>
+    <span class="sep"></span>
+    <input type="text" id="crmFilterQuery" placeholder="Rechercher société, contact, email…" style="flex:1;min-width:200px;max-width:340px">
+    <select id="crmFilterStatut" style="width:auto;min-width:140px"></select>
+    <select id="crmFilterSource" style="width:auto;min-width:140px"></select>
+    <select id="crmFilterType" style="width:auto;min-width:160px"></select>
+    <span class="sep"></span>
+    <button id="btnCrmStats" class="secondary" title="Afficher les statistiques">📊 Stats</button>
+    <button id="btnCrmExport" class="secondary" title="Télécharger tous les prospects en CSV">📥 Export CSV</button>
+    <span class="sep"></span>
+    <div class="crmViewToggle">
+      <button data-view="table" class="active">Tableau</button>
+      <button data-view="kanban">Kanban</button>
+    </div>
+  </div>
+
+  <div id="crmViewTable">
+    <div class="card" style="padding:0;overflow:hidden">
+      <table id="crmTable" style="margin:0">
+        <thead>
+          <tr>
+            <th>Société / Contact</th>
+            <th>Coordonnées</th>
+            <th>Type</th>
+            <th class="num">Pers.</th>
+            <th>Date envisagée</th>
+            <th class="num">Budget HT</th>
+            <th>Statut</th>
+            <th>Prochaine relance</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="crmViewKanban" class="hidden">
+    <div class="crmKanbanGrid" id="crmKanbanGrid"></div>
+  </div>
+</div>
+
+<!-- ===== Modal éditeur prospect CRM ===== -->
+<div id="crmModal" class="modal hidden">
+  <div class="modalContent" id="crmModalBody" style="max-width:820px;width:96%"></div>
+</div>
+
+<!-- ===== Modal éditeur fiche client (proposition de privatisation) ===== -->
+<div id="ficheClientModal" class="modal hidden" onclick="if(event.target===this)closeFicheClientEditor()">
+  <div class="modalContent ficheClientEditor">
+    <button class="modalClose" onclick="closeFicheClientEditor()" title="Fermer">×</button>
+    <div id="ficheClientEditorBody"></div>
+  </div>
+</div>
+
+<script type="module" src="/js/main.js"></script>
+
+</body>
+</html>

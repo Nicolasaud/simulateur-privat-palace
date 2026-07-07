@@ -1,0 +1,21 @@
+{
+  "name": "simulateur-palace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Simulateur de devis Palace Comedy — refonte Netlify (Functions + Blobs + auth code partagé)",
+  "type": "module",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'Pas de build pour l instant — vanilla ESM servi tel quel' && exit 0",
+    "hash-code": "node scripts/hash-code.js"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.36.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
