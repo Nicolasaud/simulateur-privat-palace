@@ -1,0 +1,24 @@
+# ============================================================
+# Configuration Netlify — Racine du monorepo Emergent
+# ============================================================
+# Le code applicatif vit dans le dossier ./simulateur/. Ce fichier
+# indique à Netlify de faire un cd vers ce dossier avant tout build,
+# afin que publish/functions/redirects du netlify.toml interne
+# fonctionnent tels quels.
+
+[build]
+  base = "simulateur"
+  publish = "public"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
