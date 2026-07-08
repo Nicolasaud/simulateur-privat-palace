@@ -1001,6 +1001,13 @@ button.delete.bib-del { padding: 2px 8px; font-size: 1em; min-width: auto; }
 .crmTodoManualWrap { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; }
 .crmTodoManualWrap textarea { flex: 1; min-height: 44px; padding: 9px 12px; resize: vertical; }
 .crmTodoManualWrap button { margin-top: 0; flex-shrink: 0; }
+.crmTodoInputSide { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; min-width: 180px; }
+.crmTodoDateLabel { display: flex; flex-direction: column; font-size: 0.72em; color: #666; text-transform: uppercase; letter-spacing: 0.03em; gap: 3px; }
+.crmTodoDateLabel input { padding: 6px 8px; font-size: 0.92em; }
+.crmTodoDueDate { display: inline-flex; align-items: center; gap: 3px; margin-left: 10px; padding: 1px 8px; font-size: 0.78em; border-radius: 10px; background: rgba(0,0,0,0.06); color: #666; font-weight: 500; white-space: nowrap; }
+.crmTodoDueDate.overdue { background: rgba(220, 53, 69, 0.12); color: #b02a37; }
+.crmTodoDueDate.today { background: rgba(255, 152, 0, 0.15); color: #cc7000; }
+.crmTodoManualItem.overdue { border-left: 3px solid #dc3545; padding-left: 8px; }
 
 .crmTodoList { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 4px; }
 .crmTodoManualItem {

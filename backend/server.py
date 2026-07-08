@@ -415,11 +415,17 @@ async def crm_todo_put(request: Request):
     import time
     for it in body:
         if isinstance(it, dict) and isinstance(it.get('text'), str):
-            sanitized.append({
+            entry = {
                 'id': it['id'] if isinstance(it.get('id'), str) else f't_{int(time.time()*1000):x}_{len(sanitized)}',
                 'text': it['text'],
                 'done': bool(it.get('done')),
-            })
+            }
+            # Champs optionnels
+            if isinstance(it.get('dueDate'), str) and it['dueDate']:
+                entry['dueDate'] = it['dueDate']
+            if isinstance(it.get('createdAt'), str) and it['createdAt']:
+                entry['createdAt'] = it['createdAt']
+            sanitized.append(entry)
     await blob_set('crm/todo-manual', sanitized)
     return sanitized
 

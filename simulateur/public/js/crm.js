@@ -199,6 +199,7 @@ async function changeProspectStatut(id, newStatut) {
     entry.updated_by = saved.updated_by;
     renderCrmKanban();
     renderCrmTable();
+    renderCrmTodoSemaine();  // statut clos → prospect disparaît de la todo semaine
     showToast(`Statut → ${statutLabel(newStatut)}`, 'success', 1500);
   } catch (e) {
     showToast(`Échec : ${e.body?.error || e.message}`, 'error');
@@ -313,15 +314,31 @@ export function renderCrmTodoManual() {
     root.innerHTML = '<li class="crmTodoEmpty">Aucune note manuelle. Ajoute une tâche au-dessus.</li>';
     return;
   }
-  root.innerHTML = items.map(it => `
-    <li data-id="${it.id}" class="crmTodoManualItem ${it.done ? 'done' : ''}">
-      <label>
-        <input type="checkbox" ${it.done ? 'checked' : ''}>
-        <span>${escapeHtml(it.text)}</span>
-      </label>
-      <button class="crmTodoDel" title="Supprimer">×</button>
-    </li>
-  `).join('');
+  // Trie : non-faites d'abord, puis par échéance croissante (sans date en dernier)
+  const sorted = [...items].sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    const da = a.dueDate || '9999-99-99';
+    const db = b.dueDate || '9999-99-99';
+    return da.localeCompare(db);
+  });
+  const today = new Date().toISOString().slice(0, 10);
+  root.innerHTML = sorted.map(it => {
+    const isOverdue = it.dueDate && it.dueDate < today && !it.done;
+    const isDue = it.dueDate && it.dueDate === today && !it.done;
+    const dateBadge = it.dueDate
+      ? `<span class="crmTodoDueDate ${isOverdue ? 'overdue' : isDue ? 'today' : ''}">📅 ${fmtDate(it.dueDate)}${isOverdue ? ' (en retard)' : isDue ? ' (aujourd\'hui)' : ''}</span>`
+      : '';
+    return `
+      <li data-id="${it.id}" class="crmTodoManualItem ${it.done ? 'done' : ''} ${isOverdue ? 'overdue' : ''}">
+        <label>
+          <input type="checkbox" ${it.done ? 'checked' : ''}>
+          <span>${escapeHtml(it.text)}</span>
+          ${dateBadge}
+        </label>
+        <button class="crmTodoDel" title="Supprimer">×</button>
+      </li>
+    `;
+  }).join('');
   root.querySelectorAll('li[data-id]').forEach(li => {
     const id = li.dataset.id;
     li.querySelector('input[type=checkbox]').addEventListener('change', e => toggleTodoItem(id, e.target.checked));
@@ -336,11 +353,20 @@ async function persistTodoManual() {
 
 async function addTodoItem() {
   const input = document.getElementById('crmTodoInput');
+  const dateInput = document.getElementById('crmTodoInputDate');
   const text = (input.value || '').trim();
   if (!text) return;
-  const it = { id: 't_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text, done: false };
+  const dueDate = dateInput ? (dateInput.value || '') : '';
+  const it = {
+    id: 't_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    text,
+    dueDate,
+    done: false,
+    createdAt: new Date().toISOString().slice(0, 10)
+  };
   state.crmTodoManual.push(it);
   input.value = '';
+  if (dateInput) dateInput.value = '';
   renderCrmTodoManual();
   await persistTodoManual();
 }
@@ -558,6 +584,7 @@ export async function saveProspect() {
     if (i >= 0) state.crmList[i] = entry; else state.crmList.push(entry);
     renderCrmTable();
     renderCrmKanban();
+    renderCrmTodoSemaine();
     showToast('Prospect enregistré', 'success', 1500);
     closeProspectEditor();
   } catch (e) {
@@ -574,6 +601,7 @@ export async function deleteProspect() {
     state.crmList = state.crmList.filter(p => p.id !== editingId);
     renderCrmTable();
     renderCrmKanban();
+    renderCrmTodoSemaine();
     showToast('Prospect supprimé', 'success', 1500);
     closeProspectEditor();
   } catch (e) {
@@ -581,6 +609,7 @@ export async function deleteProspect() {
       state.crmList = state.crmList.filter(p => p.id !== editingId);
       renderCrmTable();
       renderCrmKanban();
+      renderCrmTodoSemaine();
       closeProspectEditor();
     } else {
       showToast(`Échec : ${e.body?.error || e.message}`, 'error');
