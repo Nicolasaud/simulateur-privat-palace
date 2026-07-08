@@ -236,63 +236,108 @@ export function renderCrmTodoSemaine() {
   const root = document.getElementById('crmTodoAuto');
   if (!root) return;
 
-  // Prospects en retard (dateProchainContact < today, hors gagnés/perdus)
-  const enRetard = (state.crmList || [])
-    .filter(p => isOverdue(p.dateProchainContact, p.statut))
-    .sort((a, b) => (a.dateProchainContact || '').localeCompare(b.dateProchainContact || ''));
+  // === Unification prospects + tâches manuelles ===
+  // Chaque entrée : { kind: 'prospect'|'task', iso, overdue, ... }
+  const entries = [];
 
-  // Prospects à relancer cette semaine (0-7j à venir)
-  const relances = (state.crmList || [])
-    .filter(p => isWithinWeek(p.dateProchainContact))
-    .sort((a, b) => (a.dateProchainContact || '').localeCompare(b.dateProchainContact || ''));
+  (state.crmList || []).forEach(p => {
+    const overdue = isOverdue(p.dateProchainContact, p.statut);
+    const inWeek = isWithinWeek(p.dateProchainContact);
+    if (overdue || inWeek) {
+      entries.push({ kind: 'prospect', iso: p.dateProchainContact, overdue, data: p });
+    }
+  });
+
+  (state.crmTodoManual || []).forEach(t => {
+    if (t.done || !t.dueDate) return;   // tâches sans date OU cochées → restent en bas
+    const overdue = isOverdue(t.dueDate, null);   // pas de statut → jamais "clos"
+    const inWeek = isWithinWeek(t.dueDate);
+    if (overdue || inWeek) {
+      entries.push({ kind: 'task', iso: t.dueDate, overdue, data: t });
+    }
+  });
+
+  const enRetard = entries.filter(e => e.overdue).sort((a, b) => (a.iso || '').localeCompare(b.iso || ''));
+  const relances = entries.filter(e => !e.overdue).sort((a, b) => (a.iso || '').localeCompare(b.iso || ''));
 
   if (enRetard.length === 0 && relances.length === 0) {
     root.innerHTML = '<p class="crmTodoEmpty">Aucune relance prévue cette semaine 🎉</p>';
     return;
   }
 
+  const renderRow = (e) => {
+    if (e.kind === 'prospect') {
+      const p = e.data;
+      if (e.overdue) {
+        const days = daysBetween(p.dateProchainContact);
+        const retardLbl = days === -1 ? 'hier' : `il y a ${-days}j`;
+        return `
+          <li data-prospect-id="${p.id}" class="crmTodoAutoItem overdue" title="Relance en retard depuis ${retardLbl}">
+            <span class="crmTodoDate crmTodoDateOverdue">🔴 ${fmtDate(p.dateProchainContact)} <em>(${retardLbl})</em></span>
+            <span class="crmTodoSociete">${escapeHtml(p.societe || '—')}</span>
+            ${p.contactNom ? `<span class="crmTodoContact">${escapeHtml(p.contactNom)}</span>` : ''}
+            <span class="crmStatutBadge ${p.statut}">${statutLabel(p.statut)}</span>
+          </li>`;
+      }
+      return `
+        <li data-prospect-id="${p.id}" class="crmTodoAutoItem">
+          <span class="crmTodoDate">${fmtDate(p.dateProchainContact)}</span>
+          <span class="crmTodoSociete">${escapeHtml(p.societe || '—')}</span>
+          ${p.contactNom ? `<span class="crmTodoContact">${escapeHtml(p.contactNom)}</span>` : ''}
+          <span class="crmStatutBadge ${p.statut}">${statutLabel(p.statut)}</span>
+        </li>`;
+    }
+    // kind === 'task'
+    const t = e.data;
+    if (e.overdue) {
+      const days = daysBetween(t.dueDate);
+      const retardLbl = days === -1 ? 'hier' : `il y a ${-days}j`;
+      return `
+        <li data-task-id="${t.id}" class="crmTodoAutoItem overdue crmTodoTaskRow" title="Tâche en retard depuis ${retardLbl}">
+          <span class="crmTodoDate crmTodoDateOverdue">🔴 ${fmtDate(t.dueDate)} <em>(${retardLbl})</em></span>
+          <span class="crmTodoSociete">${escapeHtml(t.text)}</span>
+          <span class="crmTodoKindBadge">📝 Tâche</span>
+          <button class="crmTodoRowDone" title="Marquer comme faite">✓ Fait</button>
+        </li>`;
+    }
+    return `
+      <li data-task-id="${t.id}" class="crmTodoAutoItem crmTodoTaskRow">
+        <span class="crmTodoDate">${fmtDate(t.dueDate)}</span>
+        <span class="crmTodoSociete">${escapeHtml(t.text)}</span>
+        <span class="crmTodoKindBadge">📝 Tâche</span>
+        <button class="crmTodoRowDone" title="Marquer comme faite">✓ Fait</button>
+      </li>`;
+  };
+
   let html = '';
   if (enRetard.length > 0) {
     html += `
       <div class="crmTodoOverdueBanner">
         <span class="crmTodoOverdueIcon">⚠️</span>
-        <span><strong>${enRetard.length}</strong> relance${enRetard.length > 1 ? 's' : ''} en retard</span>
+        <span><strong>${enRetard.length}</strong> ${enRetard.length > 1 ? 'éléments' : 'élément'} en retard</span>
       </div>
-      <ul class="crmTodoAutoList">
-        ${enRetard.map(p => {
-          const days = daysBetween(p.dateProchainContact);
-          const retardLbl = days === -1 ? 'hier' : `il y a ${-days}j`;
-          return `
-            <li data-prospect-id="${p.id}" class="crmTodoAutoItem overdue" title="Relance en retard depuis ${retardLbl}">
-              <span class="crmTodoDate crmTodoDateOverdue">🔴 ${fmtDate(p.dateProchainContact)} <em>(${retardLbl})</em></span>
-              <span class="crmTodoSociete">${escapeHtml(p.societe || '—')}</span>
-              ${p.contactNom ? `<span class="crmTodoContact">${escapeHtml(p.contactNom)}</span>` : ''}
-              <span class="crmStatutBadge ${p.statut}">${statutLabel(p.statut)}</span>
-            </li>
-          `;
-        }).join('')}
-      </ul>
+      <ul class="crmTodoAutoList">${enRetard.map(renderRow).join('')}</ul>
     `;
   }
-
   if (relances.length > 0) {
     html += `
       ${enRetard.length > 0 ? '<h4 style="margin:14px 0 6px 0;font-size:0.85em;color:#555;text-transform:uppercase;letter-spacing:0.05em">Cette semaine</h4>' : ''}
-      <ul class="crmTodoAutoList">
-        ${relances.map(p => `
-          <li data-prospect-id="${p.id}" class="crmTodoAutoItem">
-            <span class="crmTodoDate">${fmtDate(p.dateProchainContact)}</span>
-            <span class="crmTodoSociete">${escapeHtml(p.societe || '—')}</span>
-            ${p.contactNom ? `<span class="crmTodoContact">${escapeHtml(p.contactNom)}</span>` : ''}
-            <span class="crmStatutBadge ${p.statut}">${statutLabel(p.statut)}</span>
-          </li>
-        `).join('')}
-      </ul>
+      <ul class="crmTodoAutoList">${relances.map(renderRow).join('')}</ul>
     `;
   }
   root.innerHTML = html;
+
+  // Wiring : prospect → ouvre modal · task → click sur "Fait" ou sur le body
   root.querySelectorAll('li[data-prospect-id]').forEach(li => {
     li.addEventListener('click', () => openProspectEditor(li.dataset.prospectId));
+  });
+  root.querySelectorAll('li[data-task-id]').forEach(li => {
+    const id = li.dataset.taskId;
+    li.querySelector('.crmTodoRowDone')?.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await toggleTodoItem(id, true);
+      renderCrmTodoSemaine();
+    });
   });
 }
 
@@ -310,26 +355,22 @@ export function renderCrmTodoManual() {
   const root = document.getElementById('crmTodoList');
   if (!root) return;
   const items = state.crmTodoManual || [];
-  if (items.length === 0) {
-    root.innerHTML = '<li class="crmTodoEmpty">Aucune note manuelle. Ajoute une tâche au-dessus.</li>';
+  // Ne rend ICI que les tâches SANS échéance (freeform notes) ou DÉJÀ FAITES.
+  // Les tâches avec dueDate à venir/en retard sont affichées dans la section
+  // "À faire cette semaine" au-dessus.
+  const shown = items.filter(it => !it.dueDate || it.done);
+  if (shown.length === 0) {
+    root.innerHTML = '<li class="crmTodoEmpty">Aucune note libre. Ajoute une tâche ou une échéance ci-dessus.</li>';
     return;
   }
-  // Trie : non-faites d'abord, puis par échéance croissante (sans date en dernier)
-  const sorted = [...items].sort((a, b) => {
+  const sorted = [...shown].sort((a, b) => {
     if (a.done !== b.done) return a.done ? 1 : -1;
-    const da = a.dueDate || '9999-99-99';
-    const db = b.dueDate || '9999-99-99';
-    return da.localeCompare(db);
+    return 0;
   });
-  const today = new Date().toISOString().slice(0, 10);
   root.innerHTML = sorted.map(it => {
-    const isOverdue = it.dueDate && it.dueDate < today && !it.done;
-    const isDue = it.dueDate && it.dueDate === today && !it.done;
-    const dateBadge = it.dueDate
-      ? `<span class="crmTodoDueDate ${isOverdue ? 'overdue' : isDue ? 'today' : ''}">📅 ${fmtDate(it.dueDate)}${isOverdue ? ' (en retard)' : isDue ? ' (aujourd\'hui)' : ''}</span>`
-      : '';
+    const dateBadge = it.dueDate ? `<span class="crmTodoDueDate">📅 ${fmtDate(it.dueDate)}</span>` : '';
     return `
-      <li data-id="${it.id}" class="crmTodoManualItem ${it.done ? 'done' : ''} ${isOverdue ? 'overdue' : ''}">
+      <li data-id="${it.id}" class="crmTodoManualItem ${it.done ? 'done' : ''}">
         <label>
           <input type="checkbox" ${it.done ? 'checked' : ''}>
           <span>${escapeHtml(it.text)}</span>
@@ -368,6 +409,7 @@ async function addTodoItem() {
   input.value = '';
   if (dateInput) dateInput.value = '';
   renderCrmTodoManual();
+  renderCrmTodoSemaine();
   await persistTodoManual();
 }
 
@@ -376,12 +418,14 @@ async function toggleTodoItem(id, done) {
   if (!it) return;
   it.done = done;
   renderCrmTodoManual();
+  renderCrmTodoSemaine();
   await persistTodoManual();
 }
 
 async function deleteTodoItem(id) {
   state.crmTodoManual = state.crmTodoManual.filter(x => x.id !== id);
   renderCrmTodoManual();
+  renderCrmTodoSemaine();
   await persistTodoManual();
 }
 
