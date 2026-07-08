@@ -1008,6 +1008,11 @@ button.delete.bib-del { padding: 2px 8px; font-size: 1em; min-width: auto; }
 .crmTodoDueDate.overdue { background: rgba(220, 53, 69, 0.12); color: #b02a37; }
 .crmTodoDueDate.today { background: rgba(255, 152, 0, 0.15); color: #cc7000; }
 .crmTodoManualItem.overdue { border-left: 3px solid #dc3545; padding-left: 8px; }
+.crmTodoKindBadge { background: rgba(139, 92, 246, 0.12); color: #7c3aed; padding: 1px 8px; border-radius: 10px; font-size: 0.72em; font-weight: 500; white-space: nowrap; margin-left: 4px; }
+.crmTodoRowDone { background: transparent; border: 1px solid rgba(0,0,0,0.15); color: #16a34a; padding: 3px 10px; border-radius: 6px; font-size: 0.78em; cursor: pointer; margin-left: 8px; font-weight: 500; }
+.crmTodoRowDone:hover { background: rgba(22, 163, 74, 0.08); border-color: #16a34a; }
+.crmTodoTaskRow { cursor: default; }
+.crmTodoTaskRow .crmTodoSociete { font-style: italic; color: #444; }
 
 .crmTodoList { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 4px; }
 .crmTodoManualItem {
