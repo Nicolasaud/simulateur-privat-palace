@@ -26,11 +26,16 @@ export default async (req) => {
     if (!Array.isArray(body)) return jsonResponse(400, { error: 'expected_array' });
     const sanitized = body
       .filter(it => it && typeof it === 'object' && typeof it.text === 'string')
-      .map(it => ({
-        id: typeof it.id === 'string' ? it.id : ('t_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
-        text: it.text,
-        done: !!it.done
-      }));
+      .map(it => {
+        const entry = {
+          id: typeof it.id === 'string' ? it.id : ('t_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+          text: it.text,
+          done: !!it.done
+        };
+        if (typeof it.dueDate === 'string' && it.dueDate) entry.dueDate = it.dueDate;
+        if (typeof it.createdAt === 'string' && it.createdAt) entry.createdAt = it.createdAt;
+        return entry;
+      });
     await writeJson(KEY, sanitized);
     return jsonResponse(200, sanitized);
   }

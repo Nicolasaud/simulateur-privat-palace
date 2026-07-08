@@ -421,7 +421,13 @@
     <h3 style="margin-top:20px">📝 Notes &amp; tâches manuelles</h3>
     <div class="crmTodoManualWrap">
       <textarea id="crmTodoInput" placeholder="Ex : appeler Cointreau jeudi pour bouclage devis, envoyer mock-up scénographie à Pernod…" rows="2"></textarea>
-      <button id="btnCrmTodoAdd" class="primary">+ Ajouter</button>
+      <div class="crmTodoInputSide">
+        <label class="crmTodoDateLabel">
+          <span>📅 Échéance</span>
+          <input type="date" id="crmTodoInputDate">
+        </label>
+        <button id="btnCrmTodoAdd" class="primary">+ Ajouter</button>
+      </div>
     </div>
     <ul id="crmTodoList" class="crmTodoList"></ul>
   </div>
