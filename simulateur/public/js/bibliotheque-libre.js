@@ -145,16 +145,14 @@ export function renderBibliothequeItems() {
         <thead><tr>
           <th>Libellé</th>
           <th style="width:140px">Catégorie</th>
-          <th class="num" style="width:100px">Coût HT (€)</th>
-          <th class="num" style="width:100px">Prix HT (€)</th>
-          <th class="num" style="width:90px">Marge %</th>
+          <th class="num" style="width:120px" title="Coût de revient HT par personne (ou fixe selon le mode)">Coût HT (€)</th>
           <th style="width:150px">TVA</th>
-          <th style="width:120px" title="Fixe = prix total indépendant du nb pers · × nb pers = ×nb pers du devis">Mode</th>
+          <th style="width:120px" title="Fixe = total unique · × nb pers = ×nb pers du devis">Mode</th>
           <th style="width:44px"></th>
         </tr></thead>
         <tbody></tbody>
       </table>
-      <p class="legend" style="margin-top:6px">💡 <strong>Mode</strong> : « × nb pers » = le prix est appliqué à chaque personne du devis · « Fixe » = prix total unique (ex : spectacle, forfait salle).</p>
+      <p class="legend" style="margin-top:6px">💡 <strong>Item = coût de revient</strong>. Le prix de vente se règle au niveau de la <strong>Formule</strong> (bibliothèque de formules) qui regroupe plusieurs items.</p>
     </div>
 
     <div class="bibSection">
@@ -334,9 +332,8 @@ function renderItems() {
   if (!tbody) return;
   const items = state.bibItems || [];
   tbody.innerHTML = items.length === 0
-    ? '<tr><td colspan="8" style="text-align:center;color:#888;padding:16px;font-style:italic">Aucun item libre — ajoute le premier</td></tr>'
+    ? '<tr><td colspan="6" style="text-align:center;color:#888;padding:16px;font-style:italic">Aucun item libre — ajoute le premier</td></tr>'
     : items.map(it => {
-        const marge = (it.prixHT > 0 && it.coutHT >= 0) ? ((it.prixHT - it.coutHT) / it.prixHT * 100) : 0;
         const isSys = !!it.systemFn;
         const readonly = isSys ? 'readonly disabled' : '';
         const sysBadge = isSys ? `<span class="bibSysBadge" title="${escapeHtml(describeSystemItem(it) || '')}">⚡ auto</span>` : '';
@@ -346,10 +343,8 @@ function renderItems() {
             <td><input type="text" class="bib-it-lib" value="${escapeHtml(it.libelle)}" ${readonly}>${sysBadge}</td>
             <td><select class="bib-it-cat" ${isSys ? 'disabled' : ''}>${categoriesOptions(it.categorieId)}</select></td>
             <td class="num"><input type="number" class="bib-it-cout" value="${it.coutHT ?? 0}" step="0.01" min="0" ${readonly}></td>
-            <td class="num"><input type="number" class="bib-it-prix" value="${it.prixHT ?? 0}" step="0.01" min="0" ${readonly}></td>
-            <td class="num bib-it-marge">${isSys ? '—' : fmtPct(marge)}</td>
             <td><select class="bib-it-tva" ${isSys ? 'disabled' : ''}>${tvaOptions(it.tvaCat)}</select></td>
-            <td><select class="bib-it-mode" ${isSys ? 'disabled' : ''} title="Fixe = prix total · × nb pers = ×nb pers du devis">
+            <td><select class="bib-it-mode" ${isSys ? 'disabled' : ''} title="Fixe = total · × nb pers = ×nb pers du devis">
               <option value="perPers" ${effectiveMode === 'perPers' ? 'selected' : ''}>× nb pers</option>
               <option value="unit" ${effectiveMode === 'unit' ? 'selected' : ''}>Fixe</option>
             </select></td>
@@ -373,19 +368,11 @@ function wireItemRows() {
     const upd = patch => updateItem(id, patch);
     tr.querySelector('.bib-it-lib')?.addEventListener('change', e => upd({ libelle: e.target.value }));
     tr.querySelector('.bib-it-cat')?.addEventListener('change', e => upd({ categorieId: e.target.value }));
-    tr.querySelector('.bib-it-cout')?.addEventListener('change', e => { upd({ coutHT: Number(e.target.value) }); updateMargeCell(tr); });
-    tr.querySelector('.bib-it-prix')?.addEventListener('change', e => { upd({ prixHT: Number(e.target.value) }); updateMargeCell(tr); });
+    tr.querySelector('.bib-it-cout')?.addEventListener('change', e => upd({ coutHT: Number(e.target.value) }));
     tr.querySelector('.bib-it-tva')?.addEventListener('change', e => upd({ tvaCat: e.target.value }));
     tr.querySelector('.bib-it-mode')?.addEventListener('change', e => upd({ mode: e.target.value }));
     tr.querySelector('.bib-del')?.addEventListener('click', () => deleteItem(id));
   });
-}
-
-function updateMargeCell(tr) {
-  const cout = Number(tr.querySelector('.bib-it-cout').value || 0);
-  const prix = Number(tr.querySelector('.bib-it-prix').value || 0);
-  const marge = (prix > 0) ? ((prix - cout) / prix * 100) : 0;
-  tr.querySelector('.bib-it-marge').textContent = fmtPct(marge);
 }
 
 async function updateItem(id, patch) {
@@ -408,7 +395,7 @@ function addItem() {
     libelle: 'Nouvel item',
     categorieId: (state.bibCategories[0] || {}).id || '',
     coutHT: 0,
-    prixHT: 0,
+    prixHT: 0,   // conservé pour rétro-compat, non affiché
     tvaCat: 'prestation',
     mode: 'perPers'
   });
@@ -460,6 +447,15 @@ function renderFormuleCard(f) {
           ${tagOptions}
         </select>
       </label>
+      <label title="Prix de vente HT de la formule (côté client). Laisse à 0 pour utiliser la somme des items.">💰 Prix vente HT
+        <input type="number" class="bib-fo-prix" value="${f.prixHT ?? 0}" step="0.01" min="0" placeholder="0.00">
+      </label>
+      <label title="× nb pers = prix × nombre de personnes du devis · Fixe = prix total unique">Mode
+        <select class="bib-fo-prixmode">
+          <option value="perPers" ${(f.prixMode || 'perPers') === 'perPers' ? 'selected' : ''}>× nb pers</option>
+          <option value="unit" ${f.prixMode === 'unit' ? 'selected' : ''}>Fixe</option>
+        </select>
+      </label>
     </div>`;
   return `
     <div class="bibFormule ${isBuiltIn ? 'bibFormuleLegacy' : ''}" data-formule-id="${f.id}">
@@ -475,9 +471,9 @@ function renderFormuleCard(f) {
           ? '<p class="legend" style="margin:8px 0">Aucun item — clique sur « + » pour en ajouter</p>'
           : items.map(i => {
               const sysBadge = i._system ? ' <span style="font-size:0.72em;color:#666">⚡</span>' : '';
-              const prixChip = i._system ? '<span class="bibItemChipPrix" style="font-style:italic;color:#666">auto</span>' : `<span class="bibItemChipPrix">${fmt(i.prixHT)}</span>`;
+              const coutChip = i._system ? '<span class="bibItemChipPrix" style="font-style:italic;color:#666">auto</span>' : `<span class="bibItemChipPrix" title="Coût de revient HT">${fmt(i.coutHT || 0)} coût</span>`;
               const rem = isBuiltIn ? '' : `<button class="bib-fo-rem" data-item-id="${i.id}" title="Retirer">×</button>`;
-              return `<span class="bibItemChip" data-item-id="${i.id}" title="${escapeHtml(describeSystemItem(i) || '')}">${escapeHtml(i.libelle)}${sysBadge} ${prixChip} ${rem}</span>`;
+              return `<span class="bibItemChip" data-item-id="${i.id}" title="${escapeHtml(describeSystemItem(i) || '')}">${escapeHtml(i.libelle)}${sysBadge} ${coutChip} ${rem}</span>`;
             }).join('')}
       </div>
       ${isBuiltIn ? '' : `
@@ -489,10 +485,19 @@ function renderFormuleCard(f) {
       <div class="bibFormuleTotals">
         ${isBuiltIn || allSystemItems
           ? '<span style="font-style:italic;color:#666">Coûts &amp; prix calculés à la volée selon la fiche (nb pers, jour, params).</span>'
-          : `<span>Coût HT total : <strong>${fmt(totalCout)}</strong></span>
-             <span>Prix HT total : <strong>${fmt(totalPrix)}</strong></span>
-             <span>Marge : <strong>${fmtPct(marge)}</strong></span>
-             ${hasSystemItems ? '<span style="font-size:0.82em;font-style:italic;color:#888;margin-left:auto">(hors items auto ⚡ recalculés en fiche)</span>' : ''}`}
+          : (() => {
+              const prixFormule = Number(f.prixHT || 0);
+              const modeLbl = (f.prixMode || 'perPers') === 'perPers' ? '/ pers' : 'fixe';
+              const margeFormule = prixFormule > 0 ? ((prixFormule - totalCout) / prixFormule * 100) : 0;
+              return `
+                <span title="Somme des coûts de revient des items">Coût HT items : <strong>${fmt(totalCout)}</strong> ${(f.prixMode || 'perPers') === 'perPers' ? '/ pers' : ''}</span>
+                ${prixFormule > 0
+                  ? `<span>Prix vente : <strong style="color:#0a5c2c">${fmt(prixFormule)}</strong> ${modeLbl}</span>
+                     <span>Marge : <strong style="color:${margeFormule >= 60 ? '#0a5c2c' : margeFormule >= 40 ? '#7a4400' : '#8a1a1a'}">${fmtPct(margeFormule)}</strong></span>`
+                  : '<span style="font-style:italic;color:#888">💡 Renseigne un <strong>Prix vente HT</strong> ci-dessus pour voir la marge</span>'}
+                ${hasSystemItems ? '<span style="font-size:0.82em;font-style:italic;color:#888;margin-left:auto">(hors items auto ⚡ recalculés en fiche)</span>' : ''}
+              `;
+            })()}
       </div>
     </div>
   `;
@@ -520,7 +525,7 @@ const FORMULE_TYPE_RENDU_OPTIONS = [
 function itemsAddOptions(selectedIds) {
   const items = state.bibItems || [];
   return '<option value="">— Choisir un item —</option>' +
-    items.map(i => `<option value="${i.id}">${escapeHtml(i.libelle)} — ${fmt(i.prixHT)}</option>`).join('');
+    items.map(i => `<option value="${i.id}">${escapeHtml(i.libelle)} — coût ${fmt(i.coutHT || 0)}€</option>`).join('');
 }
 
 function wireFormuleRows() {
@@ -529,6 +534,8 @@ function wireFormuleRows() {
     card.querySelector('.bib-fo-nom')?.addEventListener('change', e => updateFormule(id, { nom: e.target.value }));
     card.querySelector('.bib-fo-cat')?.addEventListener('change', e => updateFormule(id, { categorieId: e.target.value }));
     card.querySelector('.bib-fo-tag')?.addEventListener('change', e => updateFormule(id, { tag: e.target.value || null }));
+    card.querySelector('.bib-fo-prix')?.addEventListener('change', e => updateFormule(id, { prixHT: Number(e.target.value) || 0 }));
+    card.querySelector('.bib-fo-prixmode')?.addEventListener('change', e => updateFormule(id, { prixMode: e.target.value }));
     card.querySelector('.bib-fo-typeidrendu')?.addEventListener('change', e => updateFormule(id, { _typeIdRendu: e.target.value }));
     card.querySelector('.bib-del')?.addEventListener('click', () => deleteFormule(id));
     card.querySelectorAll('.bib-fo-rem').forEach(b => {
@@ -548,6 +555,10 @@ async function updateFormule(id, patch) {
   if (!f) return;
   Object.assign(f, patch);
   await persistFormules();
+  // Re-render la carte si prixHT / prixMode change → totals recalculés
+  if ('prixHT' in patch || 'prixMode' in patch) {
+    renderFormules();
+  }
 }
 async function deleteFormule(id) {
   if (!confirm('Supprimer cette formule ?')) return;
