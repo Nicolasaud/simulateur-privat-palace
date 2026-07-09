@@ -34,6 +34,17 @@ function bddFeedback(msg, type = 'ok') {
 export function refreshBddTable() {
   const tbody = document.querySelector('#bddItemsTable tbody');
   if (!tbody) return;
+  // Rafraîchit également la bannière de migration si présente
+  try {
+    const banner = document.getElementById('bddMigrateBanner');
+    const countEl = document.getElementById('bddMigrateCount');
+    if (banner && countEl) {
+      const bibLibelles = new Set((state.bibItems || []).map(i => (i.libelle || '').toLowerCase().trim()));
+      const n = (state.bddItems || []).filter(b => b.libelle && !bibLibelles.has(b.libelle.toLowerCase().trim())).length;
+      banner.style.display = n > 0 ? 'flex' : 'none';
+      countEl.textContent = n > 0 ? `(${n})` : '';
+    }
+  } catch (_) { /* silencieux */ }
   if (state.bddItems.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#888;padding:18px">Aucun item enregistré pour le moment.</td></tr>`;
     return;
