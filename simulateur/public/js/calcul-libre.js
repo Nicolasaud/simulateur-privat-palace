@@ -200,6 +200,41 @@ export function calculerBlocLibre(bloc, ctx) {
     pushLigne(item, computeSystemItem(item, itemCtx));
   }
 
+  // === Phase "Prix formule global" =====================================
+  // Si la formule libre a un prixHT > 0, on collapse toutes les lignes
+  // "resto/formule" (items non-système matérialisés depuis bloc.items) en
+  // UNE SEULE ligne au nom de la formule. Les coûts sont conservés, les prix
+  // par item sont écrasés (→ 0) et remplacés par le prix formule.
+  // Les lignes système (personnel, spectacle, frais résa, etc.) restent
+  // séparées car elles ont leur propre logique de tarification.
+  const formulePrix = Number(formuleLib?.prixHT || 0);
+  if (formulePrix > 0 && hasMaterialized) {
+    const formuleMode = formuleLib.prixMode || 'perPers';
+    const formuleQty = formuleMode === 'perPers' ? nbPers : 1;
+    const isRestoLine = (l) => l.type === 'resto' || l.type === 'item';
+
+    // Coût total à conserver dans la ligne agrégée
+    const coutAgrege = lignes
+      .filter(isRestoLine)
+      .reduce((s, l) => s + (l.coutHT || 0), 0);
+
+    // Retire les lignes "resto/item" — elles seront remplacées
+    for (let i = lignes.length - 1; i >= 0; i--) {
+      if (isRestoLine(lignes[i])) lignes.splice(i, 1);
+    }
+
+    // Insère la ligne formule EN TÊTE (visible côté client comme seule ligne "formule")
+    lignes.unshift({
+      libelle: formuleLib.nom || 'Formule',
+      qte: formuleQty,
+      puHT: formulePrix,
+      totalHT: formulePrix * formuleQty,
+      coutHT: coutAgrege,
+      tvaCat: 'prestation',   // 20% par défaut ; à affiner si besoin
+      type: 'formule'
+    });
+  }
+
   return { lignes };
 }
 
