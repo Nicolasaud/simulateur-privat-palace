@@ -428,7 +428,7 @@ const FORMULE_TYPE_RENDU_OPTIONS = [
 function itemsAddOptions(selectedIds) {
   const items = state.bibItems || [];
   return '<option value="">— Choisir un item —</option>' +
-    items.map(i => `<option value="${i.id}">${escapeHtml(i.libelle)} — coût ${fmt(i.coutHT || 0)}€</option>`).join('');
+    items.map(i => `<option value="${i.id}">${escapeHtml(i.libelle)} — coût ${fmt(i.coutHT || 0)}</option>`).join('');
 }
 
 function wireFormuleRows() {
