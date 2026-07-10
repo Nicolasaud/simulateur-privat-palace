@@ -17,7 +17,6 @@ import { showToast } from './ui-feedback.js';
 import { SYSTEM_ITEMS, LEGACY_SYSTEM_ITEMS, describeSystemItem } from './items-systeme.js';
 import { seedLegacyFormulesLibIfMissing, purgeLegacyFormulesLibFromCloud } from './formules-lib-seed.js';
 import { showOnboarding } from './onboarding.js';
-import { refreshBddTable } from './bdd-items.js';
 
 // Lookup unifié : items du catalogue + items système "legacy" (non seedés
 // dans items-lib pour éviter la pollution UI).
@@ -154,55 +153,10 @@ export function renderBibliothequeItems() {
       </table>
       <p class="legend" style="margin-top:6px">💡 <strong>Item = coût de revient</strong>. Le prix de vente se règle au niveau de la <strong>Formule</strong> (bibliothèque de formules) qui regroupe plusieurs items.</p>
     </div>
-
-    <div class="bibSection">
-      <div class="bibSectionHeader">
-        <h2>🍹 Base d'items restauration (ancienne)</h2>
-        <p class="legend" style="margin:0;flex:1;text-align:right">Base historique. Migre-la vers la nouvelle bibliothèque ⤴ pour bénéficier du mode Fixe/Variable et de l'ajout aux formules.</p>
-      </div>
-      <div class="card" style="margin-top:0">
-        <div id="bddMigrateBanner" style="display:none;padding:10px 14px;background:linear-gradient(90deg,rgba(99,102,241,0.08),rgba(139,92,246,0.06));border:1px dashed rgba(99,102,241,0.4);border-radius:8px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div style="flex:1;min-width:280px">
-            <strong style="color:#4c1d95">⤴ Migrer vers la nouvelle bibliothèque</strong>
-            <p class="legend" style="margin:2px 0 0">Les items copiés seront disponibles dans le sélecteur de formule + éditables avec le mode Fixe / × nb pers.</p>
-          </div>
-          <div style="display:flex;gap:6px">
-            <button class="primary" id="bddMigrateBtn" style="margin-top:0">🚀 Migrer <span id="bddMigrateCount"></span> items</button>
-          </div>
-        </div>
-        <table id="bddItemsTable" style="font-size:0.88em">
-          <thead>
-            <tr>
-              <th>Libellé</th>
-              <th class="num">Coût €/p</th>
-              <th class="num">Prix €/p</th>
-              <th>TVA</th>
-              <th class="num">Marge brute</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <h4 style="margin-top:14px">+ Ajouter un item resto</h4>
-        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:center">
-          <input type="text" id="bddNouveauLibelle" placeholder="Ex : Plateau apéro premium">
-          <input type="number" id="bddNouveauCout" placeholder="Coût €/p" step="0.1" style="text-align:right">
-          <input type="number" id="bddNouveauPrix" placeholder="Prix €/p" step="0.1" style="text-align:right">
-          <select id="bddNouveauTva">
-            <option value="restauration">Resto 10%</option>
-            <option value="bar">Bar 20%</option>
-          </select>
-          <button onclick="bddAjouter()" class="primary" style="margin-top:0">Ajouter</button>
-        </div>
-        <p class="legend" id="bddFeedback" style="min-height:1.2em">&nbsp;</p>
-      </div>
-    </div>
   `;
   renderCategories();
   renderItems();
   wireBibItemsHandlers();
-  // Section BDD resto — re-render depuis son module
-  try { refreshBddTable(); } catch (e) { /* silencieux */ }
   // Note : les Types internes (paramètres système) ne sont plus exposés dans
   // l'UI (retirés sur demande utilisateur). Les valeurs restent chargées en
   // RAM (state.typesInternes) et utilisées par le moteur libre.
@@ -211,57 +165,6 @@ export function renderBibliothequeItems() {
 function wireBibItemsHandlers() {
   document.getElementById('btnAddCategorie')?.addEventListener('click', addCategorie);
   document.getElementById('btnAddItem')?.addEventListener('click', addItem);
-  document.getElementById('bddMigrateBtn')?.addEventListener('click', migrateBddIntoBibItems);
-  refreshMigrateBanner();
-}
-
-// Migration de la base d'items restauration (ancienne) → nouvelle bibliothèque.
-// Idempotent : si un item avec le même libellé existe déjà dans bibItems, il
-// est ignoré (évite les doublons quand l'utilisateur clique 2 fois).
-function refreshMigrateBanner() {
-  const banner = document.getElementById('bddMigrateBanner');
-  const countEl = document.getElementById('bddMigrateCount');
-  if (!banner) return;
-  const bddItems = state.bddItems || [];
-  const bibLibelles = new Set((state.bibItems || []).map(i => (i.libelle || '').toLowerCase().trim()));
-  const toMigrate = bddItems.filter(b => b.libelle && !bibLibelles.has(b.libelle.toLowerCase().trim()));
-  if (toMigrate.length === 0) {
-    banner.style.display = 'none';
-    return;
-  }
-  banner.style.display = 'flex';
-  if (countEl) countEl.textContent = `(${toMigrate.length})`;
-}
-
-async function migrateBddIntoBibItems() {
-  const bibLibelles = new Set((state.bibItems || []).map(i => (i.libelle || '').toLowerCase().trim()));
-  const toMigrate = (state.bddItems || []).filter(b => b.libelle && !bibLibelles.has(b.libelle.toLowerCase().trim()));
-  if (toMigrate.length === 0) return;
-  if (!confirm(`Migrer ${toMigrate.length} item(s) depuis la base ancienne vers la nouvelle bibliothèque ?\n\nLes items conservent libellé, coût, prix et TVA. Le mode est réglé sur « × nb pers » par défaut (tu pourras le changer après).`)) return;
-
-  // Catégorie "Restauration" : on la crée si absente pour donner un rangement propre
-  let restauCat = (state.bibCategories || []).find(c => (c.nom || '').toLowerCase().startsWith('restaura'));
-  if (!restauCat) {
-    restauCat = { id: genId('cat'), nom: 'Restauration', couleur: '#f59e0b', ordre: (state.bibCategories || []).length };
-    state.bibCategories.push(restauCat);
-    await persistCategories();
-  }
-
-  toMigrate.forEach(b => {
-    state.bibItems.push({
-      id: genId('it'),
-      libelle: b.libelle,
-      categorieId: restauCat.id,
-      coutHT: Number(b.coutHT || 0),
-      prixHT: Number(b.prixHT || 0),
-      tvaCat: b.tvaCat || 'restauration',
-      mode: 'perPers'   // défaut : par personne (typique pour la restauration)
-    });
-  });
-  await persistItems();
-  renderItems();
-  refreshMigrateBanner();
-  alert(`✅ ${toMigrate.length} item(s) migré(s) vers la nouvelle bibliothèque.\n\nTu peux maintenant les utiliser dans les formules et régler leur mode (× nb pers / Fixe).`);
 }
 
 

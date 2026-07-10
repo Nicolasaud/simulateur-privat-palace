@@ -164,14 +164,10 @@ function buildBlocCard(bloc, idx) {
             <input type="text" value="${escapeHtml(it.libelle)}" data-bloc-item-key="libelle" data-bloc-idx="${idx}" data-i="${i}" placeholder="Libellé" style="flex:1;font-size:0.88em;padding:3px 6px;font-weight:500">
             <button class="delete" onclick="removeBlocItem(${idx},${i})" style="padding:2px 7px" title="Supprimer">×</button>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;align-items:center">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;align-items:center">
             <label style="display:flex;flex-direction:column;font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:0.02em">
               Coût ${isPerPers?'/pers':'total'}
               <input type="number" step="0.1" value="${it.coutHT}" data-bloc-item-key="coutHT" data-bloc-idx="${idx}" data-i="${i}" style="text-align:right;font-size:0.85em;padding:2px 4px">
-            </label>
-            <label style="display:flex;flex-direction:column;font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:0.02em">
-              Prix ${isPerPers?'/pers':'total'}
-              <input type="number" step="0.1" value="${it.prixHT}" data-bloc-item-key="prixHT" data-bloc-idx="${idx}" data-i="${i}" style="text-align:right;font-size:0.85em;padding:2px 4px">
             </label>
             <label style="display:flex;flex-direction:column;font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:0.02em">
               TVA
@@ -182,7 +178,7 @@ function buildBlocCard(bloc, idx) {
                 <option value="spectacle"${it.tvaCat==='spectacle'?' selected':''}>Spec 5,5%</option>
               </select>
             </label>
-            <label style="display:flex;flex-direction:column;font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:0.02em" title="Variable = prix × nb pers · Fixe = prix total indépendant du nb pers">
+            <label style="display:flex;flex-direction:column;font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:0.02em" title="× nb pers = coût multiplié par nb pers · Fixe = coût total unique">
               Mode
               <select data-bloc-item-key="mode" data-bloc-idx="${idx}" data-i="${i}" style="font-size:0.85em;padding:2px 3px">
                 <option value="perPers"${mode==='perPers'?' selected':''}>× nb pers</option>
@@ -212,6 +208,14 @@ function buildBlocCard(bloc, idx) {
     ? (state.formulesPrestation.find(f => f.id === bloc.formuleId)?.nom || '')
     : '';
 
+  // Prix vente formule : bloc.prixFormule prioritaire, sinon formule.prixHT, sinon 0
+  const formuleLibForBloc = (state.bibFormules || []).find(f => f.id === bloc.formuleLibId);
+  const prixFormuleValue = (bloc.prixFormule !== undefined && bloc.prixFormule !== null)
+    ? bloc.prixFormule
+    : (formuleLibForBloc?.prixHT || 0);
+  const prixModeValue = bloc.prixFormuleMode || formuleLibForBloc?.prixMode || 'perPers';
+  const hasFormule = !!(bloc.formuleId || bloc.formuleLibId);
+
   card.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-bottom:10px">
       <div style="flex:1">
@@ -225,8 +229,23 @@ function buildBlocCard(bloc, idx) {
       <button class="delete" onclick="removeBloc(${idx})" ${canDelete?'':'disabled'} style="${canDelete?'':'opacity:0.3;cursor:not-allowed;'}padding:6px 10px;height:36px" title="${canDelete?'Supprimer cette formule':'Au moins une formule requise'}">×</button>
     </div>
 
+    ${hasFormule ? `
+    <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;padding:8px 10px;background:linear-gradient(90deg,rgba(16,185,129,0.06),rgba(5,150,105,0.04));border:1px dashed rgba(16,185,129,0.35);border-radius:6px">
+      <div style="flex:1">
+        <label style="font-size:0.72em;color:#065f46;font-weight:500;text-transform:uppercase;letter-spacing:0.03em">💰 Prix vente formule</label>
+        <input type="number" step="0.1" min="0" value="${prixFormuleValue}" data-bloc-field="prixFormule" data-bloc-idx="${idx}" style="width:100%;font-weight:500" placeholder="0.00">
+      </div>
+      <div style="width:130px">
+        <label style="font-size:0.72em;color:#065f46;font-weight:500;text-transform:uppercase;letter-spacing:0.03em">Mode</label>
+        <select data-bloc-field="prixFormuleMode" data-bloc-idx="${idx}" style="width:100%">
+          <option value="perPers"${prixModeValue==='perPers'?' selected':''}>× nb pers</option>
+          <option value="unit"${prixModeValue==='unit'?' selected':''}>Fixe</option>
+        </select>
+      </div>
+    </div>` : ''}
+
     <details ${(bloc.items||[]).length>0?'open':''} style="margin:8px 0">
-      <summary style="font-size:0.85em;font-weight:500;cursor:pointer;padding:4px 0">Items (${(bloc.items||[]).length})</summary>
+      <summary style="font-size:0.85em;font-weight:500;cursor:pointer;padding:4px 0">Items (${(bloc.items||[]).length}) — coûts uniquement</summary>
       ${itemsHtml}
       <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
         <button onclick="addBlocItem(${idx})" style="font-size:0.85em;padding:3px 8px">+ Vide</button>
@@ -355,6 +374,18 @@ function updateBlocField(idx, field, rawValue) {
   if (field === 'nbPers') {
     b.nbPers = Math.max(1, parseInt(rawValue) || 1);
     // nbPers seul ne purge PAS le snapshot (décision user point 4)
+  } else if (field === 'prixFormule') {
+    b.prixFormule = Math.max(0, parseFloat(rawValue) || 0);
+    b.snapshot = null;
+    setDirty(true);
+    recalcul();
+    return;
+  } else if (field === 'prixFormuleMode') {
+    b.prixFormuleMode = rawValue === 'unit' ? 'unit' : 'perPers';
+    b.snapshot = null;
+    setDirty(true);
+    recalcul();
+    return;
   } else if (field === 'formuleId') {
     const newVal = rawValue || null;
     // Étape 6 — détection : formule libre composable (id préfixé fl_) vs formule V2 classique
@@ -400,6 +431,9 @@ function updateBlocField(idx, field, rawValue) {
       });
       b.items = materialized;
       b.materializedItemIds = materializedIds;
+      // Init prix vente formule depuis la biblio (si défini). L'user peut ensuite ajuster au bloc.
+      b.prixFormule = Number(libF.prixHT || 0);
+      b.prixFormuleMode = libF.prixMode || 'perPers';
       b.snapshot = null;
     } else {
       // === Bascule sur une formule V2 classique (legacy path) =========
