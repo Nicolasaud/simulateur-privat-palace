@@ -193,15 +193,19 @@ function buildBlocCard(bloc, idx) {
     `<option value="${b.id}">${escapeHtml(b.libelle)} (${fmt(b.coutHT)}→${fmt(b.prixHT)})</option>`
   ).join('');
 
-  // Sous-total HT/TTC du bloc
+  // Sous-total HT/TTC/Coût du bloc
   const jour = $('day')?.value || 'vendredi';
   const blocLignes = calculerBloc(bloc, jour);
-  let blocHT = 0, blocTTC = 0;
+  let blocHT = 0, blocTTC = 0, blocCout = 0;
   blocLignes.forEach(l => {
     const tva = getTva(l.tvaCat);
     blocHT += l.totalHT;
     blocTTC += l.totalHT * (1 + tva / 100);
+    blocCout += (l.coutHT || 0);
   });
+  const blocMarge = blocHT - blocCout;
+  const blocTauxMarge = blocHT > 0 ? (blocMarge / blocHT * 100) : 0;
+  const margeColor = blocTauxMarge >= 60 ? '#0a5c2c' : blocTauxMarge >= 40 ? '#7a4400' : '#8a1a1a';
 
   const canDelete = state.formules.length > 1;
   const typeLabel = bloc.formuleId
@@ -257,9 +261,22 @@ function buildBlocCard(bloc, idx) {
       ${buildAutoBriquesRecap(bloc)}
     </details>
 
-    <div style="margin-top:8px;padding-top:6px;border-top:1px dashed rgba(0,0,0,0.1);display:flex;justify-content:space-between;font-size:0.85em">
-      <span style="color:#666">Sous-total bloc</span>
-      <span><strong>${fmt(blocHT)} € HT</strong> · ${fmt(blocTTC)} € TTC</span>
+    <div style="margin-top:8px;padding-top:6px;border-top:1px dashed rgba(0,0,0,0.1)">
+      <div style="display:flex;justify-content:space-between;font-size:0.85em;align-items:baseline">
+        <span style="color:#666">Sous-total bloc</span>
+        <span><strong>${fmt(blocHT)} HT</strong> · ${fmt(blocTTC)} TTC</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.78em;margin-top:2px;color:#666">
+        <span>Coût de revient</span>
+        <span>${fmt(blocCout)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.85em;margin-top:2px;align-items:baseline">
+        <span style="color:#666">Marge brute</span>
+        <span>
+          <strong style="color:${margeColor}">${fmt(blocMarge)}</strong>
+          <span style="color:${margeColor};font-weight:500;margin-left:4px">(${blocTauxMarge.toFixed(1)}%)</span>
+        </span>
+      </div>
     </div>
   `;
 
@@ -300,10 +317,10 @@ export function renderRecapGlobal() {
     <div style="background:#fff;border:1px solid rgba(0,0,0,0.1);padding:10px;border-radius:6px;font-size:0.88em">
       <div style="font-weight:500;margin-bottom:6px;color:#444">Récap fiche (${nbFormules} formule${nbFormules>1?'s':''}, ${totalNbPers} pers)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px">
-        <div>Total HT</div><div style="text-align:right"><strong>${fmt(totalHT)} €</strong></div>
-        <div>Total TTC</div><div style="text-align:right"><strong>${fmt(totalTTC)} €</strong></div>
-        <div style="color:#666">HT moyen/pers</div><div style="text-align:right;color:#666">${fmt(htMoyen)} €</div>
-        <div style="color:#666">TTC moyen/pers</div><div style="text-align:right;color:#666">${fmt(ttcMoyen)} €</div>
+        <div>Total HT</div><div style="text-align:right"><strong>${fmt(totalHT)}</strong></div>
+        <div>Total TTC</div><div style="text-align:right"><strong>${fmt(totalTTC)}</strong></div>
+        <div style="color:#666">HT moyen/pers</div><div style="text-align:right;color:#666">${fmt(htMoyen)}</div>
+        <div style="color:#666">TTC moyen/pers</div><div style="text-align:right;color:#666">${fmt(ttcMoyen)}</div>
       </div>
     </div>
   `;
