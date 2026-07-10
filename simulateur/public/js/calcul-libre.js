@@ -201,15 +201,17 @@ export function calculerBlocLibre(bloc, ctx) {
   }
 
   // === Phase "Prix formule global" =====================================
-  // Si la formule libre a un prixHT > 0, on collapse toutes les lignes
-  // "resto/formule" (items non-système matérialisés depuis bloc.items) en
-  // UNE SEULE ligne au nom de la formule. Les coûts sont conservés, les prix
-  // par item sont écrasés (→ 0) et remplacés par le prix formule.
-  // Les lignes système (personnel, spectacle, frais résa, etc.) restent
-  // séparées car elles ont leur propre logique de tarification.
-  const formulePrix = Number(formuleLib?.prixHT || 0);
+  // Priorité : bloc.prixFormule (override bloc) > formuleLib.prixHT (biblio).
+  // Si > 0 ET des items ont été matérialisés → collapse les lignes 'resto/item'
+  // en UNE ligne au nom de la formule + prix formule × qty. Les items
+  // système (personnel, spectacle, frais résa) restent séparés.
+  const formulePrix = Number(
+    (bloc?.prixFormule !== undefined && bloc?.prixFormule !== null && bloc.prixFormule > 0)
+      ? bloc.prixFormule
+      : (formuleLib?.prixHT || 0)
+  );
+  const formuleMode = bloc?.prixFormuleMode || formuleLib?.prixMode || 'perPers';
   if (formulePrix > 0 && hasMaterialized) {
-    const formuleMode = formuleLib.prixMode || 'perPers';
     const formuleQty = formuleMode === 'perPers' ? nbPers : 1;
     const isRestoLine = (l) => l.type === 'resto' || l.type === 'item';
 
