@@ -45,6 +45,46 @@ function readFileAsBase64(file) {
   });
 }
 
+// Parsing du PDF entièrement CÔTÉ CLIENT via pdfjs-dist (CDN).
+// Retourne du texte tab-séparé (une cellule = un TAB, une ligne visuelle = un \n)
+// prêt à être envoyé à parseProgrammation() côté backend.
+//
+// Avantages vs parsing serveur :
+//   - Aucune dépendance PDF côté Netlify (pdf-parse/pdf2json cassaient en prod)
+//   - Le PDF ne quitte pas le navigateur (confidentialité)
+//   - Aucune limite de mémoire serverless
+async function extractPdfTextClientSide(file) {
+  // Chargement lazy de pdfjs depuis le CDN mozilla (ESM natif, aucun install)
+  const pdfjsLib = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
+
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  const lines = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    // items = [{ str, transform: [scaleX, skewX, skewY, scaleY, x, y] }]
+    const rows = new Map();
+    for (const it of content.items) {
+      const txt = (it.str || '').trim();
+      if (!txt) continue;
+      const x = it.transform?.[4] || 0;
+      const y = Math.round((it.transform?.[5] || 0) * 10) / 10;
+      if (!rows.has(y)) rows.set(y, []);
+      rows.get(y).push({ x, txt });
+    }
+    // Ordre visuel : y descendant (haut d'abord dans les coordonnées PDF)
+    const sortedRows = [...rows.entries()].sort((a, b) => b[0] - a[0]);
+    for (const [, cells] of sortedRows) {
+      cells.sort((a, b) => a.x - b.x);
+      lines.push(cells.map(c => c.txt).join('\t'));
+    }
+  }
+  return lines.join('\n');
+}
+
 // Égalité fonctionnelle entre deux jours (artistes/créneaux triés, notes trim).
 function jourEqual(a, b) {
   if (!a || !b) return false;
@@ -310,8 +350,13 @@ export async function analyzeImportPdf() {
   importState.error = null;
   renderModal();
   try {
-    const pdfBase64 = await readFileAsBase64(importState.file);
-    const resp = await parseProgrammationPdf(pdfBase64);
+    // Étape 1 : extraction texte côté CLIENT (via pdfjs CDN)
+    const rawText = await extractPdfTextClientSide(importState.file);
+    if (!rawText || rawText.length < 50) {
+      throw new Error('Le PDF semble vide ou illisible.');
+    }
+    // Étape 2 : envoi du texte seul au backend pour parseProgrammation()
+    const resp = await parseProgrammationPdf(rawText);
     if (!resp || !resp.dates) throw new Error('Réponse parser invalide');
     importState.parsed = resp.dates;
     importState.diff = await buildDiff(resp.dates);

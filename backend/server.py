@@ -502,30 +502,21 @@ async def programmation_put(request: Request, mois: str):
 
 @api.post("/parse-programmation")
 async def programmation_parse_pdf(request: Request):
-    """Parse un PDF en base64 → tente d'extraire des dates + artistes + créneaux.
-    Utilise `programmation_parser.py` (pdfplumber) — pendant Python du parser
-    Netlify JS. Retour au format { dates: {...}, chars: N, log: [...] }
-    attendu par `public/js/programmation-import.js`.
+    """Reçoit du texte tab-séparé (extrait du PDF côté client par pdfjs) et le
+    passe au parser texte. Zéro dépendance PDF côté serveur.
     """
     require_session(request)
     body = await request.json()
-    pdf_b64 = body.get('pdfBase64', '') if isinstance(body, dict) else ''
-    if not pdf_b64:
-        raise HTTPException(status_code=400, detail='missing_pdfBase64')
+    raw_text = body.get('rawText', '') if isinstance(body, dict) else ''
+    if not isinstance(raw_text, str) or len(raw_text) < 20:
+        raise HTTPException(status_code=400, detail='rawText_required')
     try:
-        from programmation_parser import parse_from_base64
-        result, log = parse_from_base64(pdf_b64)
-        # chars ≈ taille du PDF décodé (compat sortie JS pdf-parse.text.length)
-        chars = sum(len(a) for j in result.values() for a in j.get('artistes', [])) + \
-                sum(len(c) for j in result.values() for c in j.get('creneaux', []))
-        return {'dates': result, 'chars': chars, 'log': log}
+        from programmation_parser import parse_programmation_text
+        result, plog = parse_programmation_text(raw_text)
+        return {'dates': result, 'chars': len(raw_text), 'log': plog}
     except Exception as e:
         log.exception('parse-programmation failed')
-        return {
-            'dates': {},
-            'chars': 0,
-            'log': [f'❌ Erreur parsing PDF : {type(e).__name__} — {str(e)}']
-        }
+        return {'dates': {}, 'chars': 0, 'log': [f'❌ Erreur parsing : {type(e).__name__} — {str(e)}']}
 
 
 # ============================================================
