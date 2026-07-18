@@ -120,6 +120,110 @@ def _extract_notes_per_day(cells: list[str]) -> list[str]:
     return per_day
 
 
+def parse_programmation_text(raw_text: str) -> tuple[dict, list[str]]:
+    """Parse un texte tab-séparé (généré par pdfjs côté client) en réutilisant
+    la même logique de découpage que `parse_programmation_pdf`."""
+    log: list[str] = []
+    log.append(f'Texte reçu : {len(raw_text)} chars')
+    lines_text = raw_text.split('\n')
+    all_rows: list[list[str]] = []
+    for line in lines_text:
+        cells = [c.strip() for c in line.split('\t') if c.strip()]
+        if cells:
+            all_rows.append(cells)
+    log.append(f'Lignes utiles extraites : {len(all_rows)}')
+    return _parse_rows(all_rows, log)
+
+
+def _parse_rows(all_rows: list[list[str]], log: list[str]) -> tuple[dict, list[str]]:
+    # === Anomalie 1 — troncature après le marqueur ===
+    end_idx = -1
+    for i, cells in enumerate(all_rows):
+        joined = ' '.join(cells)
+        if END_MARKER_RE.search(joined):
+            end_idx = i
+            break
+    if end_idx >= 0:
+        log.append(f'✂ Tronqué à la ligne {end_idx} (marqueur "TAUX DE REMPLISSAGE MOYEN")')
+        all_rows = all_rows[:end_idx]
+
+    result: dict[str, dict[str, Any]] = {}
+    i = 0
+    while i < len(all_rows):
+        cells = all_rows[i]
+        dates = _extract_dates_from_row(cells)
+        if not dates:
+            i += 1
+            continue
+        log.append(f'══ Semaine {" | ".join(d["iso"] for d in dates)} (ligne {i + 1})')
+        horaires_per_day: list[list[str]] = []
+        artistes_per_day: list[list[str]] = [[] for _ in dates]
+        notes_per_day: list[str] = ['' for _ in dates]
+        found_horaires = False
+        i += 1
+        while i < len(all_rows):
+            cur = all_rows[i]
+            cur_dates = _extract_dates_from_row(cur)
+            if cur_dates:
+                break
+            if _is_jour_header_row(cur):
+                i += 1
+                break
+            joined = ' '.join(cur).strip()
+            if joined and IGNORE_LINE_RE.match(joined):
+                i += 1
+                continue
+            if not found_horaires and any(c.strip() == 'Artiste' for c in cur):
+                horaires_per_day = _extract_horaires_per_day(cur)
+                found_horaires = True
+                i += 1
+                continue
+            if any(re.match(r'^Notes\s*:', c.strip()) for c in cur):
+                notes = _extract_notes_per_day(cur)
+                for j, n in enumerate(notes):
+                    if j < len(notes_per_day) and n:
+                        notes_per_day[j] = n
+                i += 1
+                continue
+            if not any(OUINON_RE.match(c.strip()) for c in cur):
+                i += 1
+                continue
+            artistes_row = _extract_artistes_per_day(cur)
+            for j, name in enumerate(artistes_row):
+                if j < len(artistes_per_day) and name:
+                    artistes_per_day[j].append(name)
+            i += 1
+        for j, d in enumerate(dates):
+            horaires = horaires_per_day[j] if j < len(horaires_per_day) else []
+            seen: set[str] = set()
+            artistes_dedup: list[str] = []
+            for a in artistes_per_day[j]:
+                k = a.upper()
+                if k in seen:
+                    continue
+                seen.add(k)
+                artistes_dedup.append(a)
+            notes = notes_per_day[j] or ''
+            if not horaires and not artistes_dedup and not notes:
+                continue
+            if d['iso'] not in result:
+                result[d['iso']] = {'artistes': artistes_dedup, 'creneaux': horaires, 'notes': notes}
+            else:
+                cur_r = result[d['iso']]
+                seen_cur = {a.upper() for a in cur_r['artistes']}
+                for a in artistes_dedup:
+                    if a.upper() not in seen_cur:
+                        cur_r['artistes'].append(a)
+                seen_h = set(cur_r['creneaux'])
+                for h in horaires:
+                    if h not in seen_h:
+                        cur_r['creneaux'].append(h)
+                if notes and notes not in cur_r['notes']:
+                    cur_r['notes'] = f'{cur_r["notes"]} {notes}' if cur_r['notes'] else notes
+    log.append(f'══ Parsing terminé : {len(result)} dates avec créneaux')
+    return result, log
+
+
 def parse_programmation_pdf(pdf_bytes: bytes) -> tuple[dict, list[str]]:
     log: list[str] = []
     log.append(f'PDF reçu : {len(pdf_bytes)} bytes')

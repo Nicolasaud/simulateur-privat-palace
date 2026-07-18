@@ -157,5 +157,6 @@ export const listProgrammationMois = () => apiCall('GET', '/api/programmation');
 export const getProgrammationMois = (mois) => apiCall('GET', `/api/programmation/${encodeURIComponent(mois)}`);
 export const putProgrammationMois = (mois, obj) => apiCall('PUT', `/api/programmation/${encodeURIComponent(mois)}`, obj);
 
-// Parser PDF (Phase 2a) : POST { pdfBase64 } → { dates, chars, log }
-export const parseProgrammationPdf = (pdfBase64) => apiCall('POST', '/api/parse-programmation', { pdfBase64 });
+// Parser texte (Phase 2a) : POST { rawText } → { dates, chars, log }
+// Le PDF est parsé côté client via pdfjs — on n'envoie que du texte au backend.
+export const parseProgrammationPdf = (rawText) => apiCall('POST', '/api/parse-programmation', { rawText });
