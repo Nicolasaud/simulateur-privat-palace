@@ -285,6 +285,68 @@ function renderStep2(body) {
       }
     });
   });
+
+  // Wire "✏️ Modifier" — passe la ligne en mode édition
+  body.querySelectorAll('.edit-open').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const key = btn.dataset.editKey;
+      const it = items.find(x => x.dateKey === key);
+      if (it) {
+        it._editing = true;
+        renderModal();
+      }
+    });
+  });
+
+  // Wire "Annuler" édition
+  body.querySelectorAll('.edit-cancel').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const wrapper = btn.closest('[data-item-key]');
+      const key = wrapper?.dataset.itemKey;
+      const it = items.find(x => x.dateKey === key);
+      if (it) {
+        it._editing = false;
+        delete it._editedDate;
+        delete it._editedArtistes;
+        delete it._editedCreneaux;
+        delete it._editedNotes;
+        renderModal();
+      }
+    });
+  });
+
+  // Wire "✓ Enregistrer" édition — applique les changements sur newJour + change la clé
+  body.querySelectorAll('.edit-save').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const wrapper = btn.closest('[data-item-key]');
+      const key = wrapper?.dataset.itemKey;
+      const it = items.find(x => x.dateKey === key);
+      if (!it) return;
+      const newDate = wrapper.querySelector('.edit-date')?.value || it.dateKey;
+      const rawArtistes = wrapper.querySelector('.edit-artistes')?.value || '';
+      const rawCreneaux = wrapper.querySelector('.edit-creneaux')?.value || '';
+      const rawNotes = wrapper.querySelector('.edit-notes')?.value || '';
+      const artistes = rawArtistes.split(',').map(s => s.trim()).filter(Boolean);
+      const creneaux = rawCreneaux.split(',').map(s => s.trim()).filter(Boolean);
+      // Applique
+      it.newJour = { artistes, creneaux, notes: rawNotes.trim() };
+      // Si la date change, on met à jour dateKey ET on recalcule status vs oldJour
+      if (newDate !== it.dateKey) {
+        it.dateKey = newDate;
+        // Marque comme édité manuellement → sera passé à saveEditProgrammation avec manuelle=true côté serveur
+        it._userEdited = true;
+      }
+      it._editing = false;
+      delete it._editedDate;
+      delete it._editedArtistes;
+      delete it._editedCreneaux;
+      delete it._editedNotes;
+      renderModal();
+    });
+  });
 }
 
 function renderItemRow(it) {
@@ -296,6 +358,36 @@ function renderItemRow(it) {
   const manualBadge = it.manualOverwrite
     ? `<span style="font-size:0.7em;color:#fff;background:#a83240;padding:1px 6px;border-radius:3px;margin-left:6px;font-weight:500" title="Cette date avait été saisie manuellement">⚠️ SAISIE MANUELLE</span>`
     : '';
+
+  // Mode édition : rendu d'un formulaire inline pour ajuster date/artistes/créneaux/notes
+  if (it._editing) {
+    const editedDate = it._editedDate || it.dateKey;
+    const editedArtistes = (it._editedArtistes !== undefined) ? it._editedArtistes : (newJour.artistes || []).join(', ');
+    const editedCreneaux = (it._editedCreneaux !== undefined) ? it._editedCreneaux : (newJour.creneaux || []).join(', ');
+    const editedNotes = (it._editedNotes !== undefined) ? it._editedNotes : (newJour.notes || '');
+    return `
+      <div style="padding:10px 12px;border:2px solid #6366f1;border-radius:6px;margin-bottom:6px;background:#f5f5ff" data-item-key="${it.dateKey}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <strong style="color:#4c1d95">✏️ Édition — ${it.dateKey}</strong>
+          <div style="margin-left:auto;display:flex;gap:6px">
+            <button class="edit-cancel" style="font-size:0.85em;padding:3px 10px">Annuler</button>
+            <button class="edit-save primary" style="font-size:0.85em;padding:3px 10px;margin-top:0">✓ Enregistrer</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:6px 10px;font-size:0.88em;align-items:center">
+          <label>📅 Date</label>
+          <input type="date" class="edit-date" value="${editedDate}">
+          <label>🎤 Artistes</label>
+          <input type="text" class="edit-artistes" value="${escape(editedArtistes)}" placeholder="Ex : Nom1, Nom2, Nom3">
+          <label>🕐 Créneaux</label>
+          <input type="text" class="edit-creneaux" value="${escape(editedCreneaux)}" placeholder="Ex : 19h, 21h">
+          <label>📝 Notes</label>
+          <input type="text" class="edit-notes" value="${escape(editedNotes)}" placeholder="Optionnel">
+        </div>
+        <p class="legend" style="margin:6px 0 0;font-size:0.8em">💡 Sépare les artistes et créneaux par des virgules. Change la date si l'import s'est décalé d'un jour.</p>
+      </div>
+    `;
+  }
 
   let detailHTML = '';
   if (it.status === 'conflict') {
@@ -314,7 +406,6 @@ function renderItemRow(it) {
       </div>
     `;
   } else {
-    // Nouvelle : juste afficher le contenu nouveau
     const newArt = (newJour.artistes || []).join(', ') || '<em style="color:#888">aucun artiste</em>';
     const newCr = (newJour.creneaux || []).join(' · ') || '<em style="color:#888">aucun créneau</em>';
     const newNotes = (newJour.notes || '').trim();
@@ -328,12 +419,13 @@ function renderItemRow(it) {
 
   const dateLbl = new Date(it.dateKey).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' });
   return `
-    <div style="padding:8px 10px;border:1px solid rgba(0,0,0,0.08);border-left:3px solid ${borderLeft};border-radius:4px;margin-bottom:6px;background:${bg}">
+    <div style="padding:8px 10px;border:1px solid rgba(0,0,0,0.08);border-left:3px solid ${borderLeft};border-radius:4px;margin-bottom:6px;background:${bg}" data-item-key="${it.dateKey}">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
         <input type="checkbox" data-import-date="${it.dateKey}" ${it.selected ? 'checked' : ''} style="cursor:pointer">
         <strong>${it.dateKey}</strong>
         <span style="font-size:0.85em;color:#666">${dateLbl}</span>
         ${manualBadge}
+        <button class="edit-open" data-edit-key="${it.dateKey}" style="margin-left:auto;font-size:0.78em;padding:2px 8px" title="Corriger la date, les artistes ou les créneaux">✏️ Modifier</button>
       </label>
       ${detailHTML}
     </div>
@@ -388,8 +480,12 @@ export async function applyImport() {
   renderModal();
 
   // Grouper par mois et fusionner avec l'existant
+  // NOTE : si l'utilisateur a édité une date, son mois peut avoir changé →
+  // on recalcule it.mois depuis la dateKey actuelle avant le groupement.
   const byMois = {};
   selected.forEach(it => {
+    const currentMois = (it.dateKey || '').slice(0, 7);   // 'YYYY-MM'
+    if (currentMois) it.mois = currentMois;
     (byMois[it.mois] = byMois[it.mois] || []).push(it);
   });
 
@@ -398,8 +494,9 @@ export async function applyImport() {
   for (const [mois, list] of Object.entries(byMois)) {
     const merged = { ...(importState.diff.existing[mois] || {}) };
     list.forEach(it => {
-      // L'import efface le flag manuelle (les données viennent du PDF)
-      merged[it.dateKey] = { ...it.newJour, manuelle: false };
+      // Si l'utilisateur a corrigé (date/artistes/etc.) → manuelle=true
+      // Sinon l'import PDF → manuelle=false.
+      merged[it.dateKey] = { ...it.newJour, manuelle: !!it._userEdited };
     });
     try {
       const r = await putProgrammationMois(mois, merged);
