@@ -2,38 +2,56 @@
 // Body : { pdfBase64: "..." } (PDF encodé en base64)
 // Réponse : { dates: {...}, log: [...], chars: N }
 //
-// Reçoit un PDF, extrait son texte avec pdf-parse, le parse en structure
-// par date via netlify/lib/parse-programmation.js, et retourne le résultat.
-//
-// PDF.JS WORKER : pdf-parse v2 utilise pdfjs-dist qui charge dynamiquement
-// pdf.worker.mjs via `await import(workerSrc)`. esbuild ne suit pas ce
-// dynamic import, donc on :
-//   1. inclut explicitement le worker via [functions."parse-programmation"]
-//      included_files dans netlify.toml
-//   2. set GlobalWorkerOptions.workerSrc à un path absolu résolu via
-//      createRequire (cf init() ci-dessous) — sinon pdfjs cherche le
-//      worker relativement à son propre fichier bundle où il n'est pas.
+// Utilise pdf2json pour extraire le PDF avec positions (x,y) des cellules,
+// puis reconstruit un texte tab-séparé attendu par parseProgrammation().
 
 import { createRequire } from 'node:module';
 import { requireAuth, readJsonBody, jsonResponse, methodNotAllowed } from '../lib/auth-guard.js';
 import { parseProgrammation } from '../lib/parse-programmation.js';
 
-const requireFromHere = createRequire(import.meta.url);
+const require = createRequire(import.meta.url);
 
-// Résout le workerSrc une seule fois (mémoïsé). Renvoie un path string
-// utilisable par `await import(workerSrc)` côté pdfjs.
-let _workerSrc = null;
-function resolveWorkerSrc() {
-  if (_workerSrc) return _workerSrc;
-  try {
-    // require.resolve fonctionne avec les fichiers inclus via included_files
-    const p = requireFromHere.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs');
-    _workerSrc = p;
-  } catch (e) {
-    console.warn('[parse-programmation] resolve worker échoué', e.message);
-    _workerSrc = null;
+function safeDecode(s) {
+  try { return decodeURIComponent(s); } catch { return s; }
+}
+
+// Reconstruit un texte tab-séparé à partir de la sortie pdf2json.
+// Groupement par ligne : Y arrondi à 0.1 près (une ligne visuelle = un bucket).
+function reconstructTabbedText(pdfData) {
+  const lines = [];
+  for (const page of pdfData.Pages || []) {
+    const rows = new Map();
+    for (const t of (page.Texts || [])) {
+      const y = Math.round(t.y * 10) / 10;
+      if (!rows.has(y)) rows.set(y, []);
+      // Un Text peut avoir plusieurs Runs R (mais généralement 1)
+      const txt = (t.R || []).map(r => safeDecode(r.T || '')).join('');
+      if (txt) rows.get(y).push({ x: t.x, txt });
+    }
+    const sortedRows = [...rows.entries()].sort((a, b) => a[0] - b[0]);
+    for (const [, cells] of sortedRows) {
+      cells.sort((a, b) => a.x - b.x);
+      lines.push(cells.map(c => c.txt).join('\t'));
+    }
   }
-  return _workerSrc;
+  return lines.join('\n');
+}
+
+function parsePdfWithPdf2json(buffer) {
+  return new Promise((resolve, reject) => {
+    // pdf2json est CJS → require via createRequire depuis un module ESM
+    const PDFParser = require('pdf2json');
+    const parser = new PDFParser(null, true);
+    parser.on('pdfParser_dataError', e => reject(new Error(e.parserError?.message || 'pdf2json_error')));
+    parser.on('pdfParser_dataReady', pdfData => {
+      try {
+        resolve(reconstructTabbedText(pdfData));
+      } catch (e) {
+        reject(e);
+      }
+    });
+    parser.parseBuffer(buffer);
+  });
 }
 
 export default async (req) => {
@@ -59,27 +77,9 @@ export default async (req) => {
 
   let rawText;
   try {
-    const { PDFParse } = await import('pdf-parse');
-    // Configure GlobalWorkerOptions.workerSrc UNE FOIS avant le premier
-    // getDocument. Sans ça, pdfjs cherche pdf.worker.mjs via import.meta.url
-    // de son propre fichier (introuvable dans le bundle).
-    const ws = resolveWorkerSrc();
-    if (ws) {
-      try {
-        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-        if (pdfjs?.GlobalWorkerOptions && !pdfjs.GlobalWorkerOptions.workerSrc) {
-          pdfjs.GlobalWorkerOptions.workerSrc = ws;
-        }
-      } catch (we) {
-        console.warn('[parse-programmation] config workerSrc échoué', we.message);
-      }
-    }
-    const parser = new PDFParse({ data: buffer });
-    const result = await parser.getText();
-    await parser.destroy?.();
-    rawText = result.text || '';
+    rawText = await parsePdfWithPdf2json(buffer);
   } catch (e) {
-    console.error('[parse-programmation] pdf-parse error', e);
+    console.error('[parse-programmation] pdf2json error', e);
     return jsonResponse(500, { error: 'pdf_parse_failed', message: e.message });
   }
 
