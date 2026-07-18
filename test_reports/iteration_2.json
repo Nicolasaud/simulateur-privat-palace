@@ -1,0 +1,35 @@
+{
+  "summary": "Frontend-only test of the new inline edit feature in the PDF import preview (programmation artistique) + benchmark Nicolas regression check. All 6 scenarios pass. NOTE: /tmp/prog-mai.pdf mentioned in the review did NOT exist on the pod, so /api/parse-programmation was MOCKED via page.route to return 25 fake dates for 2026-05. UI/UX flow of the edit-inline feature is fully verified.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_2.json"],
+  "action_items": [
+    "The file /tmp/prog-mai.pdf mentioned in the review was NOT present on the pod. A minimal valid PDF was uploaded and the parse-programmation response was MOCKED with 25 dates via page.route. To reproduce with the real parser on a real PDF, the user must re-upload the file. Consider committing a fixture PDF under /app/backend/tests/fixtures/ for reproducible testing."
+  ],
+  "critical_code_review_comments": [
+    "programmation-import.js is 523 lines — approaching the recommended 700-line soft-limit; consider splitting rendering (renderStep1/renderStep2/renderItemRow) into a dedicated view module.",
+    "The inline edit path stores state in ad-hoc fields (_editing, _editedDate, _userEdited) on shared items — a dedicated editState object would be safer.",
+    "The edit-save handler reads DOM values but doesn't validate the date (e.g., empty date, invalid format). Currently a blank date falls back to the old dateKey, which is fine, but a malformed value from a non-native date input browser could bypass this.",
+    "No visible dedicated data-testid attributes on the new elements (edit-open / edit-save / edit-cancel / edit-date etc. rely on CSS classes). Consider adding data-testid for long-term test stability."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only)", "frontend": "100% (6/6 scenarios)"},
+  "test_credentials": "Login code PALACE2026, user radio 'Nicolas'",
+  "seed_data_creation": "None — the parse-programmation API was MOCKED, so no data was persisted to the backend. No cleanup needed.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The /tmp/prog-mai.pdf test fixture doesn't exist on the pod. If needed, mock POST /api/parse-programmation with 25 dates or upload a real Palace Comedy programming PDF. All edit-inline logic (open/cancel/save with date change and artistes change) is verified working. Benchmark Nicolas fiche => KPI #kpiTotalHT = '5 775,00 €' confirmed intact.",
+  "verified_scenarios": [
+    "Login PALACE2026 + Nicolas OK",
+    "Onglet Calendrier -> Importer programmation PDF -> file upload -> Analyser -> 25 dates détectées, 51 artistes, 50 créneaux",
+    "Chaque ligne a un bouton ✏️ Modifier (25/25)",
+    "Click Modifier ouvre un formulaire inline avec 4 champs (date type=date, artistes, créneaux, notes)",
+    "Bouton Annuler referme l'éditeur sans changement",
+    "Modification date 2026-05-01 -> 2026-05-23 + artistes 'NewArtist1, NewArtist2, NewArtist3' + Save -> ligne re-rendered avec la nouvelle date et les nouveaux artistes affichés",
+    "Régression benchmark : Fiche Nicolas => #kpiTotalHT = '5 775,00 €' OK"
+  ]
+}
