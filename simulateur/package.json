@@ -13,9 +13,6 @@
     "@netlify/blobs": "^8.1.0",
     "pdf2json": "^4.0.3"
   },
-  "devDependencies": {
-    "netlify-cli": "^17.36.0"
-  },
   "engines": {
     "node": ">=20"
   }
