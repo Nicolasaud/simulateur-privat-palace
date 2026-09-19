@@ -144,14 +144,16 @@ export function renderBibliothequeItems() {
         <thead><tr>
           <th>Libellé</th>
           <th style="width:140px">Catégorie</th>
-          <th class="num" style="width:120px" title="Coût de revient HT par personne (ou fixe selon le mode)">Coût HT (€)</th>
+          <th class="num" style="width:120px" title="Coût matière / de revient HT par personne (ou fixe selon le mode)">Coût matière HT (€)</th>
+          <th class="num" style="width:120px" title="Prix de vente HT par personne (ou fixe selon le mode)">Prix vente HT (€)</th>
+          <th class="num" style="width:90px" title="Marge sur prix de vente : (prix − coût) / prix">Marge</th>
           <th style="width:150px">TVA</th>
           <th style="width:120px" title="Fixe = total unique · × nb pers = ×nb pers du devis">Mode</th>
           <th style="width:44px"></th>
         </tr></thead>
         <tbody></tbody>
       </table>
-      <p class="legend" style="margin-top:6px">💡 <strong>Item = coût de revient</strong>. Le prix de vente se règle au niveau de la <strong>Formule</strong> (bibliothèque de formules) qui regroupe plusieurs items.</p>
+      <p class="legend" style="margin-top:6px">💡 Chaque item porte son <strong>coût matière</strong> et son <strong>prix de vente</strong> HT ; la marge est calculée automatiquement. Le <strong>Prix vente HT</strong> réglé au niveau de la <strong>Formule</strong> reste prioritaire : quand il est renseigné, c'est lui qui est facturé, et les prix des items servent de référence.</p>
     </div>
   `;
   renderCategories();
@@ -235,7 +237,7 @@ function renderItems() {
   if (!tbody) return;
   const items = state.bibItems || [];
   tbody.innerHTML = items.length === 0
-    ? '<tr><td colspan="6" style="text-align:center;color:#888;padding:16px;font-style:italic">Aucun item libre — ajoute le premier</td></tr>'
+    ? '<tr><td colspan="8" style="text-align:center;color:#888;padding:16px;font-style:italic">Aucun item libre — ajoute le premier</td></tr>'
     : items.map(it => {
         const isSys = !!it.systemFn;
         const readonly = isSys ? 'readonly disabled' : '';
@@ -246,6 +248,8 @@ function renderItems() {
             <td><input type="text" class="bib-it-lib" value="${escapeHtml(it.libelle)}" ${readonly}>${sysBadge}</td>
             <td><select class="bib-it-cat" ${isSys ? 'disabled' : ''}>${categoriesOptions(it.categorieId)}</select></td>
             <td class="num"><input type="number" class="bib-it-cout" value="${it.coutHT ?? 0}" step="0.01" min="0" ${readonly}></td>
+            <td class="num">${isSys ? '<span style="font-style:italic;color:#666">auto</span>' : `<input type="number" class="bib-it-prix" value="${it.prixHT ?? 0}" step="0.01" min="0">`}</td>
+            <td class="num bib-it-marge">${margeItemHtml(it)}</td>
             <td><select class="bib-it-tva" ${isSys ? 'disabled' : ''}>${tvaOptions(it.tvaCat)}</select></td>
             <td><select class="bib-it-mode" ${isSys ? 'disabled' : ''} title="Fixe = total · × nb pers = ×nb pers du devis">
               <option value="perPers" ${effectiveMode === 'perPers' ? 'selected' : ''}>× nb pers</option>
@@ -255,6 +259,26 @@ function renderItems() {
           </tr>`;
       }).join('');
   wireItemRows();
+}
+
+// Marge d'un item sur son prix de vente : (prix − coût) / prix.
+// Retourne null si aucun prix de vente n'est renseigné (marge indéfinie).
+function margeItemPct(it) {
+  const prix = Number(it.prixHT || 0);
+  if (prix <= 0) return null;
+  return (prix - Number(it.coutHT || 0)) / prix * 100;
+}
+// Couleur reprise des totaux de formule : ≥60 % vert, ≥40 % orange, sinon rouge.
+function couleurMarge(pct) {
+  return pct >= 60 ? '#0a5c2c' : pct >= 40 ? '#7a4400' : '#8a1a1a';
+}
+function margeItemHtml(it) {
+  // Items système : coût ET prix sont recalculés en fiche, la marge n'a pas
+  // de valeur fixe ici.
+  if (it.systemFn) return '<span style="font-style:italic;color:#666">auto</span>';
+  const m = margeItemPct(it);
+  if (m === null) return '<span style="color:#888" title="Renseigne un prix de vente pour voir la marge">—</span>';
+  return `<strong style="color:${couleurMarge(m)}">${fmtPct(m)}</strong>`;
 }
 
 function categoriesOptions(selected) {
@@ -271,7 +295,15 @@ function wireItemRows() {
     const upd = patch => updateItem(id, patch);
     tr.querySelector('.bib-it-lib')?.addEventListener('change', e => upd({ libelle: e.target.value }));
     tr.querySelector('.bib-it-cat')?.addEventListener('change', e => upd({ categorieId: e.target.value }));
-    tr.querySelector('.bib-it-cout')?.addEventListener('change', e => upd({ coutHT: Number(e.target.value) }));
+    // Coût et prix font bouger la marge : on rafraîchit la seule cellule
+    // concernée plutôt que tout le tableau, pour ne pas perdre le focus.
+    const refreshMarge = () => {
+      const item = state.bibItems.find(x => x.id === id);
+      const cell = tr.querySelector('.bib-it-marge');
+      if (item && cell) cell.innerHTML = margeItemHtml(item);
+    };
+    tr.querySelector('.bib-it-cout')?.addEventListener('change', e => { upd({ coutHT: Number(e.target.value) }); refreshMarge(); });
+    tr.querySelector('.bib-it-prix')?.addEventListener('change', e => { upd({ prixHT: Number(e.target.value) }); refreshMarge(); });
     tr.querySelector('.bib-it-tva')?.addEventListener('change', e => upd({ tvaCat: e.target.value }));
     tr.querySelector('.bib-it-mode')?.addEventListener('change', e => upd({ mode: e.target.value }));
     tr.querySelector('.bib-del')?.addEventListener('click', () => deleteItem(id));
@@ -298,7 +330,7 @@ function addItem() {
     libelle: 'Nouvel item',
     categorieId: (state.bibCategories[0] || {}).id || '',
     coutHT: 0,
-    prixHT: 0,   // conservé pour rétro-compat, non affiché
+    prixHT: 0,   // prix de vente HT, éditable dans le tableau (marge auto)
     tvaCat: 'prestation',
     mode: 'perPers'
   });
@@ -374,9 +406,14 @@ function renderFormuleCard(f) {
           ? '<p class="legend" style="margin:8px 0">Aucun item — clique sur « + » pour en ajouter</p>'
           : items.map(i => {
               const sysBadge = i._system ? ' <span style="font-size:0.72em;color:#666">⚡</span>' : '';
-              const coutChip = i._system ? '<span class="bibItemChipPrix" style="font-style:italic;color:#666">auto</span>' : `<span class="bibItemChipPrix" title="Coût de revient HT">${fmt(i.coutHT || 0)} coût</span>`;
+              const coutChip = i._system ? '<span class="bibItemChipPrix" style="font-style:italic;color:#666">auto</span>' : `<span class="bibItemChipPrix" title="Coût matière HT">${fmt(i.coutHT || 0)} coût</span>`;
+              // Prix de vente et marge de l'item, quand ils sont renseignés.
+              const margeItem = i._system ? null : margeItemPct(i);
+              const venteChip = margeItem === null ? '' :
+                `<span class="bibItemChipPrix" title="Prix de vente HT">${fmt(i.prixHT || 0)} vente</span> ` +
+                `<span class="bibItemChipPrix" title="Marge sur prix de vente" style="color:${couleurMarge(margeItem)}">${fmtPct(margeItem)}</span>`;
               const rem = isBuiltIn ? '' : `<button class="bib-fo-rem" data-item-id="${i.id}" title="Retirer">×</button>`;
-              return `<span class="bibItemChip" data-item-id="${i.id}" title="${escapeHtml(describeSystemItem(i) || '')}">${escapeHtml(i.libelle)}${sysBadge} ${coutChip} ${rem}</span>`;
+              return `<span class="bibItemChip" data-item-id="${i.id}" title="${escapeHtml(describeSystemItem(i) || '')}">${escapeHtml(i.libelle)}${sysBadge} ${coutChip} ${venteChip} ${rem}</span>`;
             }).join('')}
       </div>
       ${isBuiltIn ? '' : `
