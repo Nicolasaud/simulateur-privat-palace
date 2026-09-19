@@ -1,56 +1,21 @@
 # ============================================================
-# Configuration Netlify — Simulateur devis Palace Comedy
+# Configuration Netlify — Racine du monorepo Emergent
 # ============================================================
-# Documentation : https://docs.netlify.com/configure-builds/file-based-configuration/
+# Le code applicatif vit dans le dossier ./simulateur/. Ce fichier
+# indique à Netlify de faire un cd vers ce dossier avant tout build,
+# afin que publish/functions/redirects du netlify.toml interne
+# fonctionnent tels quels.
 
 [build]
-  # Dossier dont le contenu est publié sur le CDN Netlify.
-  # Pour l'instant, public/index.html = copie intacte du fichier monolithique d'origine.
+  base = "simulateur"
   publish = "public"
-
-  # Dossier où Netlify cherche les serverless functions (vide pour l'instant ;
-  # rempli à l'étape 4 — auth — puis à l'étape 5 — endpoints CRUD).
   functions = "netlify/functions"
-
-# ============================================================
-# Configuration de `netlify dev` (serveur local de développement)
-# ============================================================
-[dev]
-  # On sert le dossier public/ tel quel : pas de framework, pas de build.
-  publish = "public"
-  framework = "#static"
-  # Port d'écoute local (par défaut : 8888). Modifiable au besoin.
-  port = 8888
-  # Port que Netlify utilise pour proxyfier vers le serveur statique.
-  # Laissé auto pour que `netlify dev` choisisse un port libre.
-  targetPort = 0
-
-# ============================================================
-# Bundling spécifique : la function parse-programmation utilise pdf-parse v2,
-# qui charge dynamiquement pdf.worker.mjs via `await import(workerSrc)`. esbuild
-# (utilisé par netlify-cli) ne suit pas ce dynamic import → le worker n'est
-# pas copié dans le bundle et la function plante avec "Cannot find module
-# pdf.worker.mjs". On inclut explicitement le worker.
-# ============================================================
-[functions."parse-programmation"]
-  included_files = [
-    "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"
-  ]
-
-# ============================================================
-# Redirections : /api/* → fonctions Netlify
-# ============================================================
-# Permet d'appeler les futures fonctions via /api/auth, /api/fiches, etc.
-# au lieu de l'URL native /.netlify/functions/auth. Plus court côté client.
 
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
-# ============================================================
-# Headers de sécurité (baseline)
-# ============================================================
 [[headers]]
   for = "/*"
   [headers.values]
