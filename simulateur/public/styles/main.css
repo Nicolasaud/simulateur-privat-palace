@@ -339,19 +339,30 @@ button.delete:hover { background: var(--danger); color: white; }
 /* ============================================================
    Header avec logo (remplace le titre texte)
    ============================================================ */
-.appHeader { margin-bottom: 6px; padding: 4px 0 8px; font-size: 0; }
+.appHeader { margin-bottom: 8px; padding: 6px 0 12px; font-size: 0; }
 .appHeaderLogo {
-  display: inline-flex; align-items: center; gap: 22px;
+  display: inline-flex; align-items: center; gap: 28px;
   text-decoration: none; padding: 4px 0;
 }
 .appHeaderLogo img {
-  height: 62px; width: auto; display: block;
+  height: 96px; width: auto; display: block;
 }
 .appHeaderTagline {
   font-family: 'Lexend', sans-serif; font-weight: 800;
-  font-size: 34px; color: #1a1f3c; letter-spacing: -0.01em;
-  border-left: 3px solid #e5e7eb; padding-left: 22px;
+  font-size: 52px; color: #1a1f3c; letter-spacing: -0.01em;
+  border-left: 4px solid #e5e7eb; padding-left: 28px;
   line-height: 1;
+}
+/* Le logo fait ~5:1, il devient vite plus large que l'écran : on redescend. */
+@media (max-width: 1100px) {
+  .appHeaderLogo { gap: 20px; }
+  .appHeaderLogo img { height: 70px; }
+  .appHeaderTagline { font-size: 38px; padding-left: 20px; }
+}
+@media (max-width: 700px) {
+  .appHeaderLogo { gap: 14px; }
+  .appHeaderLogo img { height: 46px; }
+  .appHeaderTagline { font-size: 24px; padding-left: 14px; border-left-width: 3px; }
 }
 
 /* ============================================================
