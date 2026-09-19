@@ -5,7 +5,7 @@
   "description": "Simulateur de devis Palace Comedy — refonte Netlify (Functions + Blobs + auth code partagé)",
   "type": "module",
   "scripts": {
-    "dev": "netlify dev",
+    "dev": "netlify dev --dir simulateur/public",
     "build": "echo 'Pas de build pour l instant — vanilla ESM servi tel quel' && exit 0",
     "hash-code": "node scripts/hash-code.js"
   },
