@@ -23,12 +23,13 @@ import { newFiche, setDirty } from './fiches.js';
 
 // === Constantes domaine ===
 export const CRM_STATUTS = [
+  { id: 'brouillon',        label: 'Brouillon' },
   { id: 'a_contacter',      label: 'À contacter' },
   { id: 'en_discussion',    label: 'En discussion' },
   { id: 'devis_envoye',     label: 'Devis envoyé' },
   { id: 'gagne',            label: 'Gagné' },
   { id: 'acompte_facture',  label: 'Acompte facturé' },
-  { id: 'facture_solde',    label: 'Facture soldée' },
+  { id: 'facture_solde',    label: 'Facture du solde' },
   { id: 'perdu',            label: 'Perdu' }
 ];
 
@@ -703,8 +704,8 @@ export async function linkPendingProspectFiche(ficheId) {
     const p = await getProspect(prospectId);
     if (!Array.isArray(p.fichesIds)) p.fichesIds = [];
     if (!p.fichesIds.includes(ficheId)) p.fichesIds.push(ficheId);
-    // Bascule auto en "devis_envoye" si encore en a_contacter ou en_discussion
-    if (p.statut === 'a_contacter' || p.statut === 'en_discussion') {
+    // Bascule auto en "devis_envoye" si encore en amont du pipeline
+    if (p.statut === 'brouillon' || p.statut === 'a_contacter' || p.statut === 'en_discussion') {
       p.statut = 'devis_envoye';
     }
     const saved = await putProspect(prospectId, p);
@@ -769,7 +770,7 @@ function fmtTrace(iso) {
 // === Sync Simulateur → CRM ===
 // Mapping statut fiche devis → statut prospect CRM.
 const FICHE_STATUT_TO_CRM = {
-  'brouillon':       'a_contacter',
+  'brouillon':       'brouillon',
   'envoye':          'devis_envoye',
   'accepte':         'gagne',
   'refuse':          'perdu',

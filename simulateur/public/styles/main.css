@@ -275,6 +275,7 @@ button.delete:hover { background: var(--danger); color: white; }
 
 /* Badge statut CRM — nouvelle palette */
 .crmStatutBadge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 0.74em; font-weight: 600; letter-spacing: 0.01em; }
+.crmStatutBadge.brouillon      { background: rgba(234, 179, 8, 0.14); color: #a16207; }
 .crmStatutBadge.a_contacter    { background: rgba(59, 130, 246, 0.10); color: #1d4ed8; }
 .crmStatutBadge.en_discussion  { background: rgba(245, 158, 11, 0.12); color: #b45309; }
 .crmStatutBadge.devis_envoye   { background: rgba(139, 92, 246, 0.12); color: #6d28d9; }
@@ -283,10 +284,10 @@ button.delete:hover { background: var(--danger); color: white; }
 .crmStatutBadge.facture_solde  { background: #1a1a1a; color: white; }
 .crmStatutBadge.perdu          { background: rgba(239, 68, 68, 0.12); color: #b91c1c; }
 
-/* Kanban — 7 colonnes sur une ligne desktop, adapt selon largeur */
+/* Kanban — 8 colonnes sur une ligne desktop, adapt selon largeur */
 .crmKanbanGrid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(140px, 1fr));
+  grid-template-columns: repeat(8, minmax(128px, 1fr));
   gap: 8px;
 }
 @media (max-width: 1500px) { .crmKanbanGrid { grid-template-columns: repeat(4, minmax(160px, 1fr)); } }
@@ -311,6 +312,7 @@ button.delete:hover { background: var(--danger); color: white; }
 }
 .crmCard:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-1px); }
 .crmCard.dragging { opacity: 0.45; cursor: grabbing; }
+.crmCard.statut-brouillon     { border-left-color: #eab308; }
 .crmCard.statut-a_contacter   { border-left-color: #3b82f6; }
 .crmCard.statut-en_discussion { border-left-color: #f59e0b; }
 .crmCard.statut-devis_envoye  { border-left-color: #8b5cf6; }
