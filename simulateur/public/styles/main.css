@@ -73,6 +73,11 @@ th { font-family: 'Lexend', sans-serif; font-weight: 500; background: rgba(0,0,0
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 tfoot td { font-weight: 600; border-top: 2px solid rgba(0,0,0,0.15); background: rgba(0,0,0,0.02); }
 
+/* Vue interne — ligne de titre d'une formule : c'est celle qui précède le
+   détail de ses items (lignes .ligne-detail). Fond plus foncé pour la
+   distinguer des items listés en dessous. */
+#tableInterne tbody tr:not(.ligne-detail):has(+ tr.ligne-detail) { background: rgba(26,31,60,0.08); }
+
 .alerte { padding: 9px 13px; border-radius: 6px; margin: 6px 0; font-size: 0.87em; line-height: 1.45; }
 .alerte.warn { background: #fff4e0; color: #7a4400; border-left: 3px solid #f0a000; }
 .alerte.error { background: #ffe6e6; color: #800; border-left: 3px solid #c00; }
