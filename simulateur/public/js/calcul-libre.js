@@ -65,37 +65,13 @@ export function resolveTypeParamsForBloc(bloc, ctx) {
   return { ...defaults, ...(overridesFormuleV2 || {}), ...overridesBloc };
 }
 
-// Lignes issues des items saisis directement dans le bloc (bloc.items[]).
-// Même conversion que l'item système user_resto_items, réutilisée ici pour les
-// blocs sans formule associée.
-function lignesDesItemsDuBloc(bloc) {
-  const nbPers = Math.max(1, bloc?.nbPers || 1);
-  return (Array.isArray(bloc?.items) ? bloc.items : []).map(it => {
-    const isPerPers = it.mode !== 'unit';
-    const qte = isPerPers ? nbPers : 1;
-    return {
-      libelle: it.libelle,
-      qte,
-      puHT: Number(it.prixHT || 0),
-      totalHT: Number(it.prixHT || 0) * qte,
-      coutHT: Number(it.coutHT || 0) * qte,
-      tvaCat: it.tvaCat || 'restauration',
-      type: 'resto'
-    };
-  });
-}
-
 // Calcule les lignes d'un bloc via la nouvelle logique "formule libre".
 // Retourne un tableau de lignes au même format que calcul.js legacy :
 // { libelle, qte, puHT, totalHT, coutHT, tvaCat, type }
 export function calculerBlocLibre(bloc, ctx) {
   const formuleLib = resolveFormuleLibForBloc(bloc, ctx.formulesLib);
   if (!formuleLib) {
-    // Pas de formule associée : on calcule quand même les items saisis
-    // directement dans le bloc (ajoutés depuis le catalogue ou via "+ Vide"),
-    // sinon ils resteraient invisibles dans la décomposition coûts & marges.
-    const lignesItems = lignesDesItemsDuBloc(bloc);
-    if (lignesItems.length) return { lignes: lignesItems };
+    // Impossible de produire un devis sans formule associée
     return { lignes: [], warning: `Aucune formule libre associée au type "${bloc?.typeId || '?'}"` };
   }
 
@@ -129,12 +105,9 @@ export function calculerBlocLibre(bloc, ctx) {
   // Si des items ont été matérialisés dans bloc.items[] mais que la formule
   // n'inclut PAS sys_user_resto_items, on l'ajoute virtuellement pour que
   // ces items soient bien calculés (avec leur mode fixe/variable).
-  // Idem pour les items ajoutés à la main dans le bloc (catalogue ou "+ Vide") :
-  // ils ne sont rattachés à aucun itemId de la formule, donc sans cette brique
-  // virtuelle ils n'apparaîtraient pas dans la décomposition coûts & marges.
   const hasUserResto = itemsIds.includes('sys_user_resto_items');
-  const hasItemsDuBloc = (bloc?.items || []).length > 0;
-  if (hasItemsDuBloc && !hasUserResto) {
+  const hasMaterialized = (bloc?.items || []).length > 0 && materializedSet.size > 0;
+  if (hasMaterialized && !hasUserResto) {
     nonFraisIds.push('sys_user_resto_items');
   }
 
