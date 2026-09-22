@@ -189,9 +189,28 @@ function buildBlocCard(bloc, idx) {
         </div>`;
       }).join('') + '</div>';
 
-  const bddOpts = state.bddItems.map(b =>
-    `<option value="${b.id}">${escapeHtml(b.libelle)} (${fmt(b.coutHT)}→${fmt(b.prixHT)})</option>`
-  ).join('');
+  // Catalogue proposé à l'ajout dans un bloc.
+  // Source principale : la Bibliothèque d'items (state.bibItems), hors items
+  // système ⚡ qui sont calculés par le moteur et n'ont rien à faire ici.
+  // On conserve en second groupe les items de l'ancienne BDD restauration qui
+  // n'ont pas encore d'équivalent en bibliothèque, pour ne rien perdre.
+  const bibCatalogue = (state.bibItems || [])
+    .filter(i => !i.systemFn)
+    .sort((a, b) => (a.libelle || '').localeCompare(b.libelle || '', 'fr'));
+  const bibLibelles = new Set(bibCatalogue.map(i => (i.libelle || '').toLowerCase().trim()));
+  const bddRestants = (state.bddItems || [])
+    .filter(b => !bibLibelles.has((b.libelle || '').toLowerCase().trim()))
+    .sort((a, b) => (a.libelle || '').localeCompare(b.libelle || '', 'fr'));
+
+  const optionHtml = (src, it) =>
+    `<option value="${src}:${it.id}">${escapeHtml(it.libelle)} (${fmt(it.coutHT || 0)}→${fmt(it.prixHT || 0)})</option>`;
+  const bddOpts =
+    (bibCatalogue.length
+      ? `<optgroup label="Bibliothèque d'items">${bibCatalogue.map(i => optionHtml('bib', i)).join('')}</optgroup>`
+      : '') +
+    (bddRestants.length
+      ? `<optgroup label="BDD restauration">${bddRestants.map(b => optionHtml('bdd', b)).join('')}</optgroup>`
+      : '');
 
   // Sous-total HT/TTC/Coût du bloc
   const jour = $('day')?.value || 'vendredi';
@@ -253,8 +272,8 @@ function buildBlocCard(bloc, idx) {
       ${itemsHtml}
       <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
         <button onclick="addBlocItem(${idx})" style="font-size:0.85em;padding:3px 8px">+ Vide</button>
-        <select data-bloc-bdd-import="${idx}" style="flex:1;min-width:140px;font-size:0.85em">
-          <option value="">+ Importer depuis BDD…</option>
+        <select data-bloc-catalogue-import="${idx}" style="flex:1;min-width:140px;font-size:0.85em">
+          <option value="">+ Ajouter un item du catalogue…</option>
           ${bddOpts}
         </select>
       </div>
@@ -501,13 +520,24 @@ function updateBlocItem(blocIdx, itemIdx, key, rawValue) {
   if (key === 'mode') renderBlocs();
 }
 
-function importItemFromBdd(blocIdx, bddId) {
+// `ref` est préfixé par sa source : "bib:<id>" (Bibliothèque d'items) ou
+// "bdd:<id>" (ancienne BDD restauration). Le préfixe lève l'ambiguïté si un
+// même id existait des deux côtés.
+function importItemFromCatalogue(blocIdx, ref) {
   const b = state.formules[blocIdx];
-  if (!b || !bddId) return;
-  const src = state.bddItems.find(x => x.id === bddId);
+  if (!b || !ref) return;
+  const [source, id] = ref.includes(':') ? [ref.slice(0, ref.indexOf(':')), ref.slice(ref.indexOf(':') + 1)] : ['bdd', ref];
+  const src = source === 'bib'
+    ? (state.bibItems || []).find(x => x.id === id)
+    : (state.bddItems || []).find(x => x.id === id);
   if (!src) return;
   if (!Array.isArray(b.items)) b.items = [];
-  b.items.push({ libelle: src.libelle, coutHT: src.coutHT, prixHT: src.prixHT, tvaCat: src.tvaCat, mode: 'perPers' });
+  // Un item de bibliothèque porte son propre mode (Fixe / × nb pers) : on le
+  // respecte. Les items BDD gardent le défaut historique 'perPers'.
+  const mode = source === 'bib'
+    ? (src.mode || (['restauration', 'bar'].includes(src.tvaCat) ? 'perPers' : 'unit'))
+    : 'perPers';
+  b.items.push({ libelle: src.libelle, coutHT: src.coutHT, prixHT: src.prixHT, tvaCat: src.tvaCat, mode });
   b.snapshot = null;
   setDirty(true);
   renderBlocs();
@@ -536,11 +566,11 @@ function wireBlocListeners() {
       updateBlocField(parseInt(t.dataset.blocIdx), t.dataset.blocField, t.value);
     } else if (t.dataset.blocItemKey) {
       updateBlocItem(parseInt(t.dataset.blocIdx), parseInt(t.dataset.i), t.dataset.blocItemKey, t.value);
-    } else if (t.dataset.blocBddImport !== undefined) {
-      const idx = parseInt(t.dataset.blocBddImport);
-      const bddId = t.value;
-      if (bddId) {
-        importItemFromBdd(idx, bddId);
+    } else if (t.dataset.blocCatalogueImport !== undefined) {
+      const idx = parseInt(t.dataset.blocCatalogueImport);
+      const ref = t.value;
+      if (ref) {
+        importItemFromCatalogue(idx, ref);
         t.value = '';
       }
     }

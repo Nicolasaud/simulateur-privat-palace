@@ -71,6 +71,7 @@ import {
   createDevisFromProspect, openFicheFromCrm
 } from './crm.js';
 import { renderAccueil } from './accueil.js';
+import { loadBibliothequeLibre } from './bibliotheque-libre.js';
 import { openFicheClientEditor, closeFicheClientEditor } from './fiche-client.js';
 
 // === Auth ===
@@ -99,7 +100,12 @@ async function loadAllFromCloud() {
     loadPaliersFromCloud(),
     loadParamsFromCloud(),
     loadCrmFromCloud(),
-    loadCrmTodoManualFromCloud()
+    loadCrmTodoManualFromCloud(),
+    // La bibliothèque libre n'était chargée qu'à l'ouverture de ses onglets :
+    // en allant droit au Simulateur, state.bibItems restait vide et les items
+    // du catalogue n'apparaissaient ni dans le sélecteur d'items d'un bloc,
+    // ni à la matérialisation d'une formule libre.
+    loadBibliothequeLibre()
   ]);
 }
 await loadAllFromCloud();
