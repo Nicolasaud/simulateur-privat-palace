@@ -178,6 +178,15 @@ export function recalcul() {
       <td class="num">${tva}%</td>
       <td class="num">${fmt(ttc)}</td>
     </tr>`;
+    // Détail des items d'une formule au prix global : libellé + coût HT
+    // uniquement. Déjà compris dans la ligne formule ci-dessus, donc hors total.
+    (l.detail || []).forEach(d => {
+      tbody.innerHTML += `<tr class="ligne-detail">
+        <td style="padding-left:22px;color:#555">${d.libelle}</td>
+        <td class="num" style="color:#555">${fmt(d.coutHT)}</td>
+        <td></td><td></td><td></td><td></td>
+      </tr>`;
+    });
   });
   document.querySelector('#tableInterne tfoot').innerHTML = `<tr>
     <td>Total</td>

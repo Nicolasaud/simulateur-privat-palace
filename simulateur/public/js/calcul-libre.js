@@ -220,6 +220,13 @@ export function calculerBlocLibre(bloc, ctx) {
       .filter(isRestoLine)
       .reduce((s, l) => s + (l.coutHT || 0), 0);
 
+    // Détail des items fusionnés — affiché sous la ligne formule dans la vue
+    // interne (libellé + coût HT). N'entre pas dans les totaux : ces lignes
+    // sont déjà comptées par la ligne agrégée.
+    const detail = lignes
+      .filter(isRestoLine)
+      .map(l => ({ libelle: l.libelle, coutHT: l.coutHT || 0 }));
+
     // Retire les lignes "resto/item" — elles seront remplacées
     for (let i = lignes.length - 1; i >= 0; i--) {
       if (isRestoLine(lignes[i])) lignes.splice(i, 1);
@@ -233,7 +240,8 @@ export function calculerBlocLibre(bloc, ctx) {
       totalHT: formulePrix * formuleQty,
       coutHT: coutAgrege,
       tvaCat: 'prestation',   // 20% par défaut ; à affiner si besoin
-      type: 'formule'
+      type: 'formule',
+      detail
     });
   }
 
