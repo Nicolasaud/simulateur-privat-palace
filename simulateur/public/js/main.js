@@ -50,7 +50,7 @@ import {
 } from './types-internes.js';
 import {
   renderBlocs, renderRecapGlobal,
-  addBloc, removeBloc, addBlocItem, removeBlocItem
+  addBloc, removeBloc, addBlocItem, removeBlocItem, saveBlocAsFormule
 } from './blocs-ui.js';
 import {
   newFiche, saveFiche, duplicateFiche, deleteFiche,
@@ -206,7 +206,7 @@ Object.assign(window, {
   initFormuleSelectFromCurrentFormat,
   // Multi-formules UI : handlers inline + render pour fiches.js + recalcul
   renderBlocs, renderRecapGlobal,
-  addBloc, removeBloc, addBlocItem, removeBlocItem,
+  addBloc, removeBloc, addBlocItem, removeBlocItem, saveBlocAsFormule,
   // Fiches
   newFiche, saveFiche, duplicateFiche, deleteFiche,
   exportAllJSON, importJSON, exportFicheEquipe,

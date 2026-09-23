@@ -14,8 +14,9 @@ import {
   getFormulesLib, putFormulesLib
 } from './api.js';
 import { showToast } from './ui-feedback.js';
-import { SYSTEM_ITEMS, LEGACY_SYSTEM_ITEMS, describeSystemItem } from './items-systeme.js';
-import { seedLegacyFormulesLibIfMissing, purgeLegacyFormulesLibFromCloud } from './formules-lib-seed.js';
+import { SYSTEM_ITEMS, LEGACY_SYSTEM_ITEMS, describeSystemItem, getSystemItem } from './items-systeme.js';
+import { seedLegacyFormulesLibIfMissing, purgeLegacyFormulesLibFromCloud, LEGACY_FORMULES_LIB } from './formules-lib-seed.js';
+import { resolveFormuleLibForBloc } from './calcul-libre.js';
 import { showOnboarding } from './onboarding.js';
 
 // Lookup unifié : items du catalogue + items système "legacy" (non seedés
@@ -605,6 +606,97 @@ async function createFormuleFromTemplate(tplId) {
 async function persistFormules() {
   try { await putFormulesLib(state.bibFormules); }
   catch (e) { showToast('Sauvegarde formules échouée', 'error'); console.warn(e); }
+}
+
+// === Enregistrer un bloc du simulateur comme formule ====================
+// Appelé depuis le simulateur (blocs-ui.js). Deux règles décidées avec Nicolas :
+//   - les items du bloc absents de la bibliothèque y sont créés ; ceux qui
+//     existent déjà (même libellé) sont réutilisés, pas dupliqués ;
+//   - le bloc n'est PAS relié à la formule créée : il garde ses items tels quels.
+// Les briques automatiques ⚡ de la formule en cours du bloc (spectacle,
+// personnel, frais de réservation) sont reprises pour que la formule
+// réutilisée plus tard calcule la même chose qu'aujourd'hui.
+const CATEGORIE_PAR_TVA = {
+  restauration: 'cat_resto',
+  bar: 'cat_bar',
+  spectacle: 'cat_spectacle',
+  prestation: 'cat_prestation'
+};
+
+export async function enregistrerBlocCommeFormule(bloc, nomBrut) {
+  const nom = (nomBrut || '').trim();
+  if (!nom) return null;
+
+  const dejaPris = (state.bibFormules || []).some(
+    f => (f.nom || '').trim().toLowerCase() === nom.toLowerCase()
+  );
+  if (dejaPris) {
+    showToast(`Une formule « ${nom} » existe déjà dans la bibliothèque.`, 'error');
+    return null;
+  }
+
+  const itemsDuBloc = (Array.isArray(bloc?.items) ? bloc.items : [])
+    .filter(it => (it.libelle || '').trim());
+  if (itemsDuBloc.length === 0) {
+    showToast('Ce bloc n\'a aucun item à enregistrer.', 'error');
+    return null;
+  }
+
+  // 1. Items : réutilisation par libellé, création sinon.
+  const itemIds = [];
+  const itemsCrees = [];
+  for (const it of itemsDuBloc) {
+    const libelle = it.libelle.trim();
+    const existant = (state.bibItems || []).find(
+      x => !x.systemFn && (x.libelle || '').trim().toLowerCase() === libelle.toLowerCase()
+    );
+    if (existant) { itemIds.push(existant.id); continue; }
+    const nouveau = {
+      id: genId('it'),
+      libelle,
+      categorieId: CATEGORIE_PAR_TVA[it.tvaCat] || (state.bibCategories[0] || {}).id || '',
+      coutHT: Number(it.coutHT || 0),
+      prixHT: Number(it.prixHT || 0),
+      tvaCat: it.tvaCat || 'prestation',
+      mode: it.mode === 'unit' ? 'unit' : 'perPers'
+    };
+    state.bibItems.push(nouveau);
+    itemIds.push(nouveau.id);
+    itemsCrees.push(nouveau);
+  }
+
+  // 2. Briques automatiques héritées de la formule en cours du bloc.
+  const formuleSource = resolveFormuleLibForBloc(bloc, [
+    ...(state.bibFormules || []),
+    ...LEGACY_FORMULES_LIB
+  ]);
+  const briques = (formuleSource?.itemIds || []).filter(id => getSystemItem(id));
+
+  // 3. Formule.
+  const formule = {
+    id: genId('fl'),
+    nom,
+    categorieId: (state.bibCategories[0] || {}).id || '',
+    _typeIdRendu: bloc?.typeId || 'privat-full',
+    itemIds: [...briques, ...itemIds]
+  };
+  // Prix de vente forfaitaire du bloc, s'il est renseigné.
+  if (Number(bloc?.prixFormule || 0) > 0) {
+    formule.prixHT = Number(bloc.prixFormule);
+    formule.prixMode = bloc.prixFormuleMode || 'perPers';
+  }
+  state.bibFormules.push(formule);
+
+  if (itemsCrees.length) await persistItems();
+  await persistFormules();
+  renderItems();
+  renderFormules();
+
+  const detail = itemsCrees.length
+    ? ` (${itemsCrees.length} item${itemsCrees.length > 1 ? 's' : ''} créé${itemsCrees.length > 1 ? 's' : ''} dans la bibliothèque)`
+    : '';
+  showToast(`Formule « ${nom} » enregistrée${detail}.`, 'success');
+  return formule;
 }
 
 function wireBibliothequeHandlers() {

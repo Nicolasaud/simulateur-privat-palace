@@ -17,6 +17,7 @@ import { createCombobox } from './combobox.js';
 import { resolveFormuleLibForBloc } from './calcul-libre.js';
 import { getSystemItem } from './items-systeme.js';
 import { LEGACY_FORMULES_LIB } from './formules-lib-seed.js';
+import { showToast } from './ui-feedback.js';
 
 // Mapping typeId → emoji tag pour la combobox formule (Étape 7).
 // Les formules libres personnalisées peuvent surcharger via `formule.tag`.
@@ -272,6 +273,7 @@ function buildBlocCard(bloc, idx) {
       ${itemsHtml}
       <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
         <button onclick="addBlocItem(${idx})" style="font-size:0.85em;padding:3px 8px">+ Vide</button>
+        <button onclick="saveBlocAsFormule(${idx})" style="font-size:0.85em;padding:3px 8px" title="Enregistrer la composition de ce bloc comme formule réutilisable">💾 Enregistrer comme formule</button>
         <select data-bloc-catalogue-import="${idx}" style="flex:1;min-width:140px;font-size:0.85em">
           <option value="">+ Ajouter un item du catalogue…</option>
           ${bddOpts}
@@ -392,6 +394,26 @@ export function addBlocItem(idx) {
   setDirty(true);
   renderBlocs();
   recalcul();
+}
+
+// Enregistre la composition d'un bloc comme formule réutilisable.
+// Le bloc n'est pas modifié : il garde ses items, et n'est pas relié à la
+// formule créée (décision Nicolas). Import dynamique pour éviter une
+// dépendance circulaire avec bibliotheque-libre.js.
+export async function saveBlocAsFormule(idx) {
+  const b = state.formules[idx];
+  if (!b) return;
+  const nbItems = (b.items || []).length;
+  if (nbItems === 0) {
+    showToast('Ce bloc n\'a aucun item à enregistrer.', 'error');
+    return;
+  }
+  const suggestion = (state.bibFormules || []).find(f => f.id === b.formuleLibId)?.nom || '';
+  const nom = prompt(`Nom de la formule à enregistrer dans la bibliothèque (${nbItems} item${nbItems > 1 ? 's' : ''}) :`, suggestion);
+  if (!nom || !nom.trim()) return;
+  const { enregistrerBlocCommeFormule } = await import('./bibliotheque-libre.js');
+  await enregistrerBlocCommeFormule(b, nom);
+  renderBlocs();   // la nouvelle formule apparaît dans le sélecteur des blocs
 }
 
 export function removeBlocItem(blocIdx, itemIdx) {
