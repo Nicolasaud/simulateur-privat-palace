@@ -247,10 +247,18 @@ function renderCouverture(format, jour, lignes) {
   const couverturePct = caJour > 0 ? Math.round(caHorsResa / caJour * 100) : 0;
   const couvertureSeuilPct = seuil > 0 ? Math.round(caHorsResa / seuil * 100) : 0;
 
-  const couleur = fraisResa === 0 ? '#0a5c2c' : (couvertureSeuilPct < 50 ? '#8a1a1a' : '#7a4400');
-  const message = fraisResa === 0
-    ? `<strong style="color:${couleur}">✓ Le devis couvre le CA habituel + buffer. Aucun frais de réservation appliqué.</strong>`
-    : `<strong style="color:${couleur}">Frais de réservation appliqués pour atteindre le seuil : ${fmt(fraisResa)}</strong>`;
+  // Trois états distincts. Le message se basait sur la seule présence d'une
+  // ligne de frais : un devis sous le seuil dont la formule ne porte pas la
+  // brique ⚡ Frais de réservation s'annonçait donc comme couvert.
+  const seuilAtteint = caHorsResa >= seuil;
+  const couleur = fraisResa > 0
+    ? (couvertureSeuilPct < 50 ? '#8a1a1a' : '#7a4400')
+    : (seuilAtteint ? '#0a5c2c' : '#8a1a1a');
+  const message = fraisResa > 0
+    ? `<strong style="color:${couleur}">Frais de réservation appliqués pour atteindre le seuil : ${fmt(fraisResa)}</strong>`
+    : seuilAtteint
+      ? `<strong style="color:${couleur}">✓ Le devis couvre le CA habituel + buffer. Aucun frais de réservation appliqué.</strong>`
+      : `<strong style="color:${couleur}">⚠ Le devis est sous le seuil de ${fmt(seuil - caHorsResa)} et aucun frais de réservation n'est appliqué : la brique ⚡ Frais de réservation n'est présente dans aucune formule de la fiche.</strong>`;
 
   content.innerHTML = `
     <table style="width:100%;font-size:0.88em;margin:0">
