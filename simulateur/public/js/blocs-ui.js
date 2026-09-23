@@ -124,6 +124,44 @@ export function renderBlocs() {
   wireBlocListeners();
 }
 
+// Totaux affichés en pied de card. Extrait de buildBlocCard pour pouvoir les
+// rafraîchir sans reconstruire la card (cf. refreshBlocsTotaux).
+function computeBlocTotaux(bloc) {
+  const jour = $('day')?.value || 'vendredi';
+  let blocHT = 0, blocTTC = 0, blocCout = 0;
+  calculerBloc(bloc, jour).forEach(l => {
+    const tva = getTva(l.tvaCat);
+    blocHT += l.totalHT;
+    blocTTC += l.totalHT * (1 + tva / 100);
+    blocCout += (l.coutHT || 0);
+  });
+  const blocMarge = blocHT - blocCout;
+  const blocTauxMarge = blocHT > 0 ? (blocMarge / blocHT * 100) : 0;
+  const margeColor = blocTauxMarge >= 60 ? '#0a5c2c' : blocTauxMarge >= 40 ? '#7a4400' : '#8a1a1a';
+  return { blocHT, blocTTC, blocCout, blocMarge, blocTauxMarge, margeColor };
+}
+
+// Met à jour les totaux en pied de chaque card sans toucher aux inputs.
+// Nécessaire parce que la saisie du prix de vente, du nb pers ou d'un item
+// appelle recalcul() sans re-render (pour ne pas perdre le focus) : sans ça,
+// le sous-total du bloc restait figé sur sa valeur du dernier rendu.
+function refreshBlocsTotaux() {
+  document.querySelectorAll('#blocsContainer .bloc-card').forEach(card => {
+    const bloc = state.formules[parseInt(card.dataset.blocIdx)];
+    if (!bloc) return;
+    const t = computeBlocTotaux(bloc);
+    const set = (nom, html) => {
+      const el = card.querySelector(`[data-bloc-sum="${nom}"]`);
+      if (el) el.innerHTML = html;
+    };
+    set('soustotal', `<strong>${fmt(t.blocHT)} HT</strong> · ${fmt(t.blocTTC)} TTC`);
+    set('cout', fmt(t.blocCout));
+    set('marge', `
+      <strong style="color:${t.margeColor}">${fmt(t.blocMarge)}</strong>
+      <span style="color:${t.margeColor};font-weight:500;margin-left:4px">(${t.blocTauxMarge.toFixed(1)}%)</span>`);
+  });
+}
+
 function buildBlocCard(bloc, idx) {
   const card = document.createElement('div');
   card.className = 'bloc-card';
@@ -214,18 +252,7 @@ function buildBlocCard(bloc, idx) {
       : '');
 
   // Sous-total HT/TTC/Coût du bloc
-  const jour = $('day')?.value || 'vendredi';
-  const blocLignes = calculerBloc(bloc, jour);
-  let blocHT = 0, blocTTC = 0, blocCout = 0;
-  blocLignes.forEach(l => {
-    const tva = getTva(l.tvaCat);
-    blocHT += l.totalHT;
-    blocTTC += l.totalHT * (1 + tva / 100);
-    blocCout += (l.coutHT || 0);
-  });
-  const blocMarge = blocHT - blocCout;
-  const blocTauxMarge = blocHT > 0 ? (blocMarge / blocHT * 100) : 0;
-  const margeColor = blocTauxMarge >= 60 ? '#0a5c2c' : blocTauxMarge >= 40 ? '#7a4400' : '#8a1a1a';
+  const { blocHT, blocTTC, blocCout, blocMarge, blocTauxMarge, margeColor } = computeBlocTotaux(bloc);
 
   const canDelete = state.formules.length > 1;
   const typeLabel = bloc.formuleId
@@ -285,15 +312,15 @@ function buildBlocCard(bloc, idx) {
     <div style="margin-top:8px;padding-top:6px;border-top:1px dashed rgba(0,0,0,0.1)">
       <div style="display:flex;justify-content:space-between;font-size:0.85em;align-items:baseline">
         <span style="color:#666">Sous-total bloc</span>
-        <span><strong>${fmt(blocHT)} HT</strong> · ${fmt(blocTTC)} TTC</span>
+        <span data-bloc-sum="soustotal"><strong>${fmt(blocHT)} HT</strong> · ${fmt(blocTTC)} TTC</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.78em;margin-top:2px;color:#666">
         <span>Coût de revient</span>
-        <span>${fmt(blocCout)}</span>
+        <span data-bloc-sum="cout">${fmt(blocCout)}</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.85em;margin-top:2px;align-items:baseline">
         <span style="color:#666">Marge brute</span>
-        <span>
+        <span data-bloc-sum="marge">
           <strong style="color:${margeColor}">${fmt(blocMarge)}</strong>
           <span style="color:${margeColor};font-weight:500;margin-left:4px">(${blocTauxMarge.toFixed(1)}%)</span>
         </span>
@@ -317,6 +344,9 @@ function buildBlocCard(bloc, idx) {
 }
 
 export function renderRecapGlobal() {
+  // Appelé à la fin de chaque recalcul() : c'est le point de passage qui
+  // permet de remettre à jour les totaux des cards sans les reconstruire.
+  refreshBlocsTotaux();
   const container = document.getElementById('blocsRecapGlobal');
   if (!container) return;
   const jour = $('day')?.value || 'vendredi';
