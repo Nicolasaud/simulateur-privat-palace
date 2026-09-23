@@ -181,8 +181,10 @@ export function calculerBlocLibre(bloc, ctx) {
   }
 
   // === Pass 2 : frais résa (dépend du total des autres lignes) ===
+  // Sauf si la fiche les consolide en une seule ligne après tous les blocs
+  // (ctx.fraisResaParFiche) — cf. calculerFraisResaFiche.
   const caHors = lignes.reduce((s, l) => s + l.totalHT, 0);
-  for (const itemId of fraisIds) {
+  for (const itemId of (ctx.fraisResaParFiche ? [] : fraisIds)) {
     const item = resolveItem(itemId, ctx.itemsLib);
     if (!item) continue;
     const itemCtx = {
@@ -248,6 +250,57 @@ export function calculerBlocLibre(bloc, ctx) {
   return { lignes };
 }
 
+// Frais de réservation de la fiche — une seule ligne pour l'ensemble des blocs
+// (audit b-a). Calculés APRÈS consolidation, donc sur un CA qui inclut le prix
+// de vente forfaitaire des formules (audit b-b) : la base des frais est alors
+// exactement le « CA du devis hors frais de résa » affiché par la couverture.
+// Retourne { ligne, blocIdx } ou null si aucun frais n'est dû.
+export function calculerFraisResaFiche(blocs, lignes, ctx) {
+  // Réservation de groupe : la salle n'est pas privatisée, aucun frais dû.
+  if (ctx.modePrivatisation === false) return null;
+  const list = Array.isArray(blocs) ? blocs : [];
+  // Un bloc au moins doit porter la brique ⚡ Frais de réservation.
+  const blocIdx = list.findIndex(b =>
+    (resolveFormuleLibForBloc(b, ctx.formulesLib)?.itemIds || []).includes('sys_frais_resa')
+  );
+  if (blocIdx < 0) return null;
+  const item = resolveItem('sys_frais_resa', ctx.itemsLib);
+  if (!item) return null;
+
+  const bloc = list[blocIdx];
+  const caLignesHorsResa = (lignes || [])
+    .filter(l => l.type !== 'fraisResa')
+    .reduce((s, l) => s + (l.totalHT || 0), 0);
+
+  const computed = computeSystemItem(item, {
+    nbPers: Math.max(1, bloc?.nbPers || 1),
+    jour: ctx.jour,
+    periode: ctx.periode,
+    typeParams: resolveTypeParamsForBloc(bloc, ctx),
+    globalParams: ctx.globalParams || {},
+    getPersonnelFn: ctx.getPersonnelFn,
+    ficheRestoItems: bloc?.items || [],
+    formuleType: bloc?.formuleType || 'custom',
+    jourEstFermeFn: ctx.jourEstFermeFn,
+    caJourHabituel: ctx.caJourHabituel,
+    caLignesHorsResa
+  });
+  if (!computed || computed.skip) return null;
+
+  return {
+    blocIdx,
+    ligne: {
+      libelle: computed.libelleDynamique || item.libelle || 'Frais de réservation',
+      qte: 1,
+      puHT: Number(computed.prixHT || 0),
+      totalHT: Number(computed.prixHT || 0),
+      coutHT: 0,
+      tvaCat: computed.tvaCat || item.tvaCat || 'prestation',
+      type: 'fraisResa'
+    }
+  };
+}
+
 // Calcule TOUS les blocs d'une fiche et agrège les totaux.
 // ctx doit contenir : itemsLib, formulesLib, typesInternes, formulesPrestation,
 // globalParams, jour/periode/caJourHabituel, getPersonnelFn, jourEstFermeFn,
@@ -259,7 +312,12 @@ export function calculerFicheLibre(fiche, ctx) {
 
   // Le CA jour dépend de la période effective — on laisse le caller le
   // résoudre et le passer via ctx. Idem pour jour fermé.
-  const enrichedCtx = { ...ctx, jour };
+  // Le mode vient de la fiche elle-même (défaut privatisation pour les fiches
+  // enregistrées avant l'ajout du champ), sauf si le caller l'impose.
+  const modePrivatisation = ctx.modePrivatisation !== undefined
+    ? ctx.modePrivatisation
+    : config.modePrivatisation !== false;
+  const enrichedCtx = { ...ctx, jour, fraisResaParFiche: true, modePrivatisation };
 
   const lignes = [];
   const warnings = [];
@@ -268,6 +326,10 @@ export function calculerFicheLibre(fiche, ctx) {
     if (r.warning) warnings.push(r.warning);
     r.lignes.forEach(l => lignes.push({ ...l, blocIdx: idx }));
   });
+
+  // Frais de réservation : une seule fois pour la fiche, après tous les blocs.
+  const frais = calculerFraisResaFiche(blocs, lignes, enrichedCtx);
+  if (frais) lignes.push({ ...frais.ligne, blocIdx: frais.blocIdx });
 
   const tvaFn = ctx.tvaFn || (() => 0);
   let totalHT = 0, totalCout = 0, totalTTC = 0;

@@ -201,6 +201,14 @@
     </select>
     <p class="legend" id="periodeIndicator">Période effective : —</p>
 
+    <!-- Nature de la fiche : les frais de réservation ne s'appliquent qu'en
+         privatisation (une réservation de groupe n'immobilise pas la salle). -->
+    <label style="display:flex;align-items:center;gap:7px;margin-top:12px;font-weight:500">
+      <input type="checkbox" id="modePrivatisation" checked style="width:auto;margin:0">
+      Privatisation
+    </label>
+    <p class="legend" id="modePrivatisationIndicator">Décoché = réservation de groupe : aucun frais de réservation.</p>
+
     <!-- Multi-formules : UI multi-blocs (la seule UI désormais) -->
     <h3>Formules de prestation</h3>
     <div id="blocsContainer"></div>

@@ -8,7 +8,7 @@ import {
   val, getTva, getCaJour, getPeriodeEffective, jourEstFerme, getPersonnel
 } from './helpers.js';
 import { state } from './state.js';
-import { calculerFicheLibre, calculerBlocLibre } from './calcul-libre.js';
+import { calculerFicheLibre, calculerBlocLibre, calculerFraisResaFiche } from './calcul-libre.js';
 import { LEGACY_FORMULES_LIB } from './formules-lib-seed.js';
 
 // Construit un `ctx` pour le moteur libre depuis l'état runtime courant
@@ -44,6 +44,13 @@ function buildLibreCtx(jour) {
   }
 
   return {
+    // Les frais de réservation sont consolidés au niveau de la fiche
+    // (une seule ligne après tous les blocs), pas calculés bloc par bloc.
+    fraisResaParFiche: true,
+    // Réservation de groupe : aucun frais de réservation (case décochée).
+    modePrivatisation: document.getElementById('modePrivatisation')
+      ? document.getElementById('modePrivatisation').checked
+      : true,
     itemsLib: state.bibItems || [],
     formulesLib,
     typesInternes: state.typesInternes || [],
@@ -82,4 +89,12 @@ export function calculerCurrentFicheLibre(jour) {
 export function calculerBlocLibreForCurrentFiche(bloc, jour) {
   const ctx = buildLibreCtx(jour);
   return calculerBlocLibre(bloc, { ...ctx, jour });
+}
+
+// Frais de réservation de la fiche en cours : une seule ligne pour tous les
+// blocs, calculée à partir des lignes déjà consolidées. Retourne
+// `{ ligne, blocIdx }` ou null. Utilisé par calculer() et le récap global.
+export function calculerFraisResaCurrentFiche(lignes, jour) {
+  const ctx = buildLibreCtx(jour);
+  return calculerFraisResaFiche(state.formules, lignes, { ...ctx, jour });
 }

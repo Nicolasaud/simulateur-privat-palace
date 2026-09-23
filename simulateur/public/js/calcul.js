@@ -10,7 +10,7 @@ import {
   getTva, getCaJour, getPeriodeEffective, jourEstFerme, getPlafond, getPersonnel
 } from './helpers.js';
 import { state } from './state.js';
-import { calculerBlocLibreForCurrentFiche } from './calcul-libre-bridge.js';
+import { calculerBlocLibreForCurrentFiche, calculerFraisResaCurrentFiche } from './calcul-libre-bridge.js';
 
 // Lecture d'un paramètre de type interne pour UN BLOC précis (multi-formules).
 // Chaîne du Modèle C étendue au niveau bloc :
@@ -121,6 +121,12 @@ export function calculer() {
     calculerBloc(bloc, jour).forEach(l => lignes.push({ ...l, blocIdx: idx }));
   });
 
+  // Frais de réservation : une seule ligne pour la fiche, calculée une fois
+  // tous les blocs consolidés (audit b-a), sur un CA qui inclut le prix de
+  // vente forfaitaire des formules (audit b-b).
+  const frais = calculerFraisResaCurrentFiche(lignes, jour);
+  if (frais) lignes.push({ ...frais.ligne, blocIdx: frais.blocIdx });
+
   // Méta retournée pour recalcul() : reflète la fiche entière.
   // Commit 2 (1 bloc) : format = type du bloc principal, nbPers = nbPers du bloc.
   // Commit 3+ : format reste celui du bloc principal (utilisé pour les alertes
@@ -226,7 +232,8 @@ export function recalcul() {
 function renderCouverture(format, jour, lignes) {
   const box = $('couvertureBox');
   const content = $('couvertureContent');
-  if (!['privat-full','privat-salle'].includes(format) || jourEstFerme(jour)) {
+  const estPrivatisation = $('modePrivatisation') ? $('modePrivatisation').checked : true;
+  if (!estPrivatisation || !['privat-full','privat-salle'].includes(format) || jourEstFerme(jour)) {
     box.style.display = 'none';
     return;
   }

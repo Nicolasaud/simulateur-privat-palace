@@ -15,6 +15,7 @@ import { newBlocId } from './blocs.js';
 import { getTypeLabel } from './types-internes.js';
 import { createCombobox } from './combobox.js';
 import { resolveFormuleLibForBloc } from './calcul-libre.js';
+import { calculerFraisResaCurrentFiche } from './calcul-libre-bridge.js';
 import { getSystemItem } from './items-systeme.js';
 import { LEGACY_FORMULES_LIB } from './formules-lib-seed.js';
 import { showToast } from './ui-feedback.js';
@@ -351,14 +352,18 @@ export function renderRecapGlobal() {
   if (!container) return;
   const jour = $('day')?.value || 'vendredi';
   let totalHT = 0, totalTTC = 0, totalNbPers = 0;
+  const toutesLignes = [];
   state.formules.forEach(bloc => {
-    const lignes = calculerBloc(bloc, jour);
-    lignes.forEach(l => {
-      const tva = getTva(l.tvaCat);
-      totalHT += l.totalHT;
-      totalTTC += l.totalHT * (1 + tva / 100);
-    });
+    calculerBloc(bloc, jour).forEach(l => toutesLignes.push(l));
     totalNbPers += (bloc.nbPers || 0);
+  });
+  // Frais de réservation : une seule ligne pour la fiche, hors des blocs.
+  const frais = calculerFraisResaCurrentFiche(toutesLignes, jour);
+  if (frais) toutesLignes.push(frais.ligne);
+  toutesLignes.forEach(l => {
+    const tva = getTva(l.tvaCat);
+    totalHT += l.totalHT;
+    totalTTC += l.totalHT * (1 + tva / 100);
   });
   const htMoyen = totalNbPers > 0 ? totalHT / totalNbPers : 0;
   const ttcMoyen = totalNbPers > 0 ? totalTTC / totalNbPers : 0;

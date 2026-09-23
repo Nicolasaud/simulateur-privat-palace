@@ -128,6 +128,9 @@ export function readCurrentForm() {
       formules,
       day: $('day').value,
       periodeOverride: $('periodeOverride').value,
+      // Privatisation (défaut) vs réservation de groupe : pilote les frais
+      // de réservation, qui ne s'appliquent qu'en privatisation.
+      modePrivatisation: $('modePrivatisation') ? $('modePrivatisation').checked : true,
       vueClient: document.querySelector('input[name="vueClient"]:checked').value,
       fondreFraisResa: $('fondreFraisResa').checked,
       forfaitLibelle: $('forfaitLibelle').value,
@@ -182,6 +185,8 @@ export function writeFormFromFiche(f) {
     const vueRadio = document.querySelector(`input[name="vueClient"][value="${f.config.vueClient || 'decomposee'}"]`);
     if (vueRadio) vueRadio.checked = true;
     $('fondreFraisResa').checked = !!f.config.fondreFraisResa;
+    // Fiches créées avant ce champ : privatisation par défaut.
+    if ($('modePrivatisation')) $('modePrivatisation').checked = f.config.modePrivatisation !== false;
     $('forfaitLibelle').value = f.config.forfaitLibelle || 'Forfait événementiel tout inclus';
     $('forfaitSousLibelle').value = f.config.forfaitSousLibelle || 'privatisation + spectacle + restauration';
   } else {
@@ -190,6 +195,7 @@ export function writeFormFromFiche(f) {
     state.currentBlocId = null;
     state.formules = [];
     state.items = [];
+    if ($('modePrivatisation')) $('modePrivatisation').checked = true;
   }
   refreshHeureSpectacleVisibility();
   refreshStatutBadge();
