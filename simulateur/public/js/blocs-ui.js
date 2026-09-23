@@ -423,6 +423,13 @@ export async function saveBlocAsFormule(idx) {
     b.formuleId = null;
     b.typeId = formule._typeIdRendu || b.typeId || 'privat-full';
     b.materializedItemIds = (formule.itemIds || []).filter(id => !getSystemItem(id));
+    // Le prix de vente peut venir de la formule d'origine plutôt que du bloc :
+    // on le fixe sur le bloc pour que le champ « Prix vente formule », le
+    // sous-total du bloc et les deux vues affichent tous le même montant.
+    if (Number(formule.prixHT || 0) > 0) {
+      b.prixFormule = Number(formule.prixHT);
+      b.prixFormuleMode = formule.prixMode || 'perPers';
+    }
     b.snapshot = null;
     setDirty(true);
   }

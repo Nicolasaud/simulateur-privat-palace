@@ -680,10 +680,14 @@ export async function enregistrerBlocCommeFormule(bloc, nomBrut) {
     _typeIdRendu: bloc?.typeId || 'privat-full',
     itemIds: [...briques, ...itemIds]
   };
-  // Prix de vente forfaitaire du bloc, s'il est renseigné.
-  if (Number(bloc?.prixFormule || 0) > 0) {
-    formule.prixHT = Number(bloc.prixFormule);
-    formule.prixMode = bloc.prixFormuleMode || 'perPers';
+  // Prix de vente forfaitaire : saisi sur le bloc en priorité, sinon celui de
+  // la formule d'origine. Sans ce report, un bloc dont le prix vient de la
+  // formule (items « coûts uniquement ») perdait tout son chiffre d'affaires
+  // une fois relié à la formule créée.
+  const prixVente = Number(bloc?.prixFormule || 0) || Number(formuleSource?.prixHT || 0);
+  if (prixVente > 0) {
+    formule.prixHT = prixVente;
+    formule.prixMode = bloc?.prixFormuleMode || formuleSource?.prixMode || 'perPers';
   }
   state.bibFormules.push(formule);
 
