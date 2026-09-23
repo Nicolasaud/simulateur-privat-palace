@@ -10,6 +10,7 @@ import {
   getTva, getCaJour, getPeriodeEffective, jourEstFerme, getPlafond, getPersonnel
 } from './helpers.js';
 import { state } from './state.js';
+import { estPrivatisation } from './mode-fiche.js';
 import { calculerBlocLibreForCurrentFiche, calculerFraisResaCurrentFiche } from './calcul-libre-bridge.js';
 
 // Lecture d'un paramètre de type interne pour UN BLOC précis (multi-formules).
@@ -232,8 +233,7 @@ export function recalcul() {
 function renderCouverture(format, jour, lignes) {
   const box = $('couvertureBox');
   const content = $('couvertureContent');
-  const estPrivatisation = $('modePrivatisation') ? $('modePrivatisation').checked : true;
-  if (!estPrivatisation || !['privat-full','privat-salle'].includes(format) || jourEstFerme(jour)) {
+  if (!estPrivatisation() || !['privat-full','privat-salle'].includes(format) || jourEstFerme(jour)) {
     box.style.display = 'none';
     return;
   }

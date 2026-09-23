@@ -25,6 +25,7 @@ import {
   putBddItems, putFormules
 } from './api.js';
 import { showToast } from './ui-feedback.js';
+import { getModeFiche, setModeFiche } from './mode-fiche.js';
 import { linkPendingProspectFiche, syncFicheToProspect } from './crm.js';
 
 // --- Chargement cloud ---
@@ -140,9 +141,11 @@ export function readCurrentForm() {
       formules,
       day: $('day').value,
       periodeOverride: $('periodeOverride').value,
-      // Privatisation (défaut) vs réservation de groupe : pilote les frais
-      // de réservation, qui ne s'appliquent qu'en privatisation.
-      modePrivatisation: $('modePrivatisation') ? $('modePrivatisation').checked : true,
+      // Nature de la réservation : privatisation | groupe | journee.
+      // modePrivatisation reste écrit pour le moteur et les fiches relues par
+      // une version antérieure.
+      modeFiche: getModeFiche(),
+      modePrivatisation: getModeFiche() === 'privatisation',
       vueClient: document.querySelector('input[name="vueClient"]:checked').value,
       fondreFraisResa: $('fondreFraisResa').checked,
       forfaitLibelle: $('forfaitLibelle').value,
@@ -197,8 +200,9 @@ export function writeFormFromFiche(f) {
     const vueRadio = document.querySelector(`input[name="vueClient"][value="${f.config.vueClient || 'decomposee'}"]`);
     if (vueRadio) vueRadio.checked = true;
     $('fondreFraisResa').checked = !!f.config.fondreFraisResa;
-    // Fiches créées avant ce champ : privatisation par défaut.
-    if ($('modePrivatisation')) $('modePrivatisation').checked = f.config.modePrivatisation !== false;
+    // Rétro-compat : fiches sans modeFiche → privatisation, sauf celles
+    // enregistrées avec modePrivatisation: false, qui sont des groupes.
+    setModeFiche(f.config.modeFiche || (f.config.modePrivatisation === false ? 'groupe' : 'privatisation'));
     $('forfaitLibelle').value = f.config.forfaitLibelle || 'Forfait événementiel tout inclus';
     $('forfaitSousLibelle').value = f.config.forfaitSousLibelle || 'privatisation + spectacle + restauration';
   } else {
@@ -207,7 +211,7 @@ export function writeFormFromFiche(f) {
     state.currentBlocId = null;
     state.formules = [];
     state.items = [];
-    if ($('modePrivatisation')) $('modePrivatisation').checked = true;
+    setModeFiche('privatisation');
   }
   refreshHeureSpectacleVisibility();
   refreshStatutBadge();

@@ -201,13 +201,21 @@
     </select>
     <p class="legend" id="periodeIndicator">Période effective : —</p>
 
-    <!-- Nature de la fiche : les frais de réservation ne s'appliquent qu'en
-         privatisation (une réservation de groupe n'immobilise pas la salle). -->
-    <label style="display:flex;align-items:center;gap:7px;margin-top:12px;font-weight:500">
-      <input type="checkbox" id="modePrivatisation" checked style="width:auto;margin:0">
-      Privatisation
-    </label>
-    <p class="legend" id="modePrivatisationIndicator">Décoché = réservation de groupe : aucun frais de réservation.</p>
+    <!-- Nature de la fiche : seule la privatisation immobilise la salle, donc
+         seule elle déclenche des frais de réservation sous le seuil. -->
+    <label>Nature de la réservation</label>
+    <div id="modeFicheGroup" style="display:flex;flex-direction:column;gap:4px">
+      <label style="display:flex;align-items:center;gap:7px;font-weight:400;margin:0">
+        <input type="radio" name="modeFiche" value="privatisation" checked style="width:auto;margin:0"> 🎭 Privatisation
+      </label>
+      <label style="display:flex;align-items:center;gap:7px;font-weight:400;margin:0">
+        <input type="radio" name="modeFiche" value="groupe" style="width:auto;margin:0"> 👥 Groupe
+      </label>
+      <label style="display:flex;align-items:center;gap:7px;font-weight:400;margin:0">
+        <input type="radio" name="modeFiche" value="journee" style="width:auto;margin:0"> ☀️ Réservation en journée
+      </label>
+    </div>
+    <p class="legend">Seule la privatisation déclenche des frais de réservation quand le devis passe sous le seuil de couverture.</p>
 
     <!-- Multi-formules : UI multi-blocs (la seule UI désormais) -->
     <h3>Formules de prestation</h3>

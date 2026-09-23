@@ -8,6 +8,7 @@ import {
   val, getTva, getCaJour, getPeriodeEffective, jourEstFerme, getPersonnel
 } from './helpers.js';
 import { state } from './state.js';
+import { estPrivatisation } from './mode-fiche.js';
 import { calculerFicheLibre, calculerBlocLibre, calculerFraisResaFiche } from './calcul-libre.js';
 import { LEGACY_FORMULES_LIB } from './formules-lib-seed.js';
 
@@ -47,10 +48,8 @@ function buildLibreCtx(jour) {
     // Les frais de réservation sont consolidés au niveau de la fiche
     // (une seule ligne après tous les blocs), pas calculés bloc par bloc.
     fraisResaParFiche: true,
-    // Réservation de groupe : aucun frais de réservation (case décochée).
-    modePrivatisation: document.getElementById('modePrivatisation')
-      ? document.getElementById('modePrivatisation').checked
-      : true,
+    // Groupe ou réservation en journée : aucun frais de réservation.
+    modePrivatisation: estPrivatisation(),
     itemsLib: state.bibItems || [],
     formulesLib,
     typesInternes: state.typesInternes || [],
