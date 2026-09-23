@@ -44,6 +44,18 @@ function genId() {
 }
 export function nowIso() { return new Date().toISOString(); }
 
+// « 2026-09-25 » → « vendredi ». Renvoie '' si la date est vide ou incomplète.
+// Parsing composant par composant : new Date('2026-09-25') serait interprété
+// en UTC et pourrait décaler d'un jour selon le fuseau.
+const JOURS_SEMAINE = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+export function jourDeLaSemaine(dateStr) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || '');
+  if (!m) return '';
+  const d = new Date(+m[1], +m[2] - 1, +m[3]);
+  if (isNaN(d.getTime()) || d.getMonth() !== +m[2] - 1) return '';
+  return JOURS_SEMAINE[d.getDay()];
+}
+
 export function setDirty(val = true) {
   state.isDirty = val;
   $('ficheUnsavedDot').classList.toggle('show', val);
@@ -635,6 +647,21 @@ export function registerFichesListeners() {
     $(id).addEventListener('input', () => setDirty(true));
   });
   $('ficheStatut').addEventListener('change', () => { setDirty(true); refreshStatutBadge(); });
+
+  // Date de l'événement → jour de la semaine déduit automatiquement.
+  // Le dropdown reste modifiable ensuite (l'utilisateur peut forcer un autre
+  // jour), et effacer la date ne réinitialise rien : on repasse simplement en
+  // sélection manuelle. La période, elle, se déduit déjà de la date via
+  // periodeOverride = « auto » (helpers.getPeriodeEffective).
+  const syncJourDepuisDate = () => {
+    const jour = jourDeLaSemaine($('ficheDateEvent').value);
+    if (!jour || $('day').value === jour) return;
+    $('day').value = jour;
+    setDirty(true);
+    recalcul();
+  };
+  $('ficheDateEvent').addEventListener('change', syncJourDepuisDate);
+  $('ficheDateEvent').addEventListener('input', syncJourDepuisDate);
 
   document.querySelectorAll('.sidebar input, .sidebar select, .sidebar textarea').forEach(el => {
     el.addEventListener('input', () => setDirty(true));
