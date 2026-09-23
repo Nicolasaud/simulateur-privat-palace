@@ -259,11 +259,15 @@ export function calculerFraisResaFiche(blocs, lignes, ctx) {
   // Réservation de groupe : la salle n'est pas privatisée, aucun frais dû.
   if (ctx.modePrivatisation === false) return null;
   const list = Array.isArray(blocs) ? blocs : [];
-  // Un bloc au moins doit porter la brique ⚡ Frais de réservation.
-  const blocIdx = list.findIndex(b =>
+  if (list.length === 0) return null;
+  // La brique ⚡ Frais de réservation n'est PAS un prérequis : dès que la fiche
+  // est une privatisation et que le devis passe sous le seuil de couverture,
+  // les frais s'appliquent. On garde le bloc porteur comme contexte de calcul
+  // s'il existe (ses params de type), sinon le premier bloc de la fiche.
+  const idxPorteur = list.findIndex(b =>
     (resolveFormuleLibForBloc(b, ctx.formulesLib)?.itemIds || []).includes('sys_frais_resa')
   );
-  if (blocIdx < 0) return null;
+  const blocIdx = idxPorteur >= 0 ? idxPorteur : 0;
   const item = resolveItem('sys_frais_resa', ctx.itemsLib);
   if (!item) return null;
 
