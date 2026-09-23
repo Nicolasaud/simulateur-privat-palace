@@ -192,7 +192,12 @@ export function computeSystemItem(item, ctx) {
     }
 
     case 'frais_resa_auto': {
-      const buffer = Number(gp.bufferCouverture || 20) / 100;
+      // 20 % seulement si le paramètre est absent : un buffer réglé à 0 %
+      // est un choix, il ne doit pas être réécrit en 20 % (bug audit b-c).
+      const bufferParam = gp.bufferCouverture;
+      const buffer = Number(
+        bufferParam === undefined || bufferParam === null || bufferParam === '' ? 20 : bufferParam
+      ) / 100;
       const seuil = (ctx.caJourHabituel || 0) * (1 + buffer);
       const caHors = ctx.caLignesHorsResa || 0;
       const prixHT = Math.max(0, seuil - caHors);
