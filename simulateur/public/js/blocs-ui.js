@@ -412,8 +412,22 @@ export async function saveBlocAsFormule(idx) {
   const nom = prompt(`Nom de la formule à enregistrer dans la bibliothèque (${nbItems} item${nbItems > 1 ? 's' : ''}) :`, suggestion);
   if (!nom || !nom.trim()) return;
   const { enregistrerBlocCommeFormule } = await import('./bibliotheque-libre.js');
-  await enregistrerBlocCommeFormule(b, nom);
+  const formule = await enregistrerBlocCommeFormule(b, nom);
+  if (formule) {
+    // Le bloc adopte la formule qu'on vient d'en tirer : son nom s'affiche dans
+    // le sélecteur, et les deux vues du devis se mettent à jour avec ce nom.
+    // Les items du bloc ne sont PAS remplacés : on les marque matérialisés pour
+    // qu'ils soient comptés une seule fois (via bloc.items) et pas une seconde
+    // fois via les itemIds de la formule.
+    b.formuleLibId = formule.id;
+    b.formuleId = null;
+    b.typeId = formule._typeIdRendu || b.typeId || 'privat-full';
+    b.materializedItemIds = (formule.itemIds || []).filter(id => !getSystemItem(id));
+    b.snapshot = null;
+    setDirty(true);
+  }
   renderBlocs();   // la nouvelle formule apparaît dans le sélecteur des blocs
+  recalcul();      // vue interne + vue client à jour immédiatement
 }
 
 export function removeBlocItem(blocIdx, itemIdx) {
