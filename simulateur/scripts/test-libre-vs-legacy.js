@@ -51,10 +51,10 @@ const HTML_DEFAULT_PARAMS = {
   tvaPresta: 20,
   caLunP1: 0, caLunP2: 0,
   caMarP1: 0, caMarP2: 0,
-  caMerP1: 907, caMerP2: 1523,
-  caJeuP1: 907, caJeuP2: 1523,
+  caMerP1: 907, caMerP2: 2146,
+  caJeuP1: 907, caJeuP2: 2811,
   caVenP1: 2613, caVenP2: 4098,
-  caSamP1: 2613, caSamP2: 4098,
+  caSamP1: 2613, caSamP2: 4906,
   caDimP1: 907, caDimP2: 1523
 };
 

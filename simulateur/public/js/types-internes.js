@@ -37,6 +37,20 @@ export function getTypeLabel(typeId) {
   return t?.nom || TYPES_META[typeId]?.label || typeId;
 }
 
+// Valeurs de repli des params de type, indépendantes du DOM.
+// Les inputs globaux correspondants ont été retirés de l'index au cleanup
+// commit 7 : sans ces valeurs, le seed et la réconciliation écrivaient 0,
+// et le prix du spectacle de « Privatisation show + repas » tombait à 0 €.
+const DEFAULT_TYPE_PARAMS = {
+  paramSpecPrix: 1500
+};
+
+function defaultParamValue(pid) {
+  const el = $(pid);
+  if (el) return parseFloat(el.value) || 0;
+  return DEFAULT_TYPE_PARAMS[pid] ?? 0;
+}
+
 // Snapshot des valeurs actuelles des inputs globaux pour un type donné.
 // Utilisé seulement au seed initial.
 function snapshotParamsForType(typeId) {
@@ -44,8 +58,7 @@ function snapshotParamsForType(typeId) {
   if (!meta) return {};
   const out = {};
   meta.paramIds.forEach(pid => {
-    const el = $(pid);
-    if (el) out[pid] = parseFloat(el.value) || 0;
+    if ($(pid) || pid in DEFAULT_TYPE_PARAMS) out[pid] = defaultParamValue(pid);
   });
   return out;
 }
@@ -99,9 +112,14 @@ export function reconcileTypesInternes() {
     if (!t.params) t.params = {};
     meta.paramIds.forEach(pid => {
       if (!(pid in t.params)) {
-        const el = $(pid);
-        t.params[pid] = el ? (parseFloat(el.value) || 0) : 0;
+        t.params[pid] = defaultParamValue(pid);
         touched = true;
+      } else if (!t.params[pid] && pid in DEFAULT_TYPE_PARAMS) {
+        // Réparation : un blob seedé quand l'input global n'existait plus
+        // porte un 0 qui n'a jamais été voulu (cf. DEFAULT_TYPE_PARAMS).
+        t.params[pid] = DEFAULT_TYPE_PARAMS[pid];
+        touched = true;
+        console.info(`[types-internes] ${t.id}.${pid} réparé à ${DEFAULT_TYPE_PARAMS[pid]}`);
       }
     });
   });
