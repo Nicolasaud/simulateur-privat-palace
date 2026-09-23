@@ -250,6 +250,52 @@ export function calculerBlocLibre(bloc, ctx) {
   return { lignes };
 }
 
+// Personnel de salle de la fiche — même logique automatique que les frais de
+// réservation : en privatisation, la brique ⚡ Personnel n'est pas un prérequis.
+// Une seule ligne pour la fiche, dimensionnée sur le total des convives.
+// Si un bloc a déjà produit sa propre ligne personnel (via sa formule), on ne
+// double pas : la ligne automatique n'est ajoutée que s'il n'y en a aucune.
+// Retourne { ligne, blocIdx } ou null.
+export function calculerPersonnelFiche(blocs, lignes, ctx) {
+  if (ctx.modePrivatisation === false) return null;
+  const list = Array.isArray(blocs) ? blocs : [];
+  if (list.length === 0) return null;
+  if ((lignes || []).some(l => l.type === 'personnel')) return null;
+
+  const item = resolveItem('sys_personnel', ctx.itemsLib);
+  if (!item) return null;
+
+  const nbPersTotal = list.reduce((s, b) => s + (b?.nbPers || 0), 0) || 1;
+  const computed = computeSystemItem(item, {
+    nbPers: nbPersTotal,
+    jour: ctx.jour,
+    periode: ctx.periode,
+    typeParams: resolveTypeParamsForBloc(list[0], ctx),
+    globalParams: ctx.globalParams || {},
+    getPersonnelFn: ctx.getPersonnelFn,
+    ficheRestoItems: list[0]?.items || [],
+    formuleType: list[0]?.formuleType || 'custom',
+    jourEstFermeFn: ctx.jourEstFermeFn,
+    caJourHabituel: ctx.caJourHabituel,
+    caLignesHorsResa: 0
+  });
+  if (!computed || computed.skip) return null;
+
+  const qty = computed.qty || 1;
+  return {
+    blocIdx: 0,
+    ligne: {
+      libelle: computed.libelleDynamique || item.libelle || 'Service en salle',
+      qte: qty,
+      puHT: Number(computed.prixHT || 0),
+      totalHT: Number(computed.prixHT || 0) * qty,
+      coutHT: Number(computed.coutHT || 0),
+      tvaCat: computed.tvaCat || item.tvaCat || 'prestation',
+      type: 'personnel'
+    }
+  };
+}
+
 // Frais de réservation de la fiche — une seule ligne pour l'ensemble des blocs
 // (audit b-a). Calculés APRÈS consolidation, donc sur un CA qui inclut le prix
 // de vente forfaitaire des formules (audit b-b) : la base des frais est alors
@@ -330,6 +376,11 @@ export function calculerFicheLibre(fiche, ctx) {
     if (r.warning) warnings.push(r.warning);
     r.lignes.forEach(l => lignes.push({ ...l, blocIdx: idx }));
   });
+
+  // Personnel puis frais de réservation : le personnel fait partie du CA qui
+  // sert de base au calcul des frais, il doit donc être ajouté avant.
+  const perso = calculerPersonnelFiche(blocs, lignes, enrichedCtx);
+  if (perso) lignes.push({ ...perso.ligne, blocIdx: perso.blocIdx });
 
   // Frais de réservation : une seule fois pour la fiche, après tous les blocs.
   const frais = calculerFraisResaFiche(blocs, lignes, enrichedCtx);

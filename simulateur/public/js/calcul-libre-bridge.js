@@ -9,7 +9,7 @@ import {
 } from './helpers.js';
 import { state } from './state.js';
 import { estPrivatisation } from './mode-fiche.js';
-import { calculerFicheLibre, calculerBlocLibre, calculerFraisResaFiche } from './calcul-libre.js';
+import { calculerFicheLibre, calculerBlocLibre, calculerFraisResaFiche, calculerPersonnelFiche } from './calcul-libre.js';
 import { LEGACY_FORMULES_LIB } from './formules-lib-seed.js';
 
 // Construit un `ctx` pour le moteur libre depuis l'état runtime courant
@@ -93,6 +93,11 @@ export function calculerBlocLibreForCurrentFiche(bloc, jour) {
 // Frais de réservation de la fiche en cours : une seule ligne pour tous les
 // blocs, calculée à partir des lignes déjà consolidées. Retourne
 // `{ ligne, blocIdx }` ou null. Utilisé par calculer() et le récap global.
+export function calculerPersonnelCurrentFiche(lignes, jour) {
+  const ctx = buildLibreCtx(jour);
+  return calculerPersonnelFiche(state.formules, lignes, { ...ctx, jour });
+}
+
 export function calculerFraisResaCurrentFiche(lignes, jour) {
   const ctx = buildLibreCtx(jour);
   return calculerFraisResaFiche(state.formules, lignes, { ...ctx, jour });

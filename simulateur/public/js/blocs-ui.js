@@ -15,7 +15,7 @@ import { newBlocId } from './blocs.js';
 import { getTypeLabel } from './types-internes.js';
 import { createCombobox } from './combobox.js';
 import { resolveFormuleLibForBloc } from './calcul-libre.js';
-import { calculerFraisResaCurrentFiche } from './calcul-libre-bridge.js';
+import { calculerFraisResaCurrentFiche, calculerPersonnelCurrentFiche } from './calcul-libre-bridge.js';
 import { getSystemItem } from './items-systeme.js';
 import { LEGACY_FORMULES_LIB } from './formules-lib-seed.js';
 import { showToast } from './ui-feedback.js';
@@ -357,7 +357,9 @@ export function renderRecapGlobal() {
     calculerBloc(bloc, jour).forEach(l => toutesLignes.push(l));
     totalNbPers += (bloc.nbPers || 0);
   });
-  // Frais de réservation : une seule ligne pour la fiche, hors des blocs.
+  // Personnel puis frais de réservation : lignes de fiche, hors des blocs.
+  const perso = calculerPersonnelCurrentFiche(toutesLignes, jour);
+  if (perso) toutesLignes.push(perso.ligne);
   const frais = calculerFraisResaCurrentFiche(toutesLignes, jour);
   if (frais) toutesLignes.push(frais.ligne);
   toutesLignes.forEach(l => {

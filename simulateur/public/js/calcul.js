@@ -11,7 +11,9 @@ import {
 } from './helpers.js';
 import { state } from './state.js';
 import { estPrivatisation } from './mode-fiche.js';
-import { calculerBlocLibreForCurrentFiche, calculerFraisResaCurrentFiche } from './calcul-libre-bridge.js';
+import {
+  calculerBlocLibreForCurrentFiche, calculerFraisResaCurrentFiche, calculerPersonnelCurrentFiche
+} from './calcul-libre-bridge.js';
 
 // Lecture d'un paramètre de type interne pour UN BLOC précis (multi-formules).
 // Chaîne du Modèle C étendue au niveau bloc :
@@ -121,6 +123,10 @@ export function calculer() {
     // dans renderVueClient + l'export équipe.
     calculerBloc(bloc, jour).forEach(l => lignes.push({ ...l, blocIdx: idx }));
   });
+
+  // Personnel de salle : ligne automatique si aucune formule ne l'a produite.
+  const perso = calculerPersonnelCurrentFiche(lignes, jour);
+  if (perso) lignes.push({ ...perso.ligne, blocIdx: perso.blocIdx });
 
   // Frais de réservation : une seule ligne pour la fiche, calculée une fois
   // tous les blocs consolidés (audit b-a), sur un CA qui inclut le prix de
