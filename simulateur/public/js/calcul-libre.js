@@ -98,6 +98,10 @@ export function calculerBlocLibre(bloc, ctx) {
   const fraisIds = [];
   itemsIds.forEach(id => {
     if (shouldSkipMaterialized(id)) return;
+    // Groupe ou réservation en journée : pas de service en salle facturé, même
+    // si la formule du bloc porte la brique ⚡ Personnel. Le garde-fou de
+    // calculerPersonnelFiche ne couvrait que la ligne automatique.
+    if (id === 'sys_personnel' && ctx.modePrivatisation === false) return;
     if (id === 'sys_frais_resa') fraisIds.push(id);
     else nonFraisIds.push(id);
   });
