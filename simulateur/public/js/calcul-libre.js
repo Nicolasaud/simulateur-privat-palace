@@ -217,6 +217,10 @@ export function calculerBlocLibre(bloc, ctx) {
       : (formuleLib?.prixHT || 0)
   );
   const formuleMode = bloc?.prixFormuleMode || formuleLib?.prixMode || 'perPers';
+  // TVA du forfait : réglage du bloc prioritaire, sinon celui de la formule en
+  // bibliothèque, sinon prestation (20 %). Elle s'applique à tout le forfait,
+  // les TVA des items fusionnés n'ayant plus de ligne propre.
+  const formuleTva = bloc?.tvaFormule || formuleLib?.tvaCat || 'prestation';
   if (formulePrix > 0 && hasMaterialized) {
     const formuleQty = formuleMode === 'perPers' ? nbPers : 1;
     const isRestoLine = (l) => l.type === 'resto' || l.type === 'item';
@@ -245,7 +249,7 @@ export function calculerBlocLibre(bloc, ctx) {
       puHT: formulePrix,
       totalHT: formulePrix * formuleQty,
       coutHT: coutAgrege,
-      tvaCat: 'prestation',   // 20% par défaut ; à affiner si besoin
+      tvaCat: formuleTva,
       type: 'formule',
       detail
     });

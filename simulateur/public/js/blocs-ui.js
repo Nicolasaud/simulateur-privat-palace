@@ -20,6 +20,15 @@ import { getSystemItem } from './items-systeme.js';
 import { LEGACY_FORMULES_LIB } from './formules-lib-seed.js';
 import { showToast } from './ui-feedback.js';
 
+// Catégories de TVA proposées pour le forfait d'un bloc (mêmes libellés que
+// la Bibliothèque d'items).
+const TVA_CATS_BLOC = [
+  { id: 'spectacle',    label: 'Spectacle (5,5 %)' },
+  { id: 'restauration', label: 'Restauration (10 %)' },
+  { id: 'bar',          label: 'Bar (20 %)' },
+  { id: 'prestation',   label: 'Prestation (20 %)' }
+];
+
 // Mapping typeId → emoji tag pour la combobox formule (Étape 7).
 // Les formules libres personnalisées peuvent surcharger via `formule.tag`.
 const TYPE_TAG_EMOJI = {
@@ -266,6 +275,7 @@ function buildBlocCard(bloc, idx) {
     ? bloc.prixFormule
     : (formuleLibForBloc?.prixHT || 0);
   const prixModeValue = bloc.prixFormuleMode || formuleLibForBloc?.prixMode || 'perPers';
+  const tvaFormuleValue = bloc.tvaFormule || formuleLibForBloc?.tvaCat || 'prestation';
   const hasFormule = !!(bloc.formuleId || bloc.formuleLibId);
 
   card.innerHTML = `
@@ -292,6 +302,12 @@ function buildBlocCard(bloc, idx) {
         <select data-bloc-field="prixFormuleMode" data-bloc-idx="${idx}" style="width:100%">
           <option value="perPers"${prixModeValue==='perPers'?' selected':''}>× nb pers</option>
           <option value="unit"${prixModeValue==='unit'?' selected':''}>Fixe</option>
+        </select>
+      </div>
+      <div style="width:150px">
+        <label style="font-size:0.72em;color:#065f46;font-weight:500;text-transform:uppercase;letter-spacing:0.03em">TVA du forfait</label>
+        <select data-bloc-field="tvaFormule" data-bloc-idx="${idx}" style="width:100%">
+          ${TVA_CATS_BLOC.map(t => `<option value="${t.id}"${tvaFormuleValue === t.id ? ' selected' : ''}>${t.label}</option>`).join('')}
         </select>
       </div>
     </div>` : ''}
@@ -492,6 +508,12 @@ function updateBlocField(idx, field, rawValue) {
     // nbPers seul ne purge PAS le snapshot (décision user point 4)
   } else if (field === 'prixFormule') {
     b.prixFormule = Math.max(0, parseFloat(rawValue) || 0);
+    b.snapshot = null;
+    setDirty(true);
+    recalcul();
+    return;
+  } else if (field === 'tvaFormule') {
+    b.tvaFormule = rawValue;
     b.snapshot = null;
     setDirty(true);
     recalcul();

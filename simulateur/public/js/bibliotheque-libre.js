@@ -386,6 +386,11 @@ function renderFormuleCard(f) {
       <label title="Prix de vente HT de la formule (côté client). Laisse à 0 pour utiliser la somme des items.">💰 Prix vente HT
         <input type="number" class="bib-fo-prix" value="${f.prixHT ?? 0}" step="0.01" min="0" placeholder="0.00">
       </label>
+      <label title="TVA appliquée au prix de vente de la formule quand elle est vendue en forfait">TVA du forfait
+        <select class="bib-fo-tva">
+          ${TVA_CATS.map(t => `<option value="${t.id}" ${(f.tvaCat || 'prestation') === t.id ? 'selected' : ''}>${escapeHtml(t.label)}</option>`).join('')}
+        </select>
+      </label>
       <label title="× nb pers = prix × nombre de personnes du devis · Fixe = prix total unique">Mode
         <select class="bib-fo-prixmode">
           <option value="perPers" ${(f.prixMode || 'perPers') === 'perPers' ? 'selected' : ''}>× nb pers</option>
@@ -477,6 +482,7 @@ function wireFormuleRows() {
     card.querySelector('.bib-fo-tag')?.addEventListener('change', e => updateFormule(id, { tag: e.target.value || null }));
     card.querySelector('.bib-fo-prix')?.addEventListener('change', e => updateFormule(id, { prixHT: Number(e.target.value) || 0 }));
     card.querySelector('.bib-fo-prixmode')?.addEventListener('change', e => updateFormule(id, { prixMode: e.target.value }));
+    card.querySelector('.bib-fo-tva')?.addEventListener('change', e => updateFormule(id, { tvaCat: e.target.value }));
     card.querySelector('.bib-fo-typeidrendu')?.addEventListener('change', e => updateFormule(id, { _typeIdRendu: e.target.value }));
     card.querySelector('.bib-del')?.addEventListener('click', () => deleteFormule(id));
     card.querySelectorAll('.bib-fo-rem').forEach(b => {
@@ -688,6 +694,7 @@ export async function enregistrerBlocCommeFormule(bloc, nomBrut) {
   if (prixVente > 0) {
     formule.prixHT = prixVente;
     formule.prixMode = bloc?.prixFormuleMode || formuleSource?.prixMode || 'perPers';
+    formule.tvaCat = bloc?.tvaFormule || formuleSource?.tvaCat || 'prestation';
   }
   state.bibFormules.push(formule);
 

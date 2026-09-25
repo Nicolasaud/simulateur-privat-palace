@@ -336,6 +336,12 @@ function renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux) {
   // pour réutilisation par fiche-client.js (génération PDF) sans dupliquer la logique.
   window._lastLignesClient = lignesClient.map(l => ({ ...l }));
 
+  // Ventilation de la TVA calculée sur les lignes réellement présentées au
+  // client : après fusion des frais de résa et du service en salle, les
+  // montants ont changé de taux, donc la ventilation interne ne correspond
+  // plus. Le pied de tableau doit être cohérent avec ses propres lignes.
+  const lignesFacturees = [];
+
   if (vueMode === 'decomposee') {
     // Multi-formules : grouper par bloc si > 1 bloc, avec un sous-total par bloc.
     // Mono (1 bloc) : comportement identique à avant.
@@ -387,6 +393,7 @@ function renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux) {
       lignesGrp.forEach(l => {
         const tva = getTva(l.tvaCat);
         const ttc = l.totalHT * (1 + tva/100);
+        lignesFacturees.push(l);
         tbodyC.innerHTML += `<tr>
           <td>${l.libelle}</td>
           <td class="num">${l.qte}</td>
@@ -410,6 +417,7 @@ function renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux) {
       }
     });
   } else {
+    lignesFacturees.push(...lignesClient);
     const prixPers = totalHT / nbPers;
     const libellePrincipal = ($('forfaitLibelle').value || 'Forfait événementiel tout inclus').replace(/</g, '&lt;');
     const sousLibelle = ($('forfaitSousLibelle').value || '').replace(/</g, '&lt;');
@@ -423,11 +431,20 @@ function renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux) {
     </tr>`;
   }
 
-  let tfootHTML = `<tr><td colspan="3">Total HT</td><td class="num">${fmt(totalHT)}</td><td></td><td></td></tr>`;
-  Object.entries(tvaParTaux).sort((a,b) => parseFloat(a[0]) - parseFloat(b[0])).forEach(([taux, montant]) => {
+  const tvaClient = {};
+  let htClient = 0;
+  lignesFacturees.forEach(l => {
+    const tva = getTva(l.tvaCat);
+    htClient += l.totalHT;
+    tvaClient[tva] = (tvaClient[tva] || 0) + l.totalHT * tva / 100;
+  });
+  const totalTvaClient = Object.values(tvaClient).reduce((s, v) => s + v, 0);
+
+  let tfootHTML = `<tr><td colspan="3">Total HT</td><td class="num">${fmt(htClient)}</td><td></td><td></td></tr>`;
+  Object.entries(tvaClient).sort((a, b) => parseFloat(a[0]) - parseFloat(b[0])).forEach(([taux, montant]) => {
     tfootHTML += `<tr><td colspan="4" style="text-align:right">TVA ${taux}%</td><td></td><td class="num">${fmt(montant)}</td></tr>`;
   });
-  tfootHTML += `<tr><td colspan="5">Total TTC</td><td class="num">${fmt(totalTTC)}</td></tr>`;
+  tfootHTML += `<tr><td colspan="5">Total TTC</td><td class="num">${fmt(htClient + totalTvaClient)}</td></tr>`;
   tfootC.innerHTML = tfootHTML;
 }
 
