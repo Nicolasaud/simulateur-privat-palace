@@ -346,14 +346,18 @@ function renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux) {
   if (vueMode === 'decomposee') {
     // Multi-formules : grouper par bloc si > 1 bloc, avec un sous-total par bloc.
     // Mono (1 bloc) : comportement identique à avant.
+    // Les frais de réservation sont une ligne de fiche : rendus après tous les
+    // blocs, hors de tout sous-total formule.
     const nbBlocs = (Array.isArray(state.formules) ? state.formules.length : 1);
+    const lignesBlocs = lignesClient.filter(l => l.type !== 'fraisResa');
+    const lignesFiche = lignesClient.filter(l => l.type === 'fraisResa');
     const groupes = nbBlocs > 1
       ? state.formules.map((b, idx) => ({
           bloc: b,
           idx,
-          lignes: lignesClient.filter(l => (l.blocIdx ?? 0) === idx)
+          lignes: lignesBlocs.filter(l => (l.blocIdx ?? 0) === idx)
         }))
-      : [{ bloc: null, idx: 0, lignes: lignesClient }];
+      : [{ bloc: null, idx: 0, lignes: lignesBlocs }];
 
     groupes.forEach((grp, gIdx) => {
       // Titre de section pour chaque bloc en multi
@@ -416,6 +420,20 @@ function renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux) {
           <td class="num">${fmt(stTTC)}</td>
         </tr>`;
       }
+    });
+
+    lignesFiche.forEach((l, i) => {
+      const tva = getTva(l.tvaCat);
+      lignesFacturees.push(l);
+      const sep = nbBlocs > 1 && i === 0 ? 'border-top:2px solid #ddd' : '';
+      tbodyC.innerHTML += `<tr>
+        <td style="${sep}">${l.libelle}</td>
+        <td class="num" style="${sep}">${l.qte}</td>
+        <td class="num" style="${sep}">${fmt(l.puHT)}</td>
+        <td class="num" style="${sep}">${fmt(l.totalHT)}</td>
+        <td class="num" style="${sep}">${tva}%</td>
+        <td class="num" style="${sep}">${fmt(l.totalHT * (1 + tva/100))}</td>
+      </tr>`;
     });
   } else {
     lignesFacturees.push(...lignesClient);
