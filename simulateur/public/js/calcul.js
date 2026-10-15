@@ -14,6 +14,8 @@ import { estPrivatisation } from './mode-fiche.js';
 import {
   calculerBlocLibreForCurrentFiche, calculerFraisResaCurrentFiche, calculerPersonnelCurrentFiche
 } from './calcul-libre-bridge.js';
+import { resolveFormuleLibForBloc } from './calcul-libre.js';
+import { LEGACY_FORMULES_LIB } from './formules-lib-seed.js';
 
 // Lecture d'un paramètre de type interne pour UN BLOC précis (multi-formules).
 // Chaîne du Modèle C étendue au niveau bloc :
@@ -280,55 +282,54 @@ function renderCouverture(format, jour, lignes) {
   box.style.display = 'block';
 }
 
+// Bloc « restauration » : sa formule (bibliothèque ou seed legacy) est rangée
+// dans la catégorie Restauration (id cat_resto, ou une catégorie nommée ainsi).
+function estBlocRestauration(bloc) {
+  const bib = Array.isArray(state.bibFormules) ? state.bibFormules : [];
+  const existing = new Set(bib.map(f => f.id));
+  const merged = [...bib, ...LEGACY_FORMULES_LIB.filter(l => !existing.has(l.id))];
+  const catId = resolveFormuleLibForBloc(bloc, merged)?.categorieId;
+  if (!catId) return false;
+  if (catId === 'cat_resto') return true;
+  const cat = (state.bibCategories || []).find(c => c.id === catId);
+  return !!cat && (cat.nom || '').trim().toLowerCase() === 'restauration';
+}
+
 function renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux) {
   const vueMode = document.querySelector('input[name="vueClient"]:checked').value;
-  const fondreFraisResa = $('fondreFraisResa').checked;
   const tbodyC = document.querySelector('#tableClient tbody');
   const tfootC = document.querySelector('#tableClient tfoot');
   tbodyC.innerHTML = '';
 
   let lignesClient = lignes.map(l => ({ ...l }));
 
-  if (fondreFraisResa) {
-    const fraisResa = lignesClient.find(l => l.type === 'fraisResa');
-    if (fraisResa) {
-      lignesClient = lignesClient.filter(l => l.type !== 'fraisResa');
-      const cibles = lignesClient.filter(l => ['personnel','resto'].includes(l.type));
-      const totalCibles = cibles.reduce((s, l) => s + l.totalHT, 0);
-      if (totalCibles > 0) {
-        cibles.forEach(c => {
-          const ratio = c.totalHT / totalCibles;
-          const aRepartir = fraisResa.totalHT * ratio;
-          c.totalHT += aRepartir;
-          c.puHT = c.totalHT / c.qte;
-        });
-      } else {
-        lignesClient.push(fraisResa);
-      }
-    }
-  }
+  // Frais de réservation : toujours une ligne séparée côté client, jamais
+  // fondus dans une formule (l'option « Fondre les frais de réservation »
+  // n'a plus d'effet sur la Vue client).
 
-  // === Fusion "Service en salle" dans la Vue client ===
-  // La ligne 'personnel' n'apparaît plus comme une ligne autonome côté client.
-  // Son montant est réparti AU PRORATA sur toutes les autres lignes (spectacle,
-  // resto, privatSalle, forfait, fraisResa résiduel...). Le total HT est inchangé.
-  // (La marge interne reste calculée sur les lignes brutes, donc non impactée.)
+  // === Service en salle → formules de restauration ===
+  // La ligne 'personnel' est intégrée aux lignes formule/resto des blocs dont
+  // la formule est de catégorie Restauration, au prorata de leur prix HT (donc
+  // au prorata de chaque bloc restauration). Spectacle, privatisation et
+  // frais de réservation ne reçoivent rien. Sans bloc restauration, le
+  // service reste sur sa propre ligne. Le total HT est inchangé et la marge
+  // interne, calculée sur les lignes brutes, n'est pas impactée.
   {
     const persoLignes = lignesClient.filter(l => l.type === 'personnel');
-    if (persoLignes.length > 0) {
+    const blocsResto = new Set(
+      (state.formules || []).map((b, idx) => (estBlocRestauration(b) ? idx : -1)).filter(i => i >= 0)
+    );
+    const cibles = lignesClient.filter(l =>
+      ['formule', 'resto'].includes(l.type) && blocsResto.has(l.blocIdx ?? 0) && l.totalHT > 0
+    );
+    const totalCibles = cibles.reduce((s, l) => s + l.totalHT, 0);
+    if (persoLignes.length > 0 && totalCibles > 0) {
       const totalPerso = persoLignes.reduce((s, l) => s + l.totalHT, 0);
       lignesClient = lignesClient.filter(l => l.type !== 'personnel');
-      const totalAutres = lignesClient.reduce((s, l) => s + l.totalHT, 0);
-      if (totalAutres > 0) {
-        lignesClient.forEach(c => {
-          const ratio = c.totalHT / totalAutres;
-          c.totalHT += totalPerso * ratio;
-          if (c.qte > 0) c.puHT = c.totalHT / c.qte;
-        });
-      } else {
-        // Cas edge : aucune autre ligne — on remet le personnel pour ne pas perdre le total
-        lignesClient.push(...persoLignes);
-      }
+      cibles.forEach(c => {
+        c.totalHT += totalPerso * (c.totalHT / totalCibles);
+        if (c.qte > 0) c.puHT = c.totalHT / c.qte;
+      });
     }
   }
 
