@@ -61,7 +61,7 @@ function lignesNet(s) {
 function buildDefaultFromDevis() {
   const form = readCurrentForm();
   const programmeSoiree = readProgrammeSoiree();
-  // Lignes budget = lignes vue-client après fusion service-en-salle
+  // Lignes budget = lignes vue-client
   // (déjà exposées par calcul.js via window._lastLignesClient).
   const lignesClient = Array.isArray(window._lastLignesClient) ? window._lastLignesClient : [];
   const budgetLignes = lignesClient.map(l => ({

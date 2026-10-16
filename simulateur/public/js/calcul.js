@@ -14,8 +14,6 @@ import { estPrivatisation } from './mode-fiche.js';
 import {
   calculerBlocLibreForCurrentFiche, calculerFraisResaCurrentFiche, calculerPersonnelCurrentFiche
 } from './calcul-libre-bridge.js';
-import { resolveFormuleLibForBloc } from './calcul-libre.js';
-import { LEGACY_FORMULES_LIB } from './formules-lib-seed.js';
 
 // Lecture d'un paramètre de type interne pour UN BLOC précis (multi-formules).
 // Chaîne du Modèle C étendue au niveau bloc :
@@ -282,75 +280,33 @@ function renderCouverture(format, jour, lignes) {
   box.style.display = 'block';
 }
 
-// Bloc « restauration » : sa formule (bibliothèque ou seed legacy) est rangée
-// dans la catégorie Restauration (id cat_resto, ou une catégorie nommée ainsi).
-function estBlocRestauration(bloc) {
-  const bib = Array.isArray(state.bibFormules) ? state.bibFormules : [];
-  const existing = new Set(bib.map(f => f.id));
-  const merged = [...bib, ...LEGACY_FORMULES_LIB.filter(l => !existing.has(l.id))];
-  const catId = resolveFormuleLibForBloc(bloc, merged)?.categorieId;
-  if (!catId) return false;
-  if (catId === 'cat_resto') return true;
-  const cat = (state.bibCategories || []).find(c => c.id === catId);
-  return !!cat && (cat.nom || '').trim().toLowerCase() === 'restauration';
-}
-
 function renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux) {
   const vueMode = document.querySelector('input[name="vueClient"]:checked').value;
   const tbodyC = document.querySelector('#tableClient tbody');
   const tfootC = document.querySelector('#tableClient tfoot');
   tbodyC.innerHTML = '';
 
-  let lignesClient = lignes.map(l => ({ ...l }));
+  // Service en salle et frais de réservation restent des lignes séparées côté
+  // client, jamais fondus dans une formule (l'option « Fondre les frais de
+  // réservation » n'a plus d'effet sur la Vue client).
+  const lignesClient = lignes.map(l => ({ ...l }));
 
-  // Frais de réservation : toujours une ligne séparée côté client, jamais
-  // fondus dans une formule (l'option « Fondre les frais de réservation »
-  // n'a plus d'effet sur la Vue client).
-
-  // === Service en salle → formules de restauration ===
-  // La ligne 'personnel' est intégrée aux lignes formule/resto des blocs dont
-  // la formule est de catégorie Restauration, au prorata de leur prix HT (donc
-  // au prorata de chaque bloc restauration). Spectacle, privatisation et
-  // frais de réservation ne reçoivent rien. Sans bloc restauration, le
-  // service reste sur sa propre ligne. Le total HT est inchangé et la marge
-  // interne, calculée sur les lignes brutes, n'est pas impactée.
-  {
-    const persoLignes = lignesClient.filter(l => l.type === 'personnel');
-    const blocsResto = new Set(
-      (state.formules || []).map((b, idx) => (estBlocRestauration(b) ? idx : -1)).filter(i => i >= 0)
-    );
-    const cibles = lignesClient.filter(l =>
-      ['formule', 'resto'].includes(l.type) && blocsResto.has(l.blocIdx ?? 0) && l.totalHT > 0
-    );
-    const totalCibles = cibles.reduce((s, l) => s + l.totalHT, 0);
-    if (persoLignes.length > 0 && totalCibles > 0) {
-      const totalPerso = persoLignes.reduce((s, l) => s + l.totalHT, 0);
-      lignesClient = lignesClient.filter(l => l.type !== 'personnel');
-      cibles.forEach(c => {
-        c.totalHT += totalPerso * (c.totalHT / totalCibles);
-        if (c.qte > 0) c.puHT = c.totalHT / c.qte;
-      });
-    }
-  }
-
-  // Expose les lignes vue-client (après fusion frais-resa + service-en-salle)
-  // pour réutilisation par fiche-client.js (génération PDF) sans dupliquer la logique.
+  // Expose les lignes vue-client pour réutilisation par fiche-client.js (génération PDF) sans dupliquer la logique.
   window._lastLignesClient = lignesClient.map(l => ({ ...l }));
 
   // Ventilation de la TVA calculée sur les lignes réellement présentées au
-  // client : après fusion des frais de résa et du service en salle, les
-  // montants ont changé de taux, donc la ventilation interne ne correspond
-  // plus. Le pied de tableau doit être cohérent avec ses propres lignes.
+  // client : le pied de tableau doit être cohérent avec ses propres lignes.
   const lignesFacturees = [];
 
   if (vueMode === 'decomposee') {
     // Multi-formules : grouper par bloc si > 1 bloc, avec un sous-total par bloc.
     // Mono (1 bloc) : comportement identique à avant.
-    // Les frais de réservation sont une ligne de fiche : rendus après tous les
-    // blocs, hors de tout sous-total formule.
+    // Service en salle et frais de réservation sont des lignes de fiche :
+    // rendus après tous les blocs (dans cet ordre), hors de tout sous-total.
     const nbBlocs = (Array.isArray(state.formules) ? state.formules.length : 1);
-    const lignesBlocs = lignesClient.filter(l => l.type !== 'fraisResa');
-    const lignesFiche = lignesClient.filter(l => l.type === 'fraisResa');
+    const typesFiche = ['personnel', 'fraisResa'];
+    const lignesBlocs = lignesClient.filter(l => !typesFiche.includes(l.type));
+    const lignesFiche = typesFiche.flatMap(t => lignesClient.filter(l => l.type === t));
     const groupes = nbBlocs > 1
       ? state.formules.map((b, idx) => ({
           bloc: b,
