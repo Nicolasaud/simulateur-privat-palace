@@ -391,6 +391,18 @@ function renderVueClient(lignes, nbPers, totalHT, totalTTC, tvaParTaux) {
         <td class="num" style="${sep}">${fmt(l.totalHT * (1 + tva/100))}</td>
       </tr>`;
     });
+
+    // Sous-total des lignes de fiche (service en salle + frais de résa).
+    if (lignesFiche.length > 0) {
+      const stHT = lignesFiche.reduce((s, l) => s + l.totalHT, 0);
+      const stTTC = lignesFiche.reduce((s, l) => s + l.totalHT * (1 + getTva(l.tvaCat)/100), 0);
+      tbodyC.innerHTML += `<tr style="font-weight:600;color:#444">
+        <td colspan="3" style="text-align:right;padding-right:10px">Sous-total frais</td>
+        <td class="num">${fmt(stHT)}</td>
+        <td></td>
+        <td class="num">${fmt(stTTC)}</td>
+      </tr>`;
+    }
   } else {
     lignesFacturees.push(...lignesClient);
     const prixPers = totalHT / nbPers;
